@@ -12,7 +12,7 @@ public class Node_Editor : EditorWindow
 	public Node_Canvas_Object nodeCanvas;
 	public static Node_Editor editor;
 
-	public const string editorPath = "Assets/Node_Editor/";
+	public const string editorPath = "Assets/Plugins/Node_Editor/";
 	public string openedCanvas = "New Canvas";
 	public string openedCanvasPath;
 
@@ -55,7 +55,7 @@ public class Node_Editor : EditorWindow
 			nodeLabelBold.wordWrap = false;
 
 			nodeButton = new GUIStyle (GUI.skin.button);
-			nodeButton.normal.textColor = new Color (0.3f, 0.3f, 0.3f);
+			nodeButton.normal.textColor = new Color (0.6f, 0.6f, 0.6f);
 
 			NewNodeCanvas ();
 
