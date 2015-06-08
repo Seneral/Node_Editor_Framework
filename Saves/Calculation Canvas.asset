@@ -1,0 +1,514 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16e2218f533db5e42a23196cde50f9ac, type: 3}
+  m_Name: Calculation Canvas
+  m_EditorClassIdentifier: 
+  nodes:
+  - {fileID: 11427106}
+  - {fileID: 11474200}
+  - {fileID: 11482580}
+  - {fileID: 11465972}
+  - {fileID: 11470468}
+  - {fileID: 11439902}
+  - {fileID: 11487832}
+  - {fileID: 11443322}
+  scrollOffset: {x: 34, y: -39}
+  zoom: 2
+--- !u!114 &11412898
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfd9b948f4e135e4a8f0a97ec36511d4, type: 3}
+  m_Name: Input 1
+  m_EditorClassIdentifier: 
+  body: {fileID: 11482580}
+  rect:
+    serializedVersion: 2
+    x: 362
+    y: 169
+    width: 109
+    height: 16
+  connection: {fileID: 11458078}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11421204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8540dc606510f764aa58ec26b6a1348b, type: 3}
+  m_Name: Output 1
+  m_EditorClassIdentifier: 
+  body: {fileID: 11487832}
+  rect:
+    serializedVersion: 2
+    x: 1120
+    y: 301
+    width: 58
+    height: 16
+  connections:
+  - {fileID: 11463188}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11427106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13be5cee542385f4b86400f5548f2fbf, type: 3}
+  m_Name: Input Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: 69
+    y: 128
+    width: 215
+    height: 50
+  Inputs: []
+  Outputs:
+  - {fileID: 11458078}
+  value: 7.0999999
+--- !u!114 &11430432
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfd9b948f4e135e4a8f0a97ec36511d4, type: 3}
+  m_Name: Input 2
+  m_EditorClassIdentifier: 
+  body: {fileID: 11487832}
+  rect:
+    serializedVersion: 2
+    x: 963
+    y: 319
+    width: 153
+    height: 16
+  connection: {fileID: 11466500}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11439902
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e50607383fb7324898c85b9fa819424, type: 3}
+  m_Name: Display Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: 977
+    y: 168
+    width: 119
+    height: 50
+  Inputs:
+  - {fileID: 11453178}
+  Outputs: []
+  assigned: 1
+  value: .433000088
+--- !u!114 &11443322
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e50607383fb7324898c85b9fa819424, type: 3}
+  m_Name: Display Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: 1251
+    y: 279
+    width: 112
+    height: 50
+  Inputs:
+  - {fileID: 11463188}
+  Outputs: []
+  assigned: 1
+  value: 2.30946827
+--- !u!114 &11453178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfd9b948f4e135e4a8f0a97ec36511d4, type: 3}
+  m_Name: Value
+  m_EditorClassIdentifier: 
+  body: {fileID: 11439902}
+  rect:
+    serializedVersion: 2
+    x: 977
+    y: 188
+    width: 114
+    height: 16
+  connection: {fileID: 11466500}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11458078
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8540dc606510f764aa58ec26b6a1348b, type: 3}
+  m_Name: Value
+  m_EditorClassIdentifier: 
+  body: {fileID: 11427106}
+  rect:
+    serializedVersion: 2
+    x: 74
+    y: 148
+    width: 210
+    height: 16
+  connections:
+  - {fileID: 11412898}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11463188
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfd9b948f4e135e4a8f0a97ec36511d4, type: 3}
+  m_Name: Value
+  m_EditorClassIdentifier: 
+  body: {fileID: 11443322}
+  rect:
+    serializedVersion: 2
+    x: 1251
+    y: 299
+    width: 107
+    height: 16
+  connection: {fileID: 11421204}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11465488
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8540dc606510f764aa58ec26b6a1348b, type: 3}
+  m_Name: Value
+  m_EditorClassIdentifier: 
+  body: {fileID: 11474200}
+  rect:
+    serializedVersion: 2
+    x: 76
+    y: 218
+    width: 210
+    height: 16
+  connections:
+  - {fileID: 11469694}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11465972
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e50607383fb7324898c85b9fa819424, type: 3}
+  m_Name: Display Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: 665
+    y: 119
+    width: 112
+    height: 50
+  Inputs:
+  - {fileID: 11467462}
+  Outputs: []
+  assigned: 1
+  value: 7.0999999
+--- !u!114 &11466500
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8540dc606510f764aa58ec26b6a1348b, type: 3}
+  m_Name: Output 1
+  m_EditorClassIdentifier: 
+  body: {fileID: 11470468}
+  rect:
+    serializedVersion: 2
+    x: 817
+    y: 222
+    width: 58
+    height: 16
+  connections:
+  - {fileID: 11453178}
+  - {fileID: 11430432}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11467462
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfd9b948f4e135e4a8f0a97ec36511d4, type: 3}
+  m_Name: Value
+  m_EditorClassIdentifier: 
+  body: {fileID: 11465972}
+  rect:
+    serializedVersion: 2
+    x: 665
+    y: 139
+    width: 107
+    height: 16
+  connection: {fileID: 11470840}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11469564
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfd9b948f4e135e4a8f0a97ec36511d4, type: 3}
+  m_Name: Input 1
+  m_EditorClassIdentifier: 
+  body: {fileID: 11487832}
+  rect:
+    serializedVersion: 2
+    x: 963
+    y: 301
+    width: 153
+    height: 16
+  connection: {fileID: 0}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11469694
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfd9b948f4e135e4a8f0a97ec36511d4, type: 3}
+  m_Name: Input 2
+  m_EditorClassIdentifier: 
+  body: {fileID: 11482580}
+  rect:
+    serializedVersion: 2
+    x: 362
+    y: 187
+    width: 109
+    height: 16
+  connection: {fileID: 11465488}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11470468
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9d930e03e422c04fb35d22cbfe57913, type: 3}
+  m_Name: Calc Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: 660
+    y: 202
+    width: 215
+    height: 100
+  Inputs:
+  - {fileID: 11481338}
+  - {fileID: 11494064}
+  Outputs:
+  - {fileID: 11466500}
+  type: 1
+  Input1Val: 7.0999999
+  Input2Val: 6.66699982
+--- !u!114 &11470840
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8540dc606510f764aa58ec26b6a1348b, type: 3}
+  m_Name: Output 1
+  m_EditorClassIdentifier: 
+  body: {fileID: 11482580}
+  rect:
+    serializedVersion: 2
+    x: 475
+    y: 169
+    width: 102
+    height: 16
+  connections:
+  - {fileID: 11467462}
+  - {fileID: 11481338}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11474200
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13be5cee542385f4b86400f5548f2fbf, type: 3}
+  m_Name: Input Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: 71
+    y: 198
+    width: 215
+    height: 50
+  Inputs: []
+  Outputs:
+  - {fileID: 11465488}
+  value: .970000029
+--- !u!114 &11480364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8540dc606510f764aa58ec26b6a1348b, type: 3}
+  m_Name: Value
+  m_EditorClassIdentifier: 
+  body: {fileID: 0}
+  rect:
+    serializedVersion: 2
+    x: 71
+    y: 333
+    width: 210
+    height: 16
+  connections: []
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11481338
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfd9b948f4e135e4a8f0a97ec36511d4, type: 3}
+  m_Name: Input 1
+  m_EditorClassIdentifier: 
+  body: {fileID: 11470468}
+  rect:
+    serializedVersion: 2
+    x: 660
+    y: 222
+    width: 153
+    height: 16
+  connection: {fileID: 11470840}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
+--- !u!114 &11482580
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9d930e03e422c04fb35d22cbfe57913, type: 3}
+  m_Name: Calc Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: 362
+    y: 149
+    width: 215
+    height: 100
+  Inputs:
+  - {fileID: 11412898}
+  - {fileID: 11469694}
+  Outputs:
+  - {fileID: 11470840}
+  type: 2
+  Input1Val: 7.0999999
+  Input2Val: 1
+--- !u!114 &11487832
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9d930e03e422c04fb35d22cbfe57913, type: 3}
+  m_Name: Calc Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: 963
+    y: 281
+    width: 215
+    height: 100
+  Inputs:
+  - {fileID: 11469564}
+  - {fileID: 11430432}
+  Outputs:
+  - {fileID: 11421204}
+  type: 3
+  Input1Val: 1
+  Input2Val: .433000088
+--- !u!114 &11494064
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bfd9b948f4e135e4a8f0a97ec36511d4, type: 3}
+  m_Name: Input 2
+  m_EditorClassIdentifier: 
+  body: {fileID: 11470468}
+  rect:
+    serializedVersion: 2
+    x: 660
+    y: 240
+    width: 153
+    height: 16
+  connection: {fileID: 0}
+  type: System.Single, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
