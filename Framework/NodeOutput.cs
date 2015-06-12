@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Collections.Generic;
 
@@ -7,18 +7,18 @@ public class NodeOutput : ScriptableObject
 	public Node body;
 	public Rect rect = new Rect ();
 	public List<NodeInput> connections = new List<NodeInput> ();
-	public string type;
+	public TypeOf type;
 	[NonSerialized]
 	public object value = null;
 
 	/// <summary>
 	/// Creates a new NodeOutput in NodeBody of specified type
 	/// </summary>
-	public static NodeOutput Create (Node NodeBody, string OutputName, Type OutputType) 
+	public static NodeOutput Create (Node NodeBody, string OutputName, TypeOf OutputType) 
 	{
-		NodeOutput output = NodeOutput.CreateInstance (typeof (NodeOutput)) as NodeOutput;
+		NodeOutput output = CreateInstance <NodeOutput> ();
 		output.body = NodeBody;
-		output.type = OutputType.AssemblyQualifiedName;
+		output.type = OutputType;
 		output.name = OutputName;
 		NodeBody.Outputs.Add (output);
 		return output;
@@ -49,7 +49,7 @@ public class NodeOutput : ScriptableObject
 	public void SetRect (Rect labelRect) 
 	{
 		rect = new Rect (body.rect.x + labelRect.x, 
-		                 body.rect.y + labelRect.y, 
+		                 body.rect.y + labelRect.y + 20, 
 		                 body.rect.width - labelRect.x, 
 		                 labelRect.height);
 	}
