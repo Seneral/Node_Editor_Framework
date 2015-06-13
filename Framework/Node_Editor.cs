@@ -74,7 +74,7 @@ public class Node_Editor : EditorWindow
 			};
 
 			nodeBase = new GUIStyle (GUI.skin.box);
-			nodeBase.normal.background = ColorToTex (new Color (0.5f, 0.5f, 0.5f));
+			nodeBase.normal.background = ColorToTex (new Color (0.2f, 0.2f, 0.2f));
 			nodeBase.normal.textColor = new Color (0.7f, 0.7f, 0.7f);
 
 			nodeBox = new GUIStyle (nodeBase);
