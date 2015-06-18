@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using System;
 using System.Collections.Generic;
@@ -6,27 +6,22 @@ using System.Collections.Generic;
 public abstract class Node : ScriptableObject
 {
 	public Rect rect = new Rect ();
-
 	public List<NodeInput> Inputs = new List<NodeInput> ();
 	public List<NodeOutput> Outputs = new List<NodeOutput> ();
+	public bool calculated = true;
+	// Abstract member to get the ID of the node
+	public abstract string GetID { get; }
 
 	/// <summary>
-	/// Init this node. Has to be called when creating a child node of this
+	/// Gets the zoomed rect: the rect of this node how it's actually represented on the screen.
 	/// </summary>
-	protected void Init () 
+	public Rect screenRect 
 	{
-		Calculate ();
-		Node_Editor.editor.nodeCanvas.nodes.Add (this);
-		if (!String.IsNullOrEmpty (AssetDatabase.GetAssetPath (Node_Editor.editor.nodeCanvas)))
+		get 
 		{
-			AssetDatabase.AddObjectToAsset (this, Node_Editor.editor.nodeCanvas);
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-				AssetDatabase.AddObjectToAsset (Inputs [inCnt], this);
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-				AssetDatabase.AddObjectToAsset (Outputs [outCnt], this);
-
-			AssetDatabase.ImportAsset (Node_Editor.editor.openedCanvasPath);
-			AssetDatabase.Refresh ();
+			Rect nodeRect = new Rect (rect);
+			nodeRect.position += Node_Editor.zoomPos;
+			return Node_Editor.ScaleRect (nodeRect, Node_Editor.zoomPos, new Vector2 (1/Node_Editor.nodeCanvas.zoom, 1/Node_Editor.nodeCanvas.zoom)); 
 		}
 	}
 
@@ -34,68 +29,17 @@ public abstract class Node : ScriptableObject
 	/// Function implemented by the children to draw the node
 	/// </summary>
 	public abstract void NodeGUI ();
-
+	
 	/// <summary>
 	/// Function implemented by the children to calculate their outputs
 	/// Should return Success/Fail
 	/// </summary>
 	public abstract bool Calculate ();
-
+	
 	/// <summary>
-	/// Draws the node knobs; splitted from curves because of the render order
+	/// Optional callback when the node is deleted
 	/// </summary>
-	public void DrawKnobs () 
-	{
-		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-		{
-			GUI.DrawTexture (Outputs [outCnt].GetKnob (), Node_Editor.typeData [Outputs [outCnt].type].OutputKnob);
-		}
-		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-		{
-			GUI.DrawTexture (Inputs [inCnt].GetKnob (), Node_Editor.typeData [Inputs [inCnt].type].InputKnob);
-		}
-	}
-	/// <summary>
-	/// Draws the node curves; splitted from knobs because of the render order
-	/// </summary>
-	public void DrawConnections () 
-	{
-		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-		{
-			NodeOutput output = Outputs [outCnt];
-			for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
-			{
-				Node_Editor.DrawNodeCurve (output.GetKnob ().center, 
-				                           output.connections [conCnt].GetKnob ().center,
-				                           Node_Editor.typeData [output.type].col);
-			}
-		}
-	}
-
-	/// <summary>
-	/// Callback when the node is deleted. Extendable by the child node, but always call base.OnDelete when overriding !!
-	/// </summary>
-	public virtual void OnDelete () 
-	{
-		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-		{
-			NodeOutput output = Outputs [outCnt];
-			for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
-				output.connections [outCnt].connection = null;
-		}
-		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-		{
-			if (Inputs [inCnt].connection != null)
-				Inputs [inCnt].connection.connections.Remove (Inputs [inCnt]);
-		}
-
-		DestroyImmediate (this, true);
-		if (!String.IsNullOrEmpty (Node_Editor.editor.openedCanvasPath)) 
-		{
-			AssetDatabase.ImportAsset (Node_Editor.editor.openedCanvasPath);
-			AssetDatabase.Refresh ();
-		}
-	}
+	public virtual void OnDelete () {}
 
 	#region Member Functions
 
@@ -137,31 +81,6 @@ public abstract class Node : ScriptableObject
 	}
 
 	/// <summary>
-	/// Returns the input knob that is at the position on this node or null
-	/// </summary>
-	public NodeInput GetInputAtPos (Vector2 pos) 
-	{
-		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-		{ // Search for an input at the position
-			if (Inputs [inCnt].GetKnob ().Contains (new Vector3 (pos.x, pos.y)))
-				return Inputs [inCnt];
-		}
-		return null;
-	}
-	/// <summary>
-	/// Returns the output knob that is at the position on this node or null
-	/// </summary>
-	public NodeOutput GetOutputAtPos (Vector2 pos) 
-	{
-		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-		{ // Search for an output at the position
-			if (Outputs [outCnt].GetKnob ().Contains (new Vector3 (pos.x, pos.y)))
-				return Outputs [outCnt];
-		}
-		return null;
-	}
-
-	/// <summary>
 	/// Recursively checks whether this node is a child of the other node
 	/// </summary>
 	public bool isChildOf (Node otherNode)
@@ -180,10 +99,115 @@ public abstract class Node : ScriptableObject
 		}
 		return false;
 	}
+	
+	/// <summary>
+	/// Init this node. Has to be called when creating a child node
+	/// </summary>
+	protected void InitBase () 
+	{
+		Calculate ();
+		Node_Editor.nodeCanvas.nodes.Add (this);
+		if (!String.IsNullOrEmpty (AssetDatabase.GetAssetPath (Node_Editor.nodeCanvas)))
+		{
+			AssetDatabase.AddObjectToAsset (this, Node_Editor.nodeCanvas);
+			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
+				AssetDatabase.AddObjectToAsset (Inputs [inCnt], this);
+			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
+				AssetDatabase.AddObjectToAsset (Outputs [outCnt], this);
+			
+			AssetDatabase.ImportAsset (Node_Editor.openedCanvasPath);
+			AssetDatabase.Refresh ();
+		}
+	}
 
+	/// <summary>
+	/// Returns the input knob that is at the position on this node or null
+	/// </summary>
+	public NodeInput GetInputAtPos (Vector2 pos) 
+	{
+		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
+		{ // Search for an input at the position
+			if (Inputs [inCnt].GetScreenKnob ().Contains (new Vector3 (pos.x, pos.y)))
+				return Inputs [inCnt];
+		}
+		return null;
+	}
+	/// <summary>
+	/// Returns the output knob that is at the position on this node or null
+	/// </summary>
+	public NodeOutput GetOutputAtPos (Vector2 pos) 
+	{
+		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
+		{ // Search for an output at the position
+			if (Outputs [outCnt].GetScreenKnob ().Contains (new Vector3 (pos.x, pos.y)))
+				return Outputs [outCnt];
+		}
+		return null;
+	}
+
+	/// <summary>
+	/// Draws the node knobs; splitted from curves because of the render order
+	/// </summary>
+	public void DrawKnobs () 
+	{
+		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
+		{
+			GUI.DrawTexture (Outputs [outCnt].GetGUIKnob (), Node_Editor.typeData [Outputs [outCnt].type].OutputKnob);
+		}
+		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
+		{
+			GUI.DrawTexture (Inputs [inCnt].GetGUIKnob (), Node_Editor.typeData [Inputs [inCnt].type].InputKnob);
+		}
+	}
+	/// <summary>
+	/// Draws the node curves; splitted from knobs because of the render order
+	/// </summary>
+	public void DrawConnections () 
+	{
+		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
+		{
+			NodeOutput output = Outputs [outCnt];
+			for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
+			{
+				Node_Editor.DrawNodeCurve (output.GetGUIKnob ().center, 
+				                           output.connections [conCnt].GetGUIKnob ().center,
+				                           Node_Editor.typeData [output.type].col);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Deletes this Node
+	/// </summary>
+	public void Delete () 
+	{
+		Node_Editor.nodeCanvas.nodes.Remove (this);
+		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
+		{
+			NodeOutput output = Outputs [outCnt];
+			for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
+				output.connections [outCnt].connection = null;
+		}
+		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
+		{
+			NodeInput input = Inputs [inCnt];
+			if (input.connection != null)
+				input.connection.connections.Remove (input);
+		}
+		
+		DestroyImmediate (this, true);
+		
+		if (!String.IsNullOrEmpty (Node_Editor.openedCanvasPath)) 
+		{
+			AssetDatabase.ImportAsset (Node_Editor.openedCanvasPath);
+			AssetDatabase.Refresh ();
+		}
+		OnDelete ();
+	}
+	
 	#endregion
-
-	#region static Functions
+	
+	#region Static Functions
 
 	/// <summary>
 	/// Check if an output and an input can be connected (same type, ...)

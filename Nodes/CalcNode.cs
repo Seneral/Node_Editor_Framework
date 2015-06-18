@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using System.Collections;
 
@@ -8,13 +8,16 @@ public class CalcNode : Node
 	public enum CalcType { Add, Substract, Multiply, Divide }
 	public CalcType type = CalcType.Add;
 
+	public const string ID = "calcNode";
+	public override string GetID { get { return ID; } }
+
 	public float Input1Val = 1f;
 	public float Input2Val = 1f;
 
 	public static CalcNode Create (Rect NodeRect) 
 	{ // This function has to be registered in Node_Editor.ContextCallback
 		CalcNode node = CreateInstance <CalcNode> ();
-
+		
 		node.name = "Calc Node";
 		node.rect = NodeRect;
 		
@@ -22,8 +25,8 @@ public class CalcNode : Node
 		NodeInput.Create (node, "Input 2", TypeOf.Float);
 		
 		NodeOutput.Create (node, "Output 1", TypeOf.Float);
-
-		node.Init ();
+		
+		node.InitBase ();
 		return node;
 	}
 
@@ -85,12 +88,5 @@ public class CalcNode : Node
 		}
 
 		return true;
-	}
-
-	public override void OnDelete () 
-	{
-		base.OnDelete ();
-		// Always call this if we want our custom OnDelete operations!
-		// Else you can leave this out
 	}
 }

@@ -1,12 +1,13 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System;
 
 public class NodeInput : ScriptableObject
 {
 	public Node body;
-	public Rect rect = new Rect ();
 	public NodeOutput connection;
 	public TypeOf type;
+
+	public Rect rect = new Rect ();
 
 	/// <summary>
 	/// Creates a new NodeInput in NodeBody of specified type
@@ -44,20 +45,32 @@ public class NodeInput : ScriptableObject
 	/// </summary>
 	public void SetRect (Rect labelRect) 
 	{
-		rect = new Rect (body.rect.x, 
-		                 body.rect.y + labelRect.y + 20,
+		rect = new Rect (body.rect.x,
+		                 body.rect.y + labelRect.y + 20, 
 		                 labelRect.width + labelRect.x,
 		                 labelRect.height);
 	}
 	
 	/// <summary>
-	/// Get the rect of the knob left to the input
+	/// Get the rect of the knob left to the input NOT ZOOMED; Used for GUI drawing in scaled areas
 	/// </summary>
-	public Rect GetKnob () 
+	public Rect GetGUIKnob () 
 	{
-		int knobSize = Node_Editor.editor.knobSize;
-		return new Rect (rect.x - knobSize,
-		                 rect.y + (rect.height - knobSize) / 2, 
+		Rect knobRect = new Rect (rect);
+		knobRect.position += Node_Editor.zoomPanAdjust;
+		float knobSize = (float)Node_Editor.knobSize;
+		return new Rect (knobRect.x - knobSize,
+		                 knobRect.y + (knobRect.height - knobSize) / 2,
 		                 knobSize, knobSize);
+	}
+
+	/// <summary>
+	/// Get the rect of the knob left to the input ZOOMED; Used for input checks; Representative of the actual screen rect
+	/// </summary>
+	public Rect GetScreenKnob () 
+	{
+		Rect knobRect = GetGUIKnob ();
+		knobRect.position = knobRect.position - Node_Editor.zoomPanAdjust + Node_Editor.zoomPos; // Change spaces, as GUIKnob was built for scaled GUI.matrix.
+		return Node_Editor.ScaleRect (knobRect, Node_Editor.zoomPos, new Vector2 (1/Node_Editor.nodeCanvas.zoom, 1/Node_Editor.nodeCanvas.zoom));
 	}
 }

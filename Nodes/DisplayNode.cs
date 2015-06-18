@@ -1,23 +1,26 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using System.Collections;
 
 [System.Serializable]
 public class DisplayNode : Node 
 {
+	public const string ID = "displayNode";
+	public override string GetID { get { return ID; } }
+
 	public bool assigned = false;
 	public float value = 0;
 
 	public static DisplayNode Create (Rect NodeRect) 
 	{ // This function has to be registered in Node_Editor.ContextCallback
 		DisplayNode node = CreateInstance <DisplayNode> ();
-
+		
 		node.name = "Display Node";
 		node.rect = NodeRect;
 		
 		NodeInput.Create (node, "Value", TypeOf.Float);
-
-		node.Init ();
+		
+		node.InitBase ();
 		return node;
 	}
 	

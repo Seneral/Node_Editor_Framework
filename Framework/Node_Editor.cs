@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using UnityEngine.EventSystems;
 using System;
@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 using Object = UnityEngine.Object;
 
-public enum TypeOf { Float }
+public enum TypeOf { Float, Texture2D, Channel }
 
 public struct TypeData 
 {
@@ -26,75 +26,41 @@ public struct TypeData
 
 public class Node_Editor : EditorWindow 
 {
-	public Node_Canvas_Object nodeCanvas;
+	// Information about current instances
+	public static Node_Canvas_Object nodeCanvas;
 	public static Node_Editor editor;
 
 	public const string editorPath = "Assets/Plugins/Node_Editor/Editor/";
-	public string openedCanvas = "New Canvas";
-	public string openedCanvasPath;
+	public static string openedCanvas = "New Canvas";
+	public static string openedCanvasPath;
 
-	public int sideWindowWidth = 400;
-	public int knobSize = 18;
+	// Settings
+	public static int sideWindowWidth = 400;
+	public static int knobSize = 18;
 
-	// TODO: Fallback to Default Windowing System: Comment Out
-	public Node activeNode;
-	public bool dragNode = false;
+	// Variables about the current state
+	public static Node activeNode;
+	public static bool dragNode = false;
+	public static NodeOutput connectOutput;
+	public static bool navigate = false;
+	public static bool panWindow = false;
+	public static Vector2 mousePos;
+	public static Vector2 zoomPos;
+	public static Vector2 zoomPanAdjust;
 
-	public NodeOutput connectOutput;
-	public bool navigate = false;
-	public bool panWindow = false;
-	public Vector2 mousePos;
-
+	// Static textures and styles
 	public static Texture2D InputKnob;
 	public static Texture2D OutputKnob;
-
 	public static Texture2D ConnectorKnob;
 	public static Texture2D Background;
 	public static GUIStyle nodeBase;
 	public static GUIStyle nodeBox;
 	public static GUIStyle nodeLabelBold;
-	
-	private bool initiated;
 
+	// Static information about Types
 	public static Dictionary<TypeOf, TypeData> typeData;
 
-	public void checkInit () 
-	{
-		if (!initiated || nodeCanvas == null) 
-		{
-			InputKnob = AssetDatabase.LoadAssetAtPath (editorPath + "Textures/In_Knob.png", typeof(Texture2D)) as Texture2D;
-			OutputKnob = AssetDatabase.LoadAssetAtPath (editorPath + "Textures/Out_Knob.png", typeof(Texture2D)) as Texture2D;
-
-			ConnectorKnob = EditorGUIUtility.Load ("icons/animationkeyframe.png") as Texture2D;
-			Background = AssetDatabase.LoadAssetAtPath (editorPath + "Textures/background.png", typeof(Texture2D)) as Texture2D;
-
-			typeData = new Dictionary<TypeOf, TypeData> () 
-			{
-				{ TypeOf.Float, new TypeData (Color.cyan, InputKnob, OutputKnob) }
-			};
-
-			nodeBase = new GUIStyle (GUI.skin.box);
-			nodeBase.normal.background = ColorToTex (new Color (0.2f, 0.2f, 0.2f));
-			nodeBase.normal.textColor = new Color (0.7f, 0.7f, 0.7f);
-
-			nodeBox = new GUIStyle (nodeBase);
-			nodeBox.margin = new RectOffset (8, 8, 5, 8);
-			nodeBox.padding = new RectOffset (8, 8, 8, 8);
-
-			nodeLabelBold = new GUIStyle (nodeBase);
-			nodeLabelBold.fontStyle = FontStyle.Bold;
-			nodeLabelBold.wordWrap = false;
-
-			NewNodeCanvas ();
-
-			// Example of creating Nodes and Connections through code
-//			CalcNode calcNode1 = CalcNode.Create (new Rect (200, 200, 200, 150));
-//			CalcNode calcNode2 = CalcNode.Create (new Rect (600, 200, 200, 150));
-//			Node.ApplyConnection (calcNode1.Outputs [0], calcNode2.Inputs [0]);
-
-			initiated = true;
-		}
-	}
+	#region Setup
 
 	[MenuItem("Window/Node Editor")]
 	static void CreateEditor () 
@@ -103,23 +69,134 @@ public class Node_Editor : EditorWindow
 		Node_Editor.editor.minSize = new Vector2 (800, 600);
 	}
 
+	private bool initiated;
+
+	public void checkInit () 
+	{
+		if (!initiated || nodeCanvas == null) 
+		{
+			InputKnob = AssetDatabase.LoadAssetAtPath (editorPath + "Textures/In_Knob.png", typeof(Texture2D)) as Texture2D;
+			OutputKnob = AssetDatabase.LoadAssetAtPath (editorPath + "Textures/Out_Knob.png", typeof(Texture2D)) as Texture2D;
+			
+			ConnectorKnob = EditorGUIUtility.Load ("icons/animationkeyframe.png") as Texture2D;
+			Background = AssetDatabase.LoadAssetAtPath (editorPath + "Textures/background.png", typeof(Texture2D)) as Texture2D;
+
+			// TODO: Node Editor: Type Declaration
+			typeData = new Dictionary<TypeOf, TypeData> () 
+			{
+				{ TypeOf.Float, new TypeData (Color.cyan, InputKnob, OutputKnob) },
+				{ TypeOf.Texture2D, new TypeData (Color.magenta, InputKnob, OutputKnob) },
+				{ TypeOf.Channel, new TypeData (Color.yellow, InputKnob, OutputKnob) }
+			};
+			
+			nodeBase = new GUIStyle (GUI.skin.box);
+			nodeBase.normal.background = ColorToTex (new Color (0.2f, 0.2f, 0.2f));
+			nodeBase.normal.textColor = new Color (0.7f, 0.7f, 0.7f);
+			
+			nodeBox = new GUIStyle (nodeBase);
+			nodeBox.margin = new RectOffset (8, 8, 5, 8);
+			nodeBox.padding = new RectOffset (8, 8, 8, 8);
+			
+			nodeLabelBold = new GUIStyle (nodeBase);
+			nodeLabelBold.fontStyle = FontStyle.Bold;
+			nodeLabelBold.wordWrap = false;
+			
+			NewNodeCanvas ();
+			
+			// Example of creating Nodes and Connections through code
+//			CalcNode calcNode1 = CalcNode.Create (new Rect (200, 200, 200, 100));
+//			CalcNode calcNode2 = CalcNode.Create (new Rect (600, 200, 200, 100));
+//			Node.ApplyConnection (calcNode1.Outputs [0], calcNode2.Inputs [0]);
+			
+			initiated = true;
+		}
+	}
+
+	#endregion
+
 	#region GUI
 
 	public void OnGUI () 
 	{
 		checkInit ();
-		
+
+		// Draw Background when Repainting
+		if (Event.current.type == EventType.Repaint) 
+		{
+			float width = Background.width / nodeCanvas.zoom;
+			float height = Background.height / nodeCanvas.zoom;
+			Vector2 offset = new Vector2 ((nodeCanvas.panOffset.x / nodeCanvas.zoom)%width - width, 
+			                              (nodeCanvas.panOffset.y / nodeCanvas.zoom)%height - height);
+			int tileX = Mathf.CeilToInt ((position.width + (width - offset.x)) / width);
+			int tileY = Mathf.CeilToInt ((position.height + (height - offset.y)) / height);
+			
+			for (int x = 0; x < tileX; x++) 
+			{
+				for (int y = 0; y < tileY; y++) 
+				{
+					Rect texRect = new Rect (offset.x + x*width, 
+					                         offset.y + y*height, 
+					                         width, height);
+					GUI.DrawTexture (texRect, Background);
+				}
+			}
+		}
+
 		InputEvents ();
+
+		// We want to scale our nodes, but as GUI.matrix also scales our widnow's clipping group, 
+		// we have to scale it up first to receive a correct one as a result
+		#region Scale Setup
+
+		// End the default clipping group
+		GUI.EndGroup ();
 		
-		// Draw the nodes
-		BeginWindows ();
+		// The Rect of the new clipping group to draw our nodes in
+		Rect CanvasRect = canvasWindowRect;
+		Rect ScaledCanvasRect = ScaleRect (CanvasRect, zoomPos, new Vector2 (nodeCanvas.zoom, nodeCanvas.zoom));
+		ScaledCanvasRect.y += 23; // Header tab height
+
+		// Now continue drawing using the new clipping group
+		GUI.BeginGroup (ScaledCanvasRect);
+		ScaledCanvasRect.position = Vector2.zero; // Adjust because we entered the new group
+
+		// Because I currently found no way to actually scale to the center of the window rather than (0, 0),
+		// I'm going to cheat and just pan it accordingly to let it appear as if it would scroll to the center
+		// Note, due to that, other controls are still scaled to (0, 0)
+		zoomPos = CanvasRect.center; // Set it to whatever you prefer
+		zoomPanAdjust = ScaledCanvasRect.center - CanvasRect.size/2 + zoomPos;
+		
+		// Take a matrix backup to restore back later on
+		Matrix4x4 GUIMatrix = GUI.matrix;
+		
+		// Scale GUI.matrix. After that we have the correct clipping group again.
+		GUIUtility.ScaleAroundPivot (new Vector2 (1/nodeCanvas.zoom, 1/nodeCanvas.zoom), zoomPanAdjust);
+
+		#endregion
+
+		// Some features which require drawing:
+		if (navigate) 
+		{ // Draw a curve to the origin/active node for orientation purposes
+			DrawNodeCurve ((activeNode != null? activeNode.rect.center : nodeCanvas.panOffset), mousePos*nodeCanvas.zoom, Color.black); 
+			Repaint ();
+		}
+		if (connectOutput != null)
+		{ // Draw the currently drawn connection
+			DrawNodeCurve (connectOutput.GetGUIKnob ().center, mousePos*nodeCanvas.zoom, typeData [connectOutput.type].col);
+			Repaint ();
+		}
+
+		// Draw the nodes:
+//		BeginWindows ();
 		for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
 		{
+			// TODO: Node Editor Feature: Custom Windowing System
+			// To remove it, switch comments here and uncomment Begin/EndWindows. No warranty!
+//			if (nodeCanvas.nodes [nodeCnt] != activeNode)
 			DrawNode (nodeCnt);
-			// TODO: Fallback to Default Windowing System: 
-			// nodeCanvas.nodes [nodeCnt].rect = GUILayout.Window (nodeCnt, nodeCanvas.nodes [nodeCnt].rect, DrawNode, nodeCanvas.nodes [nodeCnt].name);
+//			nodeCanvas.nodes [nodeCnt].rect = GUILayout.Window (nodeCnt, nodeCanvas.nodes [nodeCnt].zoomedRect, DrawNode, nodeCanvas.nodes [nodeCnt].name);
 		}
-		EndWindows ();
+//		EndWindows ();
 
 		// Draw their connectors; Seperated because of render order
 		for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
@@ -127,6 +204,19 @@ public class Node_Editor : EditorWindow
 		for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
 			nodeCanvas.nodes [nodeCnt].DrawKnobs ();
 
+		// Draw the active Node ontop
+//		if (activeNode != null)	
+//			DrawNode (nodeCanvas.nodes.IndexOf (activeNode));
+		
+		// End scaling group:
+		// Set default matrix and clipping group for the rest
+		GUI.matrix = GUIMatrix;
+		GUI.EndGroup ();
+		GUI.BeginGroup (new Rect (0, 23, position.width, position.height));
+
+		LateEvents ();
+
+		// Draw Side Window:
 		sideWindowWidth = Math.Min (600, Math.Max (200, (int)(position.width / 5)));
 		GUILayout.BeginArea (sideWindowRect, nodeBox);
 		DrawSideWindow ();
@@ -162,6 +252,7 @@ public class Node_Editor : EditorWindow
 			RecalculateAll ();
 		}
 		knobSize = EditorGUILayout.IntSlider (new GUIContent ("Handle Size", "The size of the handles of the Node Inputs/Outputs"), knobSize, 12, 20);
+		nodeCanvas.zoom = EditorGUILayout.Slider (new GUIContent ("Zoom"), nodeCanvas.zoom, 0.6f, 2);
 	}
 
 	#endregion
@@ -173,30 +264,39 @@ public class Node_Editor : EditorWindow
 	/// </summary>
 	public void ContextCallback (object obj)
 	{
+		// TODO: Node Editor: Custom Node Regristration here!
 		switch (obj.ToString ()) 
 		{
-		case "calcNode":
-			CalcNode.Create (new Rect (mousePos.x, mousePos.y, 200, 80));
+		case CalcNode.ID:
+			CalcNode.Create (new Rect (mousePos.x - zoomPos.x, mousePos.y - zoomPos.y, 200, 100));
 			break;
 			
-		case "inputNode":
-			InputNode.Create (new Rect (mousePos.x, mousePos.y, 200, 50));
+		case InputNode.ID:
+			InputNode.Create (new Rect (mousePos.x - zoomPos.x, mousePos.y - zoomPos.y, 200, 50));
 			break;
 			
-		case "displayNode":
-			DisplayNode.Create (new Rect (mousePos.x, mousePos.y, 100, 50));
+		case DisplayNode.ID:
+			DisplayNode.Create (new Rect (mousePos.x - zoomPos.x, mousePos.y - zoomPos.y, 150, 50));
 			break;
 
-//		case "exampleNode":
-//			ExampleNode.Create (new Rect (mousePos.x, mousePos.y, 100, 80));
+//		case ExampleNode.ID:
+//			ExampleNode.Create (new Rect (mousePos.x - zoomPos.x, mousePos.y - zoomPos.y, 100, 50));
 //			break;
 			
 		case "deleteNode":
-			Node node = NodeAtPosition (mousePos);
-			if (node != null) 
+			Node nodeToDelete = NodeAtPosition (mousePos);
+			if (nodeToDelete != null) 
+				nodeToDelete.Delete ();
+			break;
+
+		case "duplicateNode":
+			Node nodeToDuplicate = NodeAtPosition (mousePos);
+			if (nodeToDuplicate != null) 
 			{
-				nodeCanvas.nodes.Remove (node);
-				node.OnDelete ();
+				ContextCallback (nodeToDuplicate.GetID);
+				Node duplicatedNode = nodeCanvas.nodes [nodeCanvas.nodes.Count-1];
+				activeNode = duplicatedNode;
+				dragNode = true;
 			}
 			break;
 		}
@@ -205,6 +305,10 @@ public class Node_Editor : EditorWindow
 	public Rect sideWindowRect 
 	{
 		get { return new Rect (position.width - sideWindowWidth, 0, sideWindowWidth, position.height); }
+	}
+	public Rect canvasWindowRect 
+	{
+		get { return new Rect (0, 0, position.width - sideWindowWidth, position.height); }
 	}
 	
 	/// <summary>
@@ -244,8 +348,9 @@ public class Node_Editor : EditorWindow
 		// Check if we clicked inside a window (or knobSize pixels left or right of it at outputs, for faster knob recognition)
 		for (int nodeCnt = nodeCanvas.nodes.Count-1; nodeCnt >= 0; nodeCnt--) 
 		{ // From top to bottom because of the render order (though overwritten by active Window, so be aware!)
-			Rect NodeRect = new Rect (nodeCanvas.nodes [nodeCnt].rect);
-			NodeRect = new Rect (NodeRect.x - knobSize, NodeRect.y, NodeRect.width + knobSize*2, NodeRect.height);
+			Rect NodeRect = new Rect (nodeCanvas.nodes [nodeCnt].screenRect);
+			float zoomedKnobSize = (float)knobSize/nodeCanvas.zoom;
+			NodeRect = new Rect (NodeRect.x - zoomedKnobSize, NodeRect.y, NodeRect.width + zoomedKnobSize*2, NodeRect.height);
 			if (NodeRect.Contains (pos))
 				return nodeCanvas.nodes [nodeCnt];
 		}
@@ -257,22 +362,37 @@ public class Node_Editor : EditorWindow
 	/// </summary>
 	private void DrawNode (int id)
 	{
-		// TODO: Fallback to Default Windowing System: Replace
+		// TODO: Node Editor Feature: Custom Windowing System
+		// To remove it, Replace following comments. No warranty!
 		
 		//nodeCanvas.nodes [id].NodeGUI ();
 		//GUI.DragWindow ();
-		
+
 		Node node = nodeCanvas.nodes [id];
-		Rect headerRect = new Rect (node.rect.x, node.rect.y, node.rect.width, 20);
-		Rect bodyRect = new Rect (node.rect.x, node.rect.y + 20, node.rect.width, node.rect.height - 20);
-		GUI.Label (headerRect, new GUIContent (node.name), GUI.skin.box);
+		Rect nodeRect = node.rect;
+		nodeRect.position += zoomPanAdjust;
+		float headerHeight = 20;
+		Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, headerHeight);
+		Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + headerHeight, nodeRect.width, nodeRect.height - headerHeight);
+
+		GUIStyle headerStyle = new GUIStyle (GUI.skin.box);
+		if (activeNode == node)
+			headerStyle.fontStyle = FontStyle.Bold;
+		GUI.Label (headerRect, new GUIContent (node.name), headerStyle);
 		GUILayout.BeginArea (bodyRect, GUI.skin.box);
 		node.NodeGUI ();
 		GUILayout.EndArea ();
 	}
+
+	public static Rect ScaleRect (Rect rect, Vector2 pivot, Vector2 scale) 
+	{
+		rect.position = Vector2.Scale (rect.position - pivot, scale) + pivot;
+		rect.size = Vector2.Scale (rect.size, scale);
+		return rect;
+	}
 	
 	/// <summary>
-	/// Draws a node curve from start to end (with three shades of shadows! :O )
+	/// Draws a node curve from start to end (with three shades of shadows)
 	/// </summary>
 	public static void DrawNodeCurve (Vector2 start, Vector2 end, Color col) 
 	{
@@ -300,59 +420,37 @@ public class Node_Editor : EditorWindow
 		mousePos = e.mousePosition;
 		
 		Node clickedNode = null;
-		if (e.type == EventType.MouseDown || e.type == EventType.MouseUp || e.type == EventType.MouseMove)
+		if (e.type == EventType.MouseDown || e.type == EventType.MouseUp)
 			clickedNode = NodeAtPosition (e.mousePosition);
-		
-		if (e.type == EventType.Repaint) 
-		{ // Draw background when repainting
-			Vector2 offset = new Vector2 (nodeCanvas.panOffset.x%Background.width - Background.width, 
-			                              nodeCanvas.panOffset.y%Background.height - Background.height);
-			int tileX = Mathf.CeilToInt ((position.width + (Background.width - offset.x)) / Background.width);
-			int tileY = Mathf.CeilToInt ((position.height + (Background.height - offset.y)) / Background.height);
-			
-			for (int x = 0; x < tileX; x++) 
-			{
-				for (int y = 0; y < tileY; y++) 
-				{
-					Rect texRect = new Rect (offset.x + x*Background.width, 
-					                         offset.y + y*Background.height, 
-					                         Background.width, Background.height);
-					GUI.DrawTexture (texRect, Background);
-				}
-			}
-		}
-		
-		if (e.type == EventType.MouseDown) 
+
+		switch (e.type) 
 		{
-			activeNode = clickedNode;
+		case EventType.MouseDown:
+
+			if (e.button == 0)
+				activeNode = clickedNode;
+
 			connectOutput = null;
 			dragNode = false;
+			panWindow = false;
 			
-			if (activeNode != null) 
+			if (clickedNode != null) 
 			{ // A click on a node
 				if (e.button == 1)
 				{ // Right click -> Node Context Click
 					GenericMenu menu = new GenericMenu ();
 					
 					menu.AddItem (new GUIContent ("Delete Node"), false, ContextCallback, "deleteNode");
+					menu.AddItem (new GUIContent ("Duplicate Node"), false, ContextCallback, "duplicateNode");
 					
 					menu.ShowAsContext ();
 					e.Use();
 				}
 				else if (e.button == 0)
 				{
-					if (activeNode.rect.Contains (mousePos))
-					{ // Left click inside node -> Drag Node
-						// TODO: Fallback to Default Windowing System: Comment Out
-						if (GUIUtility.hotControl == 0)
-						{ // We didn't clicked on GUI module, so we'll start drag the node
-							dragNode = true;
-							e.delta = new Vector2 (0, 0); // Because this is the delta from when it was last checked, we have to reset it
-						}
-					}
-					else 
+					if (!clickedNode.screenRect.Contains (mousePos))
 					{ // Left click at node edges -> Check for clicked connections to edit
-						NodeOutput nodeOutput = activeNode.GetOutputAtPos (mousePos);
+						NodeOutput nodeOutput = clickedNode.GetOutputAtPos (mousePos);
 						if (nodeOutput != null)
 						{ // Output Node -> New Connection drawn from this
 							connectOutput = nodeOutput;
@@ -360,44 +458,46 @@ public class Node_Editor : EditorWindow
 						}
 						else 
 						{ // no output clicked, check input
-							NodeInput nodeInput = activeNode.GetInputAtPos (mousePos);
+							NodeInput nodeInput = clickedNode.GetInputAtPos (mousePos);
 							if (nodeInput != null && nodeInput.connection != null)
 							{ // Input node -> Loose and edit Connection
 								connectOutput = nodeInput.connection;
 								nodeInput.connection.connections.Remove (nodeInput);
 								nodeInput.connection = null;
-								RecalculateFrom (activeNode);
+								RecalculateFrom (clickedNode);
 								e.Use();
 							}
 						}
 					}
 				}
 			}
-			else if (!sideWindowRect.Contains (mousePos))
+			else if (canvasWindowRect.Contains (mousePos))
 			{ // A click on the empty canvas
 				if (e.button == 2 || e.button == 0)
 				{ // Left/Middle Click -> Start scrolling
 					panWindow = true;
-					e.delta = new Vector2 (0, 0);
+					e.delta = Vector2.zero;
 				}
 				else if (e.button == 1) 
 				{ // Right click -> Editor Context Click
 					GenericMenu menu = new GenericMenu ();
 					
-					menu.AddItem(new GUIContent("Add Input Node"), false, ContextCallback, "inputNode");
-					menu.AddItem(new GUIContent("Add Display Node"), false, ContextCallback, "displayNode");
-					menu.AddItem(new GUIContent("Add Calculation Node"), false, ContextCallback, "calcNode");
-					menu.AddSeparator("");
-
+					menu.AddItem (new GUIContent ("Add Input Node"), false, ContextCallback, InputNode.ID);
+					menu.AddItem (new GUIContent ("Add Display Node"), false, ContextCallback, DisplayNode.ID);
+					menu.AddItem (new GUIContent ("Add Calculation Node"), false, ContextCallback, CalcNode.ID);
+					menu.AddSeparator ("");
+					
 					//menu.AddItem(new GUIContent("Add Example Node"), false, ContextCallback, "exampleNode");
-
+					
 					menu.ShowAsContext ();
 					e.Use();
-				} 
+				}
 			}
-		}
-		else if (e.type == EventType.MouseUp) 
-		{
+
+			break;
+
+		case EventType.MouseUp:
+
 			if (connectOutput != null) 
 			{ // Apply a connection if theres a clicked input
 				if (clickedNode != null && !clickedNode.Outputs.Contains (connectOutput)) 
@@ -410,53 +510,76 @@ public class Node_Editor : EditorWindow
 				}
 				e.Use();
 			}
-			else if (e.button == 2 || e.button == 0)
-			{ // Left/Middle click up -> Stop scrolling
-				panWindow = false;
-			}
-			dragNode = false;
+
 			connectOutput = null;
-		}
-		else if (e.type == EventType.KeyDown)
-		{
-			if (e.keyCode == KeyCode.N) // Start Navigating (curve to origin)
+			dragNode = false;
+			panWindow = false;
+
+			break;
+
+		case EventType.ScrollWheel:
+
+			nodeCanvas.zoom = Mathf.Min (2.0f, Mathf.Max (0.6f, nodeCanvas.zoom + e.delta.y / 15));
+			Repaint ();
+			
+			break;
+
+		case EventType.KeyDown:
+
+			// TODO: Node Editor: Shortcuts
+			if (e.keyCode == KeyCode.N) // Start Navigating (curve to origin / active Node)
 				navigate = true;
-		}
-		else if (e.type == EventType.KeyUp)
-		{
+
+			if (e.keyCode == KeyCode.LeftControl && activeNode != null) // Snap
+				activeNode.rect.position = new Vector2 (Mathf.RoundToInt ((activeNode.rect.position.x - nodeCanvas.panOffset.x) / 10) * 10 + nodeCanvas.panOffset.x, 
+					                                    Mathf.RoundToInt ((activeNode.rect.position.y - nodeCanvas.panOffset.y) / 10) * 10 + nodeCanvas.panOffset.y);
+
+			Repaint ();
+
+			break;
+
+		case EventType.KeyUp:
+
 			if (e.keyCode == KeyCode.N) // Stop Navigating
 				navigate = false;
+
+			Repaint ();
+
+			break;
+
 		}
-		else if (e.type == EventType.Repaint) 
-		{
-			if (navigate) 
-			{ // Draw a curve to the origin/active node for orientation purposes
-				DrawNodeCurve (nodeCanvas.panOffset, (activeNode != null? activeNode.rect.center : e.mousePosition), Color.black); 
-				Repaint ();
-			}
-			if (connectOutput != null)
-			{ // Draw the currently drawn connection
-				DrawNodeCurve (connectOutput.GetKnob ().center, e.mousePosition, typeData [connectOutput.type].col);
-				Repaint ();
-			}
-		}
+
 		if (panWindow) 
 		{ // Scroll everything with the current mouse delta
-			nodeCanvas.panOffset += e.delta / 2;
+			nodeCanvas.panOffset += e.delta / 2 * nodeCanvas.zoom;
 			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
-				nodeCanvas.nodes [nodeCnt].rect.position += e.delta / 2;
+				nodeCanvas.nodes [nodeCnt].rect.position += e.delta / 2 * nodeCanvas.zoom;
 			Repaint ();
 		}
-		// TODO: Fallback to Default Windowing System: Comment Out
-		if (dragNode && activeNode != null) 
+
+		if (dragNode && activeNode != null && GUIUtility.hotControl == 0) 
 		{ // Drag the active node with the current mouse delta
-			if (GUIUtility.hotControl == 0) 
-			{
-				activeNode.rect.position += e.delta / 2;
-				Repaint ();
-			} 
-			else
-				dragNode = false;
+			activeNode.rect.position += e.delta / 2 * nodeCanvas.zoom;
+			Repaint ();
+		}
+	}
+
+	/// <summary>
+	/// Proccesses late events. Called after GUI Functions, used when they have higher priority in focus
+	/// </summary>
+	private void LateEvents () 
+	{
+		Event e = Event.current;
+
+		if (e.type == EventType.MouseDown && e.button == 0 && 
+		    activeNode != null && activeNode.screenRect.Contains (mousePos))
+		{ // Left click inside node -> Drag Node
+			// Because of hotControl we have to put it after the GUI Functions
+			if (GUIUtility.hotControl == 0)
+			{ // We didn't clicked on GUI module, so we'll start drag the node
+				dragNode = true;
+				e.delta = Vector2.zero; // Because this is the delta from when it was last checked, we have to reset it
+			}
 		}
 	}
 	
@@ -465,7 +588,7 @@ public class Node_Editor : EditorWindow
 	#region Calculation
 
 	// A list of Nodes from which calculation originates -> Call StartCalculation
-	public List<Node> workList;
+	public static List<Node> workList;
 
 	/// <summary>
 	/// Recalculate from every Input Node.
@@ -477,96 +600,103 @@ public class Node_Editor : EditorWindow
 		for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
 		{
 			if (nodeCanvas.nodes [nodeCnt].Inputs.Count == 0) 
-			{
+			{ // Add all Inputs
+				ClearCalculation (nodeCanvas.nodes [nodeCnt]);
 				workList.Add (nodeCanvas.nodes [nodeCnt]);
-				ClearChildrenInput (nodeCanvas.nodes [nodeCnt]);
 			}
 		}
 		StartCalculation ();
 	}
 
 	/// <summary>
-	/// Recalculate from node. 
+	/// Recalculate from this node. 
 	/// Usually does not need to be called manually
 	/// </summary>
 	public void RecalculateFrom (Node node) 
 	{
+		ClearCalculation (node);
 		workList = new List<Node> { node };
-		ClearChildrenInput (node);
 		StartCalculation ();
 	}
 
 	/// <summary>
 	/// Iterates through the worklist and calculates everything, including children
 	/// </summary>
-	private void StartCalculation () 
+	public void StartCalculation () 
 	{
 		// this blocks iterates through the worklist and starts calculating
 		// if a node returns false state it stops and adds the node to the worklist
 		// later on, this worklist is reworked
 		bool limitReached = false;
 		for (int roundCnt = 0; !limitReached; roundCnt++)
-		{ // Runs until every node that can be calculated are calculated
+		{ // Runs until every node possible is calculated
 			limitReached = true;
 			for (int workCnt = 0; workCnt < workList.Count; workCnt++) 
 			{
 				Node node = workList [workCnt];
-				if (node.Calculate ())
-				{ // finished Calculating, continue with the children
-					for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
-					{
-						NodeOutput output = node.Outputs [outCnt];
-						for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-							ContinueCalculation (output.connections [conCnt].body);
-					}
-					if (workList.Contains (node))
-						workList.Remove (node);
+				if (ContinueCalculation (node))
 					limitReached = false;
-				}
-				else if (!workList.Contains (node)) 
-				{ // Calculate returned false state (due to missing inputs / whatever), add it to check later
-					workList.Add (node);
-				}
 			}
 		}
 	}
 
 	/// <summary>
-	/// A recursive function to clear all inputs that depend on the outputs of node. 
+	/// Recursive function which continues calculation on this node and all the child nodes
 	/// Usually does not need to be called manually
+	/// Returns success/failure on this node only
 	/// </summary>
-	private void ClearChildrenInput (Node node) 
+	private bool ContinueCalculation (Node node) 
 	{
-		node.Calculate ();
-		for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
-		{
-			NodeOutput output = node.Outputs [outCnt];
-			output.value = null;
-			for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-				ClearChildrenInput (output.connections [conCnt].body);
-		}
-	}
-
-	/// <summary>
-	/// Continues calculation on this node to all the child nodes
-	/// Usually does not need to be called manually
-	/// </summary>
-	private void ContinueCalculation (Node node) 
-	{
-		if (node.Calculate ())
+		if (descendantsCalculated (node) && node.Calculate ())
 		{ // finished Calculating, continue with the children
 			for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
 			{
 				NodeOutput output = node.Outputs [outCnt];
 				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-				{
 					ContinueCalculation (output.connections [conCnt].body);
-				}
 			}
+			workList.Remove (node);
+			node.calculated = true;
+			//Debug.Log ("Calculated " + node.name + (node.Outputs.Count != 0? ("; First Ouput: " + node.Outputs [0].value + " !") : "!"));
+			return true;
 		}
-		else if (!workList.Contains (node))
+		else if (!workList.Contains (node)) 
+		{ // failed to calculate, add it to check later
+			//Debug.Log ("Failed to calculate " + node.name + (node.Outputs.Count != 0? ("; First Ouput: " + node.Outputs [0].value + " !") : "!"));
 			workList.Add (node);
+		}
+		return false;
 	}
+
+	/// <summary>
+	/// A recursive function to clear all calculations depending on this node.
+	/// Usually does not need to be called manually
+	/// </summary>
+	private void ClearCalculation (Node node) 
+	{
+		node.calculated = false;
+		for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
+		{
+			NodeOutput output = node.Outputs [outCnt];
+			output.value = null;
+			for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
+				ClearCalculation (output.connections [conCnt].body);
+		}
+	}
+
+	/// <summary>
+	/// Returns whether every node this node depends on, have been calculated
+	/// </summary>
+	public bool descendantsCalculated (Node node) 
+	{
+		for (int cnt = 0; cnt < node.Inputs.Count; cnt++) 
+		{
+			if (node.Inputs [cnt].connection != null && !node.Inputs [cnt].connection.body.calculated)
+				return false;
+		}
+		return true;
+	}
+
 	#endregion
 
 	#region Save/Load
@@ -629,7 +759,8 @@ public class Node_Editor : EditorWindow
 		string[] folders = path.Split (new char[] {'/'}, StringSplitOptions.None);
 		openedCanvas = folders [folders.Length-1];
 		openedCanvasPath = path;
-		
+		RecalculateAll ();
+
 		Repaint ();
 		AssetDatabase.Refresh ();
 	}
