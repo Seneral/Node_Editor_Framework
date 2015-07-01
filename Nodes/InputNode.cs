@@ -10,16 +10,15 @@ public class InputNode : Node
 
 	public float value = 1f;
 
-	public static InputNode Create (Rect NodeRect) 
+	public override Node Create (Vector2 pos) 
 	{ // This function has to be registered in Node_Editor.ContextCallback
 		InputNode node = CreateInstance <InputNode> ();
 		
 		node.name = "Input Node";
-		node.rect = NodeRect;
+		node.rect = new Rect (pos.x, pos.y, 200, 50);;
 		
-		NodeOutput.Create (node, "Value", TypeOf.Float);
-		
-		node.InitBase ();
+		NodeOutput.Create (node, "Value", "Float");
+
 		return node;
 	}
 
@@ -30,7 +29,7 @@ public class InputNode : Node
 			Outputs [0].SetRect (GUILayoutUtility.GetLastRect ());
 
 		if (GUI.changed)
-			Node_Editor.editor.RecalculateFrom (this);
+			NodeEditor.RecalculateFrom (this);
 	}
 	
 	public override bool Calculate () 

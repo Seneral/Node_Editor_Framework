@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEditor;
 using System;
 using System.Collections.Generic;
 
@@ -13,17 +12,10 @@ public abstract class Node : ScriptableObject
 	public abstract string GetID { get; }
 
 	/// <summary>
-	/// Gets the zoomed rect: the rect of this node how it's actually represented on the screen.
+	/// Function implemented by the children to create the node
 	/// </summary>
-	public Rect screenRect 
-	{
-		get 
-		{
-			Rect nodeRect = new Rect (rect);
-			nodeRect.position += Node_Editor.zoomPos;
-			return Node_Editor.ScaleRect (nodeRect, Node_Editor.zoomPos, new Vector2 (1/Node_Editor.nodeCanvas.zoom, 1/Node_Editor.nodeCanvas.zoom)); 
-		}
-	}
+	/// <param name="pos">Position.</param>
+	public abstract Node Create (Vector2 pos);
 
 	/// <summary>
 	/// Function implemented by the children to draw the node
@@ -81,6 +73,19 @@ public abstract class Node : ScriptableObject
 	}
 
 	/// <summary>
+	/// Returns whether every node this node depends on has been calculated
+	/// </summary>
+	public bool descendantsCalculated () 
+	{
+		for (int cnt = 0; cnt < Inputs.Count; cnt++) 
+		{
+			if (Inputs [cnt].connection != null && !Inputs [cnt].connection.body.calculated)
+				return false;
+		}
+		return true;
+	}
+
+	/// <summary>
 	/// Recursively checks whether this node is a child of the other node
 	/// </summary>
 	public bool isChildOf (Node otherNode)
@@ -103,21 +108,23 @@ public abstract class Node : ScriptableObject
 	/// <summary>
 	/// Init this node. Has to be called when creating a child node
 	/// </summary>
-	protected void InitBase () 
+	public void InitBase () 
 	{
 		Calculate ();
-		Node_Editor.nodeCanvas.nodes.Add (this);
-		if (!String.IsNullOrEmpty (AssetDatabase.GetAssetPath (Node_Editor.nodeCanvas)))
+		NodeEditor.curNodeCanvas.nodes.Add (this);
+#if UNITY_EDITOR
+		if (!String.IsNullOrEmpty (UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas)))
 		{
-			AssetDatabase.AddObjectToAsset (this, Node_Editor.nodeCanvas);
+			UnityEditor.AssetDatabase.AddObjectToAsset (this, NodeEditor.curNodeCanvas);
 			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-				AssetDatabase.AddObjectToAsset (Inputs [inCnt], this);
+				UnityEditor.AssetDatabase.AddObjectToAsset (Inputs [inCnt], this);
 			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-				AssetDatabase.AddObjectToAsset (Outputs [outCnt], this);
+				UnityEditor.AssetDatabase.AddObjectToAsset (Outputs [outCnt], this);
 			
-			AssetDatabase.ImportAsset (Node_Editor.openedCanvasPath);
-			AssetDatabase.Refresh ();
+			UnityEditor.AssetDatabase.ImportAsset (UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas));
+			UnityEditor.AssetDatabase.Refresh ();
 		}
+#endif
 	}
 
 	/// <summary>
@@ -152,11 +159,11 @@ public abstract class Node : ScriptableObject
 	{
 		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 		{
-			GUI.DrawTexture (Outputs [outCnt].GetGUIKnob (), Node_Editor.typeData [Outputs [outCnt].type].OutputKnob);
+			GUI.DrawTexture (Outputs [outCnt].GetGUIKnob (), ConnectionTypes.types [Outputs [outCnt].type].OutputKnob);
 		}
 		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 		{
-			GUI.DrawTexture (Inputs [inCnt].GetGUIKnob (), Node_Editor.typeData [Inputs [inCnt].type].InputKnob);
+			GUI.DrawTexture (Inputs [inCnt].GetGUIKnob (), ConnectionTypes.types [Inputs [inCnt].type].InputKnob);
 		}
 	}
 	/// <summary>
@@ -169,19 +176,19 @@ public abstract class Node : ScriptableObject
 			NodeOutput output = Outputs [outCnt];
 			for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
 			{
-				Node_Editor.DrawNodeCurve (output.GetGUIKnob ().center, 
-				                           output.connections [conCnt].GetGUIKnob ().center,
-				                           Node_Editor.typeData [output.type].col);
+				NodeEditor.DrawNodeCurve (output.GetGUIKnob ().center, 
+				                          output.connections [conCnt].GetGUIKnob ().center,
+				                          ConnectionTypes.types [output.type].col);
 			}
 		}
 	}
 
 	/// <summary>
-	/// Deletes this Node
+	/// Deletes this Node from curNodeCanvas. Depends on that.
 	/// </summary>
 	public void Delete () 
 	{
-		Node_Editor.nodeCanvas.nodes.Remove (this);
+		NodeEditor.curNodeCanvas.nodes.Remove (this);
 		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 		{
 			NodeOutput output = Outputs [outCnt];
@@ -196,12 +203,14 @@ public abstract class Node : ScriptableObject
 		}
 		
 		DestroyImmediate (this, true);
-		
-		if (!String.IsNullOrEmpty (Node_Editor.openedCanvasPath)) 
+
+#if UNITY_EDITOR
+		if (!String.IsNullOrEmpty (UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas))) 
 		{
-			AssetDatabase.ImportAsset (Node_Editor.openedCanvasPath);
-			AssetDatabase.Refresh ();
+			UnityEditor.AssetDatabase.ImportAsset (UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas));
+			UnityEditor.AssetDatabase.Refresh ();
 		}
+#endif
 		OnDelete ();
 	}
 	
@@ -225,7 +234,7 @@ public abstract class Node : ScriptableObject
 
 		if (output.body.isChildOf (input.body)) 
 		{
-			Node_Editor.editor.ShowNotification (new GUIContent ("Recursion detected!"));
+			NodeEditorWindow.editor.ShowNotification (new GUIContent ("Recursion detected!"));
 			return false;
 		}
 		return true;
@@ -245,7 +254,7 @@ public abstract class Node : ScriptableObject
 			input.connection = output;
 			output.connections.Add (input);
 
-			Node_Editor.editor.RecalculateFrom (input.body);
+			NodeEditor.RecalculateFrom (input.body);
 		}
 	}
 

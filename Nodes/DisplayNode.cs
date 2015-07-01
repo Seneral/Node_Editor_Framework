@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEditor;
 using System.Collections;
 
 [System.Serializable]
@@ -11,16 +10,15 @@ public class DisplayNode : Node
 	public bool assigned = false;
 	public float value = 0;
 
-	public static DisplayNode Create (Rect NodeRect) 
+	public override Node Create (Vector2 pos) 
 	{ // This function has to be registered in Node_Editor.ContextCallback
 		DisplayNode node = CreateInstance <DisplayNode> ();
 		
 		node.name = "Display Node";
-		node.rect = NodeRect;
+		node.rect = new Rect (pos.x, pos.y, 150, 50);
 		
-		NodeInput.Create (node, "Value", TypeOf.Float);
-		
-		node.InitBase ();
+		NodeInput.Create (node, "Value", "Float");
+
 		return node;
 	}
 	

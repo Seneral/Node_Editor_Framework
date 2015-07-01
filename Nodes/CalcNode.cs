@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEditor;
 using System.Collections;
 
 [System.Serializable]
@@ -14,19 +13,18 @@ public class CalcNode : Node
 	public float Input1Val = 1f;
 	public float Input2Val = 1f;
 
-	public static CalcNode Create (Rect NodeRect) 
-	{ // This function has to be registered in Node_Editor.ContextCallback
+	public override Node Create (Vector2 pos) 
+	{
 		CalcNode node = CreateInstance <CalcNode> ();
 		
 		node.name = "Calc Node";
-		node.rect = NodeRect;
+		node.rect = new Rect (pos.x, pos.y, 200, 100);
 		
-		NodeInput.Create (node, "Input 1", TypeOf.Float);
-		NodeInput.Create (node, "Input 2", TypeOf.Float);
+		NodeInput.Create (node, "Input 1", "Float");
+		NodeInput.Create (node, "Input 2", "Float");
 		
-		NodeOutput.Create (node, "Output 1", TypeOf.Float);
-		
-		node.InitBase ();
+		NodeOutput.Create (node, "Output 1", "Float");
+
 		return node;
 	}
 
@@ -37,15 +35,19 @@ public class CalcNode : Node
 
 		if (Inputs [0].connection != null)
 			GUILayout.Label (Inputs [0].name);
+#if UNITY_EDITOR
 		else
-			Input1Val = EditorGUILayout.FloatField (Input1Val);
+			Input1Val = UnityEditor.EditorGUILayout.FloatField (Input1Val);
+#endif
 		if (Event.current.type == EventType.Repaint) 
 			Inputs [0].SetRect (GUILayoutUtility.GetLastRect ());
 		// --
 		if (Inputs [1].connection != null)
 			GUILayout.Label (Inputs [1].name);
+#if UNITY_EDITOR
 		else
-			Input2Val = EditorGUILayout.FloatField (Input2Val);
+			Input2Val = UnityEditor.EditorGUILayout.FloatField (Input2Val);
+#endif
 		if (Event.current.type == EventType.Repaint) 
 			Inputs [1].SetRect (GUILayoutUtility.GetLastRect ());
 
@@ -58,10 +60,10 @@ public class CalcNode : Node
 		GUILayout.EndVertical ();
 		GUILayout.EndHorizontal ();
 
-		type = (CalcType)EditorGUILayout.EnumPopup (new GUIContent ("Calculation Type", "The type of calculation performed on Input 1 and Input 2"), type);
+		type = (CalcType)UnityEditor.EditorGUILayout.EnumPopup (new GUIContent ("Calculation Type", "The type of calculation performed on Input 1 and Input 2"), type);
 
 		if (GUI.changed)
-			Node_Editor.editor.RecalculateFrom (this);
+			NodeEditor.RecalculateFrom (this);
 	}
 
 	public override bool Calculate () 

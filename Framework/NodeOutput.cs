@@ -1,21 +1,20 @@
 ﻿using UnityEngine;
-using System;
 using System.Collections.Generic;
 
 public class NodeOutput : ScriptableObject
 {
 	public Node body;
+	public Rect outputRect = new Rect ();
 	public List<NodeInput> connections = new List<NodeInput> ();
-	public TypeOf type;
-	[NonSerialized]
-	public object value = null;
+	public string type;
 
-	public Rect rect = new Rect ();
+	[System.NonSerialized]
+	public object value = null;
 
 	/// <summary>
 	/// Creates a new NodeOutput in NodeBody of specified type
 	/// </summary>
-	public static NodeOutput Create (Node NodeBody, string OutputName, TypeOf OutputType) 
+	public static NodeOutput Create (Node NodeBody, string OutputName, string OutputType) 
 	{
 		NodeOutput output = CreateInstance <NodeOutput> ();
 		output.body = NodeBody;
@@ -49,10 +48,10 @@ public class NodeOutput : ScriptableObject
 	/// </summary>
 	public void SetRect (Rect labelRect) 
 	{
-		rect = new Rect (body.rect.x + labelRect.x, 
-		                 body.rect.y + labelRect.y + 20, 
-		                 body.rect.width - labelRect.x, 
-		                 labelRect.height);
+		outputRect = new Rect (body.rect.x + labelRect.x, 
+		                       body.rect.y + labelRect.y + 20, 
+		                       body.rect.width - labelRect.x,
+		                       labelRect.height);
 	}
 	
 	/// <summary>
@@ -60,12 +59,9 @@ public class NodeOutput : ScriptableObject
 	/// </summary>
 	public Rect GetGUIKnob () 
 	{
-		Rect knobRect = new Rect (rect);
-		knobRect.position += Node_Editor.zoomPanAdjust;
-		float knobSize = (float)Node_Editor.knobSize;
-		return new Rect (knobRect.x + knobRect.width,
-		                 knobRect.y + (knobRect.height - knobSize) / 2,
-		                 knobSize, knobSize);
+		Rect knobRect = new Rect (outputRect);
+		knobRect.position += NodeEditor.curEditorState.zoomPanAdjust;
+		return TransformOutputRect (knobRect);
 	}
 
 	/// <summary>
@@ -73,8 +69,17 @@ public class NodeOutput : ScriptableObject
 	/// </summary>
 	public Rect GetScreenKnob () 
 	{
-		Rect knobRect = GetGUIKnob ();
-		knobRect.position = knobRect.position - Node_Editor.zoomPanAdjust + Node_Editor.zoomPos; // Change spaces, as GUIKnob was built for scaled GUI.matrix.
-		return Node_Editor.ScaleRect (knobRect, Node_Editor.zoomPos, new Vector2 (1/Node_Editor.nodeCanvas.zoom, 1/Node_Editor.nodeCanvas.zoom));
+		return NodeEditor.GUIToScreenRect (TransformOutputRect (outputRect));
+	}
+
+	/// <summary>
+	/// Transforms the output rect to the knob format
+	/// </summary>
+	private Rect TransformOutputRect (Rect knobRect) 
+	{
+		float knobSize = (float)NodeEditor.knobSize;
+		return new Rect (knobRect.x + knobRect.width,
+		                 knobRect.y + (knobRect.height - knobSize) / 2,
+		                 knobSize, knobSize);
 	}
 }
