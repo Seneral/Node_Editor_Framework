@@ -2,7 +2,7 @@
 using System.Collections;
 
 [System.Serializable]
-[Node (true, "")]
+[Node (true, "Example")]
 public class ExampleNode : Node 
 {
 	public const string ID = "exampleNode";

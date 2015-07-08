@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 
 [System.Serializable]
+[Node (true, "Group")]
 public class GroupNode : Node 
 {
 	public const string ID = "groupNode";

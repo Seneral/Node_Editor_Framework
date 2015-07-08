@@ -3,6 +3,7 @@ using UnityEditor;
 using System.Collections;
 
 [System.Serializable]
+[Node (false, "Float/Input")]
 public class InputNode : Node 
 {
 	public const string ID = "inputNode";

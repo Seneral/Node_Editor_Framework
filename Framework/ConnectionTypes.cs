@@ -16,6 +16,8 @@ public static class ConnectionTypes
 	/// </summary>
 	public static void FetchTypes () 
 	{ // Search the current and (if the NodeEditor is packed into a .dll) the calling one
+		types = new Dictionary<string, TypeData> ();
+
 		Assembly assembly = Assembly.GetExecutingAssembly ();
 		foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.GetInterfaces ().Contains (typeof (ITypeDeclaration)))) 
 		{

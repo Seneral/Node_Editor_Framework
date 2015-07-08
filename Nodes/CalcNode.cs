@@ -2,6 +2,7 @@
 using System.Collections;
 
 [System.Serializable]
+[Node (false, "Float/Calculation")]
 public class CalcNode : Node 
 {
 	public enum CalcType { Add, Substract, Multiply, Divide }

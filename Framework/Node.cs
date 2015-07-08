@@ -122,7 +122,6 @@ public abstract class Node : ScriptableObject
 				UnityEditor.AssetDatabase.AddObjectToAsset (Outputs [outCnt], this);
 			
 			UnityEditor.AssetDatabase.ImportAsset (UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas));
-			UnityEditor.AssetDatabase.Refresh ();
 		}
 #endif
 	}
@@ -192,14 +191,16 @@ public abstract class Node : ScriptableObject
 		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 		{
 			NodeOutput output = Outputs [outCnt];
-			for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
+			for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
 				output.connections [outCnt].connection = null;
+			DestroyImmediate (output, true);
 		}
 		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 		{
 			NodeInput input = Inputs [inCnt];
 			if (input.connection != null)
 				input.connection.connections.Remove (input);
+			DestroyImmediate (input, true);
 		}
 		
 		DestroyImmediate (this, true);
@@ -208,7 +209,6 @@ public abstract class Node : ScriptableObject
 		if (!String.IsNullOrEmpty (UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas))) 
 		{
 			UnityEditor.AssetDatabase.ImportAsset (UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas));
-			UnityEditor.AssetDatabase.Refresh ();
 		}
 #endif
 		OnDelete ();

@@ -20,7 +20,7 @@ public class NodeEditorWindow : EditorWindow
 	[MenuItem("Window/Node Editor")]
 	static void CreateEditor () 
 	{
-		editor = GetWindow<NodeEditorWindow> ();
+		editor = GetWindow<NodeEditorWindow> ("Node Editor");
 		editor.minSize = new Vector2 (800, 600);
 	}
 

@@ -456,8 +456,10 @@ public static class NodeEditor
 #if UNITY_EDITOR
 					UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
 
-					foreach (Node node in NodeTypes.nodes) 
-						menu.AddItem (new GUIContent ("Add " + node.name), false, ContextCallback, new callbackObject (node.GetID, curNodeCanvas, curEditorState));
+					foreach (Node node in NodeTypes.nodes.Keys) 
+					{
+						menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes [node]), false, ContextCallback, new callbackObject (node.GetID, curNodeCanvas, curEditorState));
+					}
 					//menu.AddSeparator ("");
 					
 					menu.ShowAsContext ();
@@ -597,7 +599,7 @@ public static class NodeEditor
 			break;
 
 		default:
-			foreach (Node node in NodeTypes.nodes)
+			foreach (Node node in NodeTypes.nodes.Keys)
 			{
 				if (node.GetID == cbObj.message) 
 				{

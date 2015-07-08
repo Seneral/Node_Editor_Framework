@@ -2,6 +2,7 @@
 using System.Collections;
 
 [System.Serializable]
+[Node (false, "Float/Display")]
 public class DisplayNode : Node 
 {
 	public const string ID = "displayNode";
