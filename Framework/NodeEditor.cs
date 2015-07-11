@@ -482,6 +482,26 @@ public static class NodeEditor
 						Node.ApplyConnection (curEditorState.connectOutput, clickedInput);
 					}
 				}
+                else
+                { // Show menu containing all node types that can take curEditorState.connectOutput as an input
+#if UNITY_EDITOR
+					UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
+                    // Iterate through all compatible nodes
+					foreach (Node node in NodeTypes.nodes.Keys)
+					{
+                        foreach (var input in node.Inputs)
+                        {
+                            if (input.type == curEditorState.connectOutput.type)
+                            {
+                                menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[node]), false, ContextCallback, new callbackObject(node.GetID, curNodeCanvas, curEditorState, null, curEditorState.connectOutput));
+                            }
+                        }
+					}
+					//menu.AddSeparator ("");
+					
+					menu.ShowAsContext ();
+#endif 
+                }
 				e.Use();
 			}
 			
@@ -603,7 +623,25 @@ public static class NodeEditor
 			{
 				if (node.GetID == cbObj.message) 
 				{
-					node.Create (ScreenToGUIPos (mousePos)).InitBase ();
+					var newNode = node.Create (ScreenToGUIPos (mousePos));
+                    newNode.InitBase();
+                    // If nodeOutput is defined, link it to the first input of the same type
+                    if(cbObj.nodeOutput != null)
+                    {
+                        foreach (var input in newNode.Inputs)
+                        {
+                            if (input.type == cbObj.nodeOutput.type)
+                            {
+                                if (Node.CanApplyConnection (cbObj.nodeOutput, input))
+                                { // If it can connect (type is equals, it does not cause recursion, ...)
+                                    Node.ApplyConnection (cbObj.nodeOutput, input);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+
 					break;
 				}
 			}
@@ -617,13 +655,18 @@ public static class NodeEditor
 		public NodeCanvas canvas;
 		public NodeEditorState editor;
 		public Node node;
-		
+        /// <summary>
+        /// Output node to connect to automatically
+        /// </summary>
+		public NodeOutput nodeOutput;
+
 		public callbackObject (string Message, NodeCanvas nodecanvas, NodeEditorState editorState) 
 		{
 			message = Message;
 			canvas = nodecanvas;
 			editor = editorState;
 			node = null;
+            nodeOutput = null;
 		}
 		public callbackObject (string Message, NodeCanvas nodecanvas, NodeEditorState editorState, Node Node) 
 		{
@@ -631,6 +674,15 @@ public static class NodeEditor
 			canvas = nodecanvas;
 			editor = editorState;
 			node = Node;
+            nodeOutput = null;
+		}
+        public callbackObject (string Message, NodeCanvas nodecanvas, NodeEditorState editorState, Node Node, NodeOutput NodeOutput) 
+		{
+			message = Message;
+			canvas = nodecanvas;
+			editor = editorState;
+			node = Node;
+            nodeOutput = NodeOutput;
 		}
 	}
 	
@@ -849,7 +901,7 @@ public static class NodeEditor
 		UnityEditor.AssetDatabase.Refresh ();
 		
 		return nodeCanvas;
-#elif
+#else
 		return null;
 #endif
 	}
