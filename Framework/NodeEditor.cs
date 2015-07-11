@@ -494,6 +494,7 @@ public static class NodeEditor
                             if (input.type == curEditorState.connectOutput.type)
                             {
                                 menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[node]), false, ContextCallback, new callbackObject(node.GetID, curNodeCanvas, curEditorState, null, curEditorState.connectOutput));
+                                break;
                             }
                         }
 					}
