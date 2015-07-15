@@ -29,7 +29,7 @@ public static class NodeEditor
 	public static GUIStyle nodeLabelBold;
 
 	// Constants
-	public const string editorPath = "Assets/Plugins/Node_Editor/Editor/";
+	public const string editorPath = "Assets/Plugins/Node_Editor/";
 
 	#region Setup
 
@@ -893,7 +893,7 @@ public static class NodeEditor
 		
 		for (int cnt = 0; cnt < objects.Length; cnt++) 
 		{ // We only have to search for the NodeCanvas itself in the mess, because it still holds references to all of it's nodes and their connections
-			if (objects [cnt].GetType () == typeof (NodeCanvas)) 
+			if (objects [cnt] && objects [cnt].GetType () == typeof (NodeCanvas)) 
 				nodeCanvas = objects [cnt] as NodeCanvas;
 		}
 		if (nodeCanvas == null)
