@@ -10,13 +10,13 @@ public static class ConnectionTypes
 {
 	// Static consistent information about types
 	static Dictionary<string, TypeData> types = new Dictionary<string, TypeData> ();
-	public static string defaultTypeDataName = "Float";
 	public static TypeData GetTypeData(string typeName)
 	{
 		TypeData res;
 		if( types.TryGetValue(typeName, out res) )
 			return res;
-		return types[defaultTypeDataName];
+		UnityEngine.Debug.LogError("No TypeData defined for: " + typeName);
+		return types.First().Value;
 	}
 
 	/// <summary>
