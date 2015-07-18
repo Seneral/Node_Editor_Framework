@@ -4,9 +4,13 @@ using System.Collections.Generic;
 
 public abstract class Node : ScriptableObject
 {
+	[HideInInspector]
 	public Rect rect = new Rect ();
-	public List<NodeInput> Inputs = new List<NodeInput> ();
-	public List<NodeOutput> Outputs = new List<NodeOutput> ();
+	[HideInInspector]
+	public List<NodeInput> Inputs = new List<NodeInput>();
+	[HideInInspector]
+	public List<NodeOutput> Outputs = new List<NodeOutput>();
+	[HideInInspector]
 	public bool calculated = true;
 	// Abstract member to get the ID of the node
 	public abstract string GetID { get; }

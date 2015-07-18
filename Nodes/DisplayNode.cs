@@ -8,6 +8,7 @@ public class DisplayNode : Node
 	public const string ID = "displayNode";
 	public override string GetID { get { return ID; } }
 
+	[HideInInspector]
 	public bool assigned = false;
 	public float value = 0;
 

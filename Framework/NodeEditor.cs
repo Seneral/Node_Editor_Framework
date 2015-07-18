@@ -393,7 +393,14 @@ public static class NodeEditor
 		Node clickedNode = null;
 		if (insideCanvas && (e.type == EventType.MouseDown || e.type == EventType.MouseUp))
 			clickedNode = NodeEditor.NodeAtPosition (e.mousePosition);
-		
+
+#if UNITY_EDITOR
+		if (clickedNode != null)
+		{
+			UnityEditor.Selection.activeObject = clickedNode;
+		}
+#endif
+
 		switch (e.type) 
 		{
 		case EventType.MouseDown:
