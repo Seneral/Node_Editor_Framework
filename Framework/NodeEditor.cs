@@ -168,7 +168,7 @@ public static class NodeEditor
 		}
 		if (curEditorState.connectOutput != null)
 		{ // Draw the currently drawn connection
-			DrawNodeCurve (curEditorState.connectOutput.GetGUIKnob ().center, ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, ConnectionTypes.types [curEditorState.connectOutput.type].col);
+			DrawNodeCurve(curEditorState.connectOutput.GetGUIKnob().center, ScreenToGUIPos(mousePos) + curEditorState.zoomPos * curEditorState.zoom, ConnectionTypes.GetTypeData(curEditorState.connectOutput.type).col);
 			NodeEditorWindow.editor.Repaint ();
 		}
 		if (curNodeCanvas != NodeEditorWindow.mainNodeCanvas)
