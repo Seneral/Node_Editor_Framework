@@ -13,6 +13,7 @@ public class NodeEditorState : ScriptableObject
 
 	public bool dragNode = false; // whether the active node is dragged
 	public NodeOutput connectOutput; // the output, always on the activeNode, which is currently drawn a new connection from
+	public Vector2 connectMousePos; // the mouse pos at the time of setting connectOutput
 
 	public bool navigate = false; // navigate ('N') feature
 	public bool panWindow = false; // panning the window

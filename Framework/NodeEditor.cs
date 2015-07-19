@@ -437,6 +437,8 @@ public static class NodeEditor
 					if (nodeOutput != null)
 					{ // Output Node -> New Connection drawn from this
 						curEditorState.connectOutput = nodeOutput;
+						curEditorState.connectMousePos = mousePos;
+
 						e.Use();
 					}
 					else 
@@ -629,11 +631,16 @@ public static class NodeEditor
 			break;
 
 		default:
+			var createPos = ScreenToGUIPos(mousePos);
+			if (cbObj.nodeOutput != null && (curEditorState.connectMousePos - mousePos).sqrMagnitude < 50)
+			{
+				createPos = new Vector2(cbObj.nodeOutput.body.rect.xMax+50, cbObj.nodeOutput.body.rect.yMin);
+			}
 			foreach (Node node in NodeTypes.nodes.Keys)
 			{
 				if (node.GetID == cbObj.message) 
 				{
-					var newNode = node.Create (ScreenToGUIPos (mousePos));
+					var newNode = node.Create (createPos);
                     newNode.InitBase();
                     // If nodeOutput is defined, link it to the first input of the same type
                     if(cbObj.nodeOutput != null)

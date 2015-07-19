@@ -40,8 +40,7 @@ public class CalcNode : Node
 		else
 			Input1Val = UnityEditor.EditorGUILayout.FloatField (Input1Val);
 #endif
-		if (Event.current.type == EventType.Repaint) 
-			Inputs [0].SetRect (GUILayoutUtility.GetLastRect ());
+		PlaceGUIInputKnobHere(0);
 		// --
 		if (Inputs [1].connection != null)
 			GUILayout.Label (Inputs [1].name);
@@ -49,8 +48,7 @@ public class CalcNode : Node
 		else
 			Input2Val = UnityEditor.EditorGUILayout.FloatField (Input2Val);
 #endif
-		if (Event.current.type == EventType.Repaint) 
-			Inputs [1].SetRect (GUILayoutUtility.GetLastRect ());
+		PlaceGUIInputKnobHere(1);
 
 		GUILayout.EndVertical ();
 		GUILayout.BeginVertical ();

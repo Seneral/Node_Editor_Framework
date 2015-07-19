@@ -19,6 +19,7 @@ public class NodeEditorWindow : EditorWindow
 			return _editor;
 		}
 	}
+
 	// The main Node Canvas
 	public static NodeCanvas mainNodeCanvas;
 	public static NodeEditorState mainEditorState;
