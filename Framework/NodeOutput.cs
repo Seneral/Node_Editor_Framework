@@ -14,7 +14,51 @@ public class NodeOutput : ScriptableObject
 	public string type;
 
 	[System.NonSerialized]
-	public object value = null;
+	private object value = null;
+
+	private static System.Type valueType;
+
+	public T GetValue<T>()
+		where T : class, new()
+	{
+		if (valueType == null)
+		{
+			valueType = ConnectionTypes.GetOutputType(type);
+		}
+
+		if (valueType == typeof(T))
+		{
+			if (value == null)
+			{
+				value = new T();
+			}
+			return (T)value;
+		}
+		UnityEngine.Debug.LogError("Trying to GetValue<" + typeof(T).FullName + "> for Output Type: " + type);
+
+		return null;
+	}
+
+	public T SetValue<T>()
+		where T : class, new()
+	{
+		if (valueType == null)
+		{
+			valueType = ConnectionTypes.GetOutputType(type);
+		}
+
+		if (valueType == typeof(T))
+		{
+			if (value == null)
+			{
+				value = new T();
+			}
+			return (T)value;
+		}
+		UnityEngine.Debug.LogError("Trying to SetValue<" + typeof(T).FullName + "> for Output Type: " + type);
+
+		return null;
+	}
 
 	/// <summary>
 	/// Creates a new NodeOutput in NodeBody of specified type

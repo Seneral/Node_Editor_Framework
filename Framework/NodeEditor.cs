@@ -820,7 +820,6 @@ public static class NodeEditor
 		for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
 		{
 			NodeOutput output = node.Outputs [outCnt];
-			output.value = null;
 			for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
 				ClearCalculation (output.connections [conCnt].body);
 		}

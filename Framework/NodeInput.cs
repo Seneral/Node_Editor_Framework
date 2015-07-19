@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 [HideInInspector]
 public class NodeInput : ScriptableObject
@@ -11,7 +12,44 @@ public class NodeInput : ScriptableObject
 	public NodeOutput connection;
 	[HideInInspector]
 	public string type;
-	public object value;
+	[NonSerialized]
+	private object value = null;
+	private static System.Type valueType;
+
+	public T GetValue<T>()
+		where T : class, new()
+	{
+		if( valueType == null || valueType == typeof(ConnectionTypes))
+			valueType = ConnectionTypes.GetInputType(type);
+
+		if (valueType == typeof(T))
+		{
+			if (value == null)
+			{
+				value = new T();
+			}
+			return (T)value;
+		}
+		UnityEngine.Debug.LogError("Trying to GetValue<" + typeof(T).FullName+ "> for Input Type: " + type);
+		return null;
+	}
+
+	public void SetValue<T>(T value)
+		where T : class, new()
+	{
+		if (valueType == null)
+			valueType = ConnectionTypes.GetInputType(type);
+
+		if (valueType == typeof(T))
+		{
+			this.value = value;
+		}
+		else
+		{
+			UnityEngine.Debug.LogError("Trying to SetValue<" + typeof(T).FullName + "> for Input Type: " + type);
+		}
+	}
+
 
 	/// <summary>
 	/// Creates a new NodeInput in NodeBody of specified type
@@ -83,4 +121,5 @@ public class NodeInput : ScriptableObject
 		                 knobRect.y + (knobRect.height - knobSize) / 2,
 		                 knobSize, knobSize);
 	}
+
 }

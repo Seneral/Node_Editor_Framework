@@ -41,7 +41,7 @@ public class DisplayNode : Node
 			return false;
 		}
 
-		value = (float)Inputs [0].connection.value;
+		value = Inputs[0].connection.GetValue<FloatValue>().value;
 		assigned = true;
 
 		return true;

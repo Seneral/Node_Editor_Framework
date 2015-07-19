@@ -25,7 +25,7 @@ public abstract class Node : ScriptableObject
 	/// Function implemented by the children to draw the node
 	/// </summary>
 	public abstract void NodeGUI ();
-	
+
 	/// <summary>
 	/// Function implemented by the children to calculate their outputs
 	/// Should return Success/Fail
@@ -46,7 +46,7 @@ public abstract class Node : ScriptableObject
 	{
 		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 		{
-			if (Inputs [inCnt].connection == null || Inputs [inCnt].connection.value == null)
+			if (Inputs[inCnt].connection == null || Inputs[inCnt].connection.GetValue<FloatValue>().value == null)
 				return false;
 		}
 		return true;
@@ -70,7 +70,7 @@ public abstract class Node : ScriptableObject
 	{
 		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 		{
-			if (Inputs [inCnt].connection != null && Inputs [inCnt].connection.value == null)
+			if (Inputs[inCnt].connection != null && Inputs[inCnt].connection.GetValue<FloatValue>().value == null)
 				return true;
 		}
 		return false;
@@ -245,7 +245,7 @@ public abstract class Node : ScriptableObject
 	/// <summary>
 	/// Draws the node curves; splitted from knobs because of the render order
 	/// </summary>
-	public void DrawConnections () 
+	public virtual void DrawConnections () 
 	{
 		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 		{

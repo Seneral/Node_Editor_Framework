@@ -55,8 +55,17 @@ public class NodeEditorWindow : EditorWindow
 		NodeEditor.checkInit ();
 		
 		mainEditorState.canvasRect = canvasWindowRect;
-		NodeEditor.DrawCanvas (mainNodeCanvas, mainEditorState);
-		
+		try
+		{
+			NodeEditor.DrawCanvas(mainNodeCanvas, mainEditorState);
+		}
+		catch (Exception e)
+		{
+			// on exceptions in drawing flush the canvas to avoid locking the ui.
+			NewNodeCanvas();
+			Debug.LogError("Unloaded Canvas due to exception in Draw!");
+			Debug.LogException(e);
+		}		
 		// Draw Side Window
 		sideWindowWidth = Math.Min (600, Math.Max (200, (int)(position.width / 5)));
 		GUILayout.BeginArea (sideWindowRect, NodeEditor.nodeBox);

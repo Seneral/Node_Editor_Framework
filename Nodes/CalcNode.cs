@@ -67,24 +67,24 @@ public class CalcNode : Node
 
 	public override bool Calculate () 
 	{
-		if (Inputs [0].connection != null && Inputs [0].connection.value != null) 
-			Input1Val = (float)Inputs [0].connection.value;
-		if (Inputs [1].connection != null && Inputs [1].connection.value != null) 
-			Input2Val = (float)Inputs [1].connection.value;
+		if (Inputs[0].connection != null && Inputs[0].connection.GetValue<FloatValue>().value != null)
+			Input1Val = (float)Inputs[0].connection.GetValue<FloatValue>().value;
+		if (Inputs[1].connection != null && Inputs[1].connection.GetValue<FloatValue>().value != null)
+			Input2Val = (float)Inputs[1].connection.GetValue<FloatValue>().value;
 
 		switch (type) 
 		{
 		case CalcType.Add:
-			Outputs [0].value = Input1Val + Input2Val;
+				Outputs[0].GetValue<FloatValue>().value = Input1Val + Input2Val;
 			break;
 		case CalcType.Substract:
-			Outputs [0].value = Input1Val - Input2Val;
+			Outputs[0].GetValue<FloatValue>().value = Input1Val - Input2Val;
 			break;
 		case CalcType.Multiply:
-			Outputs [0].value = Input1Val * Input2Val;
+			Outputs[0].GetValue<FloatValue>().value = Input1Val * Input2Val;
 			break;
 		case CalcType.Divide:
-			Outputs [0].value = Input1Val / Input2Val;
+			Outputs[0].GetValue<FloatValue>().value = Input1Val / Input2Val;
 			break;
 		}
 

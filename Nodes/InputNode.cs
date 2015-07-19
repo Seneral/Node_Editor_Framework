@@ -34,7 +34,7 @@ public class InputNode : Node
 	
 	public override bool Calculate () 
 	{
-		Outputs [0].value = value;
+		Outputs[0].GetValue<FloatValue>().value = value;
 		return true;
 	}
 }
