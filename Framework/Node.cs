@@ -4,9 +4,13 @@ using System.Collections.Generic;
 
 public abstract class Node : ScriptableObject
 {
+	[HideInInspector]
 	public Rect rect = new Rect ();
-	public List<NodeInput> Inputs = new List<NodeInput> ();
-	public List<NodeOutput> Outputs = new List<NodeOutput> ();
+	[HideInInspector]
+	public List<NodeInput> Inputs = new List<NodeInput>();
+	[HideInInspector]
+	public List<NodeOutput> Outputs = new List<NodeOutput>();
+	[HideInInspector]
 	public bool calculated = true;
 	// Abstract member to get the ID of the node
 	public abstract string GetID { get; }
@@ -158,11 +162,11 @@ public abstract class Node : ScriptableObject
 	{
 		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 		{
-			GUI.DrawTexture (Outputs [outCnt].GetGUIKnob (), ConnectionTypes.types [Outputs [outCnt].type].OutputKnob);
+			GUI.DrawTexture(Outputs[outCnt].GetGUIKnob(), ConnectionTypes.GetTypeData(Outputs[outCnt].type).OutputKnob);
 		}
 		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 		{
-			GUI.DrawTexture (Inputs [inCnt].GetGUIKnob (), ConnectionTypes.types [Inputs [inCnt].type].InputKnob);
+			GUI.DrawTexture(Inputs[inCnt].GetGUIKnob(), ConnectionTypes.GetTypeData(Inputs[inCnt].type).InputKnob);
 		}
 	}
 	/// <summary>
@@ -177,7 +181,7 @@ public abstract class Node : ScriptableObject
 			{
 				NodeEditor.DrawNodeCurve (output.GetGUIKnob ().center, 
 				                          output.connections [conCnt].GetGUIKnob ().center,
-				                          ConnectionTypes.types [output.type].col);
+										  ConnectionTypes.GetTypeData(output.type).col);
 			}
 		}
 	}

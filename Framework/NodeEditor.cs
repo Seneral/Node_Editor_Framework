@@ -168,7 +168,7 @@ public static class NodeEditor
 		}
 		if (curEditorState.connectOutput != null)
 		{ // Draw the currently drawn connection
-			DrawNodeCurve (curEditorState.connectOutput.GetGUIKnob ().center, ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, ConnectionTypes.types [curEditorState.connectOutput.type].col);
+			DrawNodeCurve(curEditorState.connectOutput.GetGUIKnob().center, ScreenToGUIPos(mousePos) + curEditorState.zoomPos * curEditorState.zoom, ConnectionTypes.GetTypeData(curEditorState.connectOutput.type).col);
 			NodeEditorWindow.editor.Repaint ();
 		}
 		if (curNodeCanvas != NodeEditorWindow.mainNodeCanvas)
@@ -393,7 +393,14 @@ public static class NodeEditor
 		Node clickedNode = null;
 		if (insideCanvas && (e.type == EventType.MouseDown || e.type == EventType.MouseUp))
 			clickedNode = NodeEditor.NodeAtPosition (e.mousePosition);
-		
+
+#if UNITY_EDITOR
+		if (clickedNode != null)
+		{
+			UnityEditor.Selection.activeObject = clickedNode;
+		}
+#endif
+
 		switch (e.type) 
 		{
 		case EventType.MouseDown:
