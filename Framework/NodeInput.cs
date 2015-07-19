@@ -1,10 +1,15 @@
 ﻿using UnityEngine;
 
+[HideInInspector]
 public class NodeInput : ScriptableObject
 {
+	[HideInInspector]
 	public Node body;
-	public Rect inputRect = new Rect ();
+	[HideInInspector]
+	public Rect inputRect = new Rect();
+	[HideInInspector]
 	public NodeOutput connection;
+	[HideInInspector]
 	public string type;
 
 	/// <summary>

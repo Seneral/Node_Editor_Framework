@@ -211,7 +211,9 @@ public static class NodeEditor
 		GUI.matrix = GUIMatrix;
 		GUI.EndGroup ();
 		if (curNodeCanvas.parent == null)
+		{
 			GUI.BeginGroup (new Rect (0, 23, NodeEditorWindow.editor.position.width, NodeEditorWindow.editor.position.height));
+		}
 		else 
 		{
 			Rect parentGroupRect = ScaleRect (curEditorState.parent.canvasRect, curEditorState.parent.zoomPos + curEditorState.parent.canvasRect.position, new Vector2 (curEditorState.parent.zoom, curEditorState.parent.zoom));

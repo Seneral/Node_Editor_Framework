@@ -1,11 +1,16 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
+[HideInInspector]
 public class NodeOutput : ScriptableObject
 {
+	[HideInInspector]
 	public Node body;
-	public Rect outputRect = new Rect ();
-	public List<NodeInput> connections = new List<NodeInput> ();
+	[HideInInspector]
+	public Rect outputRect = new Rect();
+	[HideInInspector]
+	public List<NodeInput> connections = new List<NodeInput>();
+	[HideInInspector]
 	public string type;
 
 	[System.NonSerialized]

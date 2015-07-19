@@ -6,7 +6,19 @@ using System.Collections.Generic;
 public class NodeEditorWindow : EditorWindow 
 {
 	// Information about current instances
-	public static NodeEditorWindow editor; // This instance, because the class itself cannot be static
+	static NodeEditorWindow _editor;
+	public static NodeEditorWindow editor
+	{
+		get
+		{
+			if (_editor == null)
+			{
+				CreateEditor();
+				_editor.Repaint();
+			}
+			return _editor;
+		}
+	}
 	// The main Node Canvas
 	public static NodeCanvas mainNodeCanvas;
 	public static NodeEditorState mainEditorState;
@@ -20,8 +32,8 @@ public class NodeEditorWindow : EditorWindow
 	[MenuItem("Window/Node Editor")]
 	static void CreateEditor () 
 	{
-		editor = GetWindow<NodeEditorWindow> ("Node Editor");
-		editor.minSize = new Vector2 (800, 600);
+		_editor = GetWindow<NodeEditorWindow> ("Node Editor");
+		_editor.minSize = new Vector2 (800, 600);
 	}
 
 	#region GUI
