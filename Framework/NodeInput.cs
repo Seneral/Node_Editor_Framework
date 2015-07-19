@@ -37,6 +37,12 @@ public class NodeInput : ScriptableObject
 	public void SetValue<T>(T value)
 		where T : class, new()
 	{
+		if( type == null)
+		{
+			// race condition during load, just accept the incoming value. 
+			this.value = value;
+			return;
+		}
 		if (valueType == null)
 			valueType = ConnectionTypes.GetInputType(type);
 
