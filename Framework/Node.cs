@@ -130,6 +130,55 @@ public abstract class Node : ScriptableObject
 	}
 
 	/// <summary>
+	/// Mimic's UnityEditor.EditorGUILayout.TextField in taking a label and a string and returning the edited string.
+	/// </summary>
+	/// <param name="label">The label text</param>
+	/// <param name="text">The value</param>
+	/// <returns>the updated value</returns>
+	protected string PlaceGUITextField(string label, string text)
+	{
+		GUILayout.BeginHorizontal();
+		GUILayout.Label(label, GUILayout.Width(146));
+		var res = GUILayout.TextField(text);
+		GUILayout.EndHorizontal();
+		return res;
+	}
+	/// <summary>
+	/// Mimic's UnityEditor.EditorGUILayout.TextField in taking a label and a string and returning the edited string.
+	/// </summary>
+	/// <param name="label">The label text</param>
+	/// <param name="text">The value</param>
+	/// <returns>the updated value</returns>
+	protected string PlaceGUITextField(GUIContent label, string text)
+	{
+		GUILayout.BeginHorizontal();
+		GUILayout.Label(label, GUILayout.Width(146));
+		var res = GUILayout.TextField(text);
+		GUILayout.EndHorizontal();
+		return res;
+	}
+
+	/// <summary>
+	/// Call this method to create an output on your node
+	/// </summary>
+	/// <param name="outputName">the name of the output</param>
+	/// <param name="outputType">the type of the output</param>
+	public void CreateOutput(string outputName, string outputType)
+	{
+		NodeOutput.Create(this, outputName, outputType);
+	}
+
+	/// <summary>
+	/// Call this method to create an input on your node
+	/// </summary>
+	/// <param name="inputName">the name of the input</param>
+	/// <param name="inputType">the type of the input</param>
+	public void CreateInput(string inputName, string inputType)
+	{
+		NodeInput.Create(this, inputName, inputType);
+	}
+
+	/// <summary>
 	/// Init this node. Has to be called when creating a child node
 	/// </summary>
 	public void InitBase () 

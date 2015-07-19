@@ -11,6 +11,7 @@ public class NodeInput : ScriptableObject
 	public NodeOutput connection;
 	[HideInInspector]
 	public string type;
+	public object value;
 
 	/// <summary>
 	/// Creates a new NodeInput in NodeBody of specified type

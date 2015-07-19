@@ -140,7 +140,7 @@ public static class NodeEditor
 		Rect ScaledCanvasRect = ScaleRect (curEditorState.canvasRect, curEditorState.zoomPos + curEditorState.canvasRect.position, new Vector2 (curEditorState.zoom, curEditorState.zoom));
 		ScaledCanvasRect.y += 23; // Header tab height
 
-		if (curNodeCanvas != NodeEditorWindow.mainNodeCanvas) 
+		if (curNodeCanvas != NodeEditorWindow.MainNodeCanvas) 
 			GUI.DrawTexture (ScaledCanvasRect, Background);
 
 		// Now continue drawing using the new clipping group
@@ -171,7 +171,7 @@ public static class NodeEditor
 			DrawNodeCurve(curEditorState.connectOutput.GetGUIKnob().center, ScreenToGUIPos(mousePos) + curEditorState.zoomPos * curEditorState.zoom, ConnectionTypes.GetTypeData(curEditorState.connectOutput.type).col);
 			NodeEditorWindow.editor.Repaint ();
 		}
-		if (curNodeCanvas != NodeEditorWindow.mainNodeCanvas)
+		if (curNodeCanvas != NodeEditorWindow.MainNodeCanvas)
 			return;
 		// Draw the nodes
 		for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 

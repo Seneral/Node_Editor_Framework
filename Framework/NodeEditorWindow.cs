@@ -20,9 +20,12 @@ public class NodeEditorWindow : EditorWindow
 		}
 	}
 
+	public static NodeCanvas MainNodeCanvas { get { return editor.mainNodeCanvas; } }
+	public static NodeEditorState MainEditorState { get { return editor.mainEditorState; } }
+
 	// The main Node Canvas
-	public static NodeCanvas mainNodeCanvas;
-	public static NodeEditorState mainEditorState;
+	public NodeCanvas mainNodeCanvas;
+	public NodeEditorState mainEditorState;
 
 	public static string openedCanvas = "New Canvas";
 	public static string openedCanvasPath;
