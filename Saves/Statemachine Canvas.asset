@@ -1,0 +1,506 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 566c928cded0abe4bbbbdf5d8a21cffd, type: 3}
+  m_Name: MainStateMachine
+  m_EditorClassIdentifier: 
+  parent: {fileID: 0}
+  childs: []
+  nodes:
+  - {fileID: 11484582}
+  - {fileID: 11438972}
+  - {fileID: 11423024}
+  - {fileID: 11452164}
+  - {fileID: 11481276}
+  - {fileID: 11458478}
+--- !u!114 &11403168
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f04d0525f674b54b95310014875bfc2, type: 3}
+  m_Name: Leave
+  m_EditorClassIdentifier: 
+  body: {fileID: 11458478}
+  outputRect:
+    serializedVersion: 2
+    x: -17.599905
+    y: 12.7000275
+    width: 346
+    height: 16
+  connections: []
+  type: Transition
+--- !u!114 &11410718
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f04d0525f674b54b95310014875bfc2, type: 3}
+  m_Name: Leave
+  m_EditorClassIdentifier: 
+  body: {fileID: 11484582}
+  outputRect:
+    serializedVersion: 2
+    x: -1093.79297
+    y: -82.0008545
+    width: 346
+    height: 16
+  connections:
+  - {fileID: 11477142}
+  type: Transition
+--- !u!114 &11411108
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f04d0525f674b54b95310014875bfc2, type: 3}
+  m_Name: Leave
+  m_EditorClassIdentifier: 
+  body: {fileID: 11438972}
+  outputRect:
+    serializedVersion: 2
+    x: -580.801941
+    y: -82.9010162
+    width: 346
+    height: 16
+  connections:
+  - {fileID: 11498116}
+  - {fileID: 11436410}
+  - {fileID: 11454016}
+  type: Transition
+--- !u!114 &11419838
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 317163a651c08124ea2ed33ea2231b71, type: 3}
+  m_Name: Enter
+  m_EditorClassIdentifier: 
+  body: {fileID: 11484582}
+  inputRect:
+    serializedVersion: 2
+    x: -1097.79297
+    y: -82.0008545
+    width: 346
+    height: 16
+  connection: {fileID: 0}
+  type: Transition
+--- !u!114 &11423024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 441a9a65ece86bb47979c148df1ebc78, type: 3}
+  m_Name: State Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: -1.999686
+    y: -335.698273
+    width: 350
+    height: 90
+  Inputs:
+  - {fileID: 11498116}
+  Outputs:
+  - {fileID: 11435868}
+  calculated: 1
+  OnEnter:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.Events.UnityEvent, UnityEngine, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  OnLeave:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.Events.UnityEvent, UnityEngine, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  stateName: New Game
+  triggers:
+  - trigger: Continue
+--- !u!114 &11430314
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 317163a651c08124ea2ed33ea2231b71, type: 3}
+  m_Name: Enter
+  m_EditorClassIdentifier: 
+  body: {fileID: 11452164}
+  inputRect:
+    serializedVersion: 2
+    x: 601.49939
+    y: -108.400192
+    width: 346
+    height: 16
+  connection: {fileID: 11435868}
+  type: Transition
+--- !u!114 &11435868
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f04d0525f674b54b95310014875bfc2, type: 3}
+  m_Name: Leave
+  m_EditorClassIdentifier: 
+  body: {fileID: 11423024}
+  outputRect:
+    serializedVersion: 2
+    x: 2.000314
+    y: -312.698273
+    width: 346
+    height: 16
+  connections:
+  - {fileID: 11430314}
+  type: Transition
+--- !u!114 &11436410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 317163a651c08124ea2ed33ea2231b71, type: 3}
+  m_Name: Enter
+  m_EditorClassIdentifier: 
+  body: {fileID: 11481276}
+  inputRect:
+    serializedVersion: 2
+    x: -12.2000093
+    y: -138.700363
+    width: 346
+    height: 16
+  connection: {fileID: 11411108}
+  type: Transition
+--- !u!114 &11438972
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 441a9a65ece86bb47979c148df1ebc78, type: 3}
+  m_Name: State Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: -584.801941
+    y: -105.901016
+    width: 350
+    height: 90
+  Inputs:
+  - {fileID: 11477142}
+  Outputs:
+  - {fileID: 11411108}
+  calculated: 1
+  OnEnter:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.Events.UnityEvent, UnityEngine, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  OnLeave:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.Events.UnityEvent, UnityEngine, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  stateName: Menu
+  triggers:
+  - trigger: New
+  - trigger: Load
+  - trigger: Settings
+--- !u!114 &11440724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f04d0525f674b54b95310014875bfc2, type: 3}
+  m_Name: Leave
+  m_EditorClassIdentifier: 
+  body: {fileID: 11452164}
+  outputRect:
+    serializedVersion: 2
+    x: 605.49939
+    y: -108.400192
+    width: 346
+    height: 16
+  connections: []
+  type: Transition
+--- !u!114 &11452164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 441a9a65ece86bb47979c148df1ebc78, type: 3}
+  m_Name: State Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: 601.49939
+    y: -131.400192
+    width: 350
+    height: 90
+  Inputs:
+  - {fileID: 11430314}
+  Outputs:
+  - {fileID: 11440724}
+  calculated: 1
+  OnEnter:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.Events.UnityEvent, UnityEngine, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  OnLeave:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.Events.UnityEvent, UnityEngine, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  stateName: Game
+  triggers: []
+--- !u!114 &11454016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 317163a651c08124ea2ed33ea2231b71, type: 3}
+  m_Name: Enter
+  m_EditorClassIdentifier: 
+  body: {fileID: 11458478}
+  inputRect:
+    serializedVersion: 2
+    x: -21.599905
+    y: 12.7000275
+    width: 346
+    height: 16
+  connection: {fileID: 11411108}
+  type: Transition
+--- !u!114 &11458478
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 441a9a65ece86bb47979c148df1ebc78, type: 3}
+  m_Name: State Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: -21.599905
+    y: -10.2999725
+    width: 350
+    height: 90
+  Inputs:
+  - {fileID: 11454016}
+  Outputs:
+  - {fileID: 11403168}
+  calculated: 1
+  OnEnter:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.Events.UnityEvent, UnityEngine, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  OnLeave:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.Events.UnityEvent, UnityEngine, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  stateName: Settings
+  triggers: []
+--- !u!114 &11463750
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9bb149bdf8bb844faee178a56d8f765, type: 3}
+  m_Name: MainEditorState
+  m_EditorClassIdentifier: 
+  canvas: {fileID: 11400000}
+  parent: {fileID: 0}
+  childs: []
+  drawing: 1
+  activeNode: {fileID: 0}
+  dragNode: 0
+  connectOutput: {fileID: 0}
+  connectMousePos: {x: 277, y: 338}
+  navigate: 0
+  panWindow: 0
+  panOffset: {x: -262.300049, y: 229.300781}
+  zoomPanAdjust: {x: 743.199951, y: 490.399963}
+  zoom: 1.5999999
+  canvasRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 929
+    height: 613
+--- !u!114 &11477142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 317163a651c08124ea2ed33ea2231b71, type: 3}
+  m_Name: Enter
+  m_EditorClassIdentifier: 
+  body: {fileID: 11438972}
+  inputRect:
+    serializedVersion: 2
+    x: -584.801941
+    y: -82.9010162
+    width: 346
+    height: 16
+  connection: {fileID: 11410718}
+  type: Transition
+--- !u!114 &11481276
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 441a9a65ece86bb47979c148df1ebc78, type: 3}
+  m_Name: State Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: -12.2000093
+    y: -161.700363
+    width: 350
+    height: 90
+  Inputs:
+  - {fileID: 11436410}
+  Outputs:
+  - {fileID: 11490450}
+  calculated: 1
+  OnEnter:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.Events.UnityEvent, UnityEngine, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  OnLeave:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.Events.UnityEvent, UnityEngine, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  stateName: Load Game
+  triggers: []
+--- !u!114 &11484582
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 441a9a65ece86bb47979c148df1ebc78, type: 3}
+  m_Name: State Node
+  m_EditorClassIdentifier: 
+  rect:
+    serializedVersion: 2
+    x: -1097.79297
+    y: -105.000854
+    width: 350
+    height: 90
+  Inputs:
+  - {fileID: 11419838}
+  Outputs:
+  - {fileID: 11410718}
+  calculated: 1
+  OnEnter:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.Events.UnityEvent, UnityEngine, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  OnLeave:
+    m_PersistentCalls:
+      m_Calls: []
+    m_TypeName: UnityEngine.Events.UnityEvent, UnityEngine, Version=0.0.0.0, Culture=neutral,
+      PublicKeyToken=null
+  stateName: Loading
+  triggers:
+  - trigger: Continue
+--- !u!114 &11490450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f04d0525f674b54b95310014875bfc2, type: 3}
+  m_Name: Leave
+  m_EditorClassIdentifier: 
+  body: {fileID: 11481276}
+  outputRect:
+    serializedVersion: 2
+    x: -8.20000935
+    y: -138.700363
+    width: 346
+    height: 16
+  connections: []
+  type: Transition
+--- !u!114 &11498116
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 317163a651c08124ea2ed33ea2231b71, type: 3}
+  m_Name: Enter
+  m_EditorClassIdentifier: 
+  body: {fileID: 11423024}
+  inputRect:
+    serializedVersion: 2
+    x: -1.999686
+    y: -312.698273
+    width: 346
+    height: 16
+  connection: {fileID: 11411108}
+  type: Transition

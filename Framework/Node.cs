@@ -25,7 +25,7 @@ public abstract class Node : ScriptableObject
 	/// Function implemented by the children to draw the node
 	/// </summary>
 	public abstract void NodeGUI ();
-	
+
 	/// <summary>
 	/// Function implemented by the children to calculate their outputs
 	/// Should return Success/Fail
@@ -46,7 +46,7 @@ public abstract class Node : ScriptableObject
 	{
 		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 		{
-			if (Inputs [inCnt].connection == null || Inputs [inCnt].connection.value == null)
+			if (Inputs[inCnt].connection == null || Inputs[inCnt].connection.GetValue<FloatValue>().value == null)
 				return false;
 		}
 		return true;
@@ -70,7 +70,7 @@ public abstract class Node : ScriptableObject
 	{
 		for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 		{
-			if (Inputs [inCnt].connection != null && Inputs [inCnt].connection.value == null)
+			if (Inputs[inCnt].connection != null && Inputs[inCnt].connection.GetValue<FloatValue>().value == null)
 				return true;
 		}
 		return false;
@@ -108,7 +108,76 @@ public abstract class Node : ScriptableObject
 		}
 		return false;
 	}
-	
+
+	/// <summary>
+	/// Call this method in your NodeGUI to setup an output knob aligning with the y position of the last GUILayout control drawn.
+	/// </summary>
+	/// <param name="outputIdx">The index of the output in the Node's Outputs list</param>
+	protected void PlaceGUIOutputKnobHere(int outputIdx)
+	{
+		if (Event.current.type == EventType.Repaint)
+			Outputs[outputIdx].SetRect(GUILayoutUtility.GetLastRect());
+	}
+
+	/// <summary>
+	/// Call this method in your NodeGUI to setup an input knob aligning with the y position of the last GUILayout control drawn.
+	/// </summary>
+	/// <param name="inputIdx">The index of the input in the Node's Inputs list</param>
+	protected void PlaceGUIInputKnobHere(int inputIdx)
+	{
+		if (Event.current.type == EventType.Repaint)
+			Inputs[inputIdx].SetRect(GUILayoutUtility.GetLastRect());
+	}
+
+	/// <summary>
+	/// Mimic's UnityEditor.EditorGUILayout.TextField in taking a label and a string and returning the edited string.
+	/// </summary>
+	/// <param name="label">The label text</param>
+	/// <param name="text">The value</param>
+	/// <returns>the updated value</returns>
+	protected string PlaceGUITextField(string label, string text)
+	{
+		GUILayout.BeginHorizontal();
+		GUILayout.Label(label, GUILayout.Width(146));
+		var res = GUILayout.TextField(text);
+		GUILayout.EndHorizontal();
+		return res;
+	}
+	/// <summary>
+	/// Mimic's UnityEditor.EditorGUILayout.TextField in taking a label and a string and returning the edited string.
+	/// </summary>
+	/// <param name="label">The label text</param>
+	/// <param name="text">The value</param>
+	/// <returns>the updated value</returns>
+	protected string PlaceGUITextField(GUIContent label, string text)
+	{
+		GUILayout.BeginHorizontal();
+		GUILayout.Label(label, GUILayout.Width(146));
+		var res = GUILayout.TextField(text);
+		GUILayout.EndHorizontal();
+		return res;
+	}
+
+	/// <summary>
+	/// Call this method to create an output on your node
+	/// </summary>
+	/// <param name="outputName">the name of the output</param>
+	/// <param name="outputType">the type of the output</param>
+	public void CreateOutput(string outputName, string outputType)
+	{
+		NodeOutput.Create(this, outputName, outputType);
+	}
+
+	/// <summary>
+	/// Call this method to create an input on your node
+	/// </summary>
+	/// <param name="inputName">the name of the input</param>
+	/// <param name="inputType">the type of the input</param>
+	public void CreateInput(string inputName, string inputType)
+	{
+		NodeInput.Create(this, inputName, inputType);
+	}
+
 	/// <summary>
 	/// Init this node. Has to be called when creating a child node
 	/// </summary>
@@ -117,7 +186,11 @@ public abstract class Node : ScriptableObject
 		Calculate ();
 		NodeEditor.curNodeCanvas.nodes.Add (this);
 #if UNITY_EDITOR
-		if (!String.IsNullOrEmpty (UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas)))
+		if (name == "")
+		{
+			name = UnityEditor.ObjectNames.NicifyVariableName(GetID);
+		}
+		if (!String.IsNullOrEmpty(UnityEditor.AssetDatabase.GetAssetPath(NodeEditor.curNodeCanvas)))
 		{
 			UnityEditor.AssetDatabase.AddObjectToAsset (this, NodeEditor.curNodeCanvas);
 			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
@@ -172,7 +245,7 @@ public abstract class Node : ScriptableObject
 	/// <summary>
 	/// Draws the node curves; splitted from knobs because of the render order
 	/// </summary>
-	public void DrawConnections () 
+	public virtual void DrawConnections () 
 	{
 		for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 		{

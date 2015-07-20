@@ -6,10 +6,26 @@ using System.Collections.Generic;
 public class NodeEditorWindow : EditorWindow 
 {
 	// Information about current instances
-	public static NodeEditorWindow editor; // This instance, because the class itself cannot be static
+	static NodeEditorWindow _editor;
+	public static NodeEditorWindow editor
+	{
+		get
+		{
+			if (_editor == null)
+			{
+				CreateEditor();
+				_editor.Repaint();
+			}
+			return _editor;
+		}
+	}
+
+	public static NodeCanvas MainNodeCanvas { get { return editor.mainNodeCanvas; } }
+	public static NodeEditorState MainEditorState { get { return editor.mainEditorState; } }
+
 	// The main Node Canvas
-	public static NodeCanvas mainNodeCanvas;
-	public static NodeEditorState mainEditorState;
+	public NodeCanvas mainNodeCanvas;
+	public NodeEditorState mainEditorState;
 
 	public static string openedCanvas = "New Canvas";
 	public static string openedCanvasPath;
@@ -20,8 +36,8 @@ public class NodeEditorWindow : EditorWindow
 	[MenuItem("Window/Node Editor")]
 	static void CreateEditor () 
 	{
-		editor = GetWindow<NodeEditorWindow> ("Node Editor");
-		editor.minSize = new Vector2 (800, 600);
+		_editor = GetWindow<NodeEditorWindow> ("Node Editor");
+		_editor.minSize = new Vector2 (800, 600);
 	}
 
 	#region GUI
@@ -39,8 +55,17 @@ public class NodeEditorWindow : EditorWindow
 		NodeEditor.checkInit ();
 		
 		mainEditorState.canvasRect = canvasWindowRect;
-		NodeEditor.DrawCanvas (mainNodeCanvas, mainEditorState);
-		
+		try
+		{
+			NodeEditor.DrawCanvas(mainNodeCanvas, mainEditorState);
+		}
+		catch (Exception e)
+		{
+			// on exceptions in drawing flush the canvas to avoid locking the ui.
+			NewNodeCanvas();
+			Debug.LogError("Unloaded Canvas due to exception in Draw!");
+			Debug.LogException(e);
+		}		
 		// Draw Side Window
 		sideWindowWidth = Math.Min (600, Math.Max (200, (int)(position.width / 5)));
 		GUILayout.BeginArea (sideWindowRect, NodeEditor.nodeBox);

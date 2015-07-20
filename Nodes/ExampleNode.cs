@@ -35,7 +35,7 @@ public class ExampleNode : Node
 	{
 		if (!allInputsReady ())
 			return false;
-		Outputs [0].value = (float)Inputs [0].connection.value * 5;
+		Outputs[0].GetValue<FloatValue>().value = Inputs[0].connection.GetValue<FloatValue>().value * 5;
 		return true;
 	}
 }

@@ -28,8 +28,7 @@ public class DisplayNode : Node
 	{
 		GUILayout.BeginHorizontal ();
 		GUILayout.Label (new GUIContent ("Value : " + (assigned? value.ToString () : ""), "The input value to display"));
-		if (Event.current.type == EventType.Repaint) 
-			Inputs [0].SetRect (GUILayoutUtility.GetLastRect ());
+		PlaceGUIInputKnobHere(0);
 		GUILayout.EndHorizontal ();
 	}
 	
@@ -42,7 +41,7 @@ public class DisplayNode : Node
 			return false;
 		}
 
-		value = (float)Inputs [0].connection.value;
+		value = Inputs[0].connection.GetValue<FloatValue>().value;
 		assigned = true;
 
 		return true;

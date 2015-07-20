@@ -8,15 +8,41 @@ using System.Collections.Generic;
 
 public static class ConnectionTypes
 {
+	public static Type NullType { get { return typeof(ConnectionTypes); } }
+
 	// Static consistent information about types
 	static Dictionary<string, TypeData> types = new Dictionary<string, TypeData> ();
 	public static TypeData GetTypeData(string typeName)
 	{
+		if (types == null || types.Count == 0)
+			FetchTypes();
 		TypeData res;
 		if( types.TryGetValue(typeName, out res) )
 			return res;
 		UnityEngine.Debug.LogError("No TypeData defined for: " + typeName);
 		return types.First().Value;
+	}
+
+	public static Type GetInputType(string typeName)
+	{
+		if (types == null || types.Count == 0)
+			FetchTypes();
+		TypeData res;
+		if (types.TryGetValue(typeName, out res))
+			return res.InputType ?? NullType;
+		UnityEngine.Debug.LogError("No TypeData defined for: " + typeName);
+		return NullType;
+	}
+
+	public static Type GetOutputType(string typeName)
+	{
+		if (types == null || types.Count == 0)
+			FetchTypes();
+		TypeData res;
+		if (types.TryGetValue(typeName, out res))
+			return res.OutputType ?? NullType;
+		UnityEngine.Debug.LogError("No TypeData defined for: " + typeName);
+		return NullType;
 	}
 
 	/// <summary>
@@ -32,7 +58,7 @@ public static class ConnectionTypes
 			ITypeDeclaration typeDecl = assembly.CreateInstance (type.Name) as ITypeDeclaration;
 			Texture2D InputKnob = LoadTexture(typeDecl.InputKnob_TexPath);
 			Texture2D OutputKnob = LoadTexture(typeDecl.OutputKnob_TexPath);
-			types.Add (typeDecl.name, new TypeData (typeDecl.col, InputKnob, OutputKnob));
+			types.Add(typeDecl.name, new TypeData(typeDecl.col, InputKnob, OutputKnob, typeDecl.InputType, typeDecl.OutputType));
 		}
 
 		if (assembly != Assembly.GetCallingAssembly ())
@@ -43,7 +69,7 @@ public static class ConnectionTypes
 				ITypeDeclaration typeDecl = assembly.CreateInstance (type.Name) as ITypeDeclaration;
 				Texture2D InputKnob = LoadTexture(typeDecl.InputKnob_TexPath);
 				Texture2D OutputKnob = LoadTexture(typeDecl.OutputKnob_TexPath);
-				types.Add (typeDecl.name, new TypeData (typeDecl.col, InputKnob, OutputKnob));
+				types.Add (typeDecl.name, new TypeData (typeDecl.col, InputKnob, OutputKnob, typeDecl.InputType, typeDecl.OutputType));
 			}
 		}
 	}
@@ -69,12 +95,16 @@ public struct TypeData
 	public Color col;
 	public Texture2D InputKnob;
 	public Texture2D OutputKnob;
+	public Type InputType;
+	public Type OutputType;
 	
-	public TypeData (Color color, Texture2D inKnob, Texture2D outKnob) 
+	public TypeData (Color color, Texture2D inKnob, Texture2D outKnob, Type inputType, Type outputType) 
 	{
 		col = color;
 		InputKnob = NodeEditor.Tint (inKnob, color);
 		OutputKnob = NodeEditor.Tint (outKnob, color);
+		InputType = inputType;
+		OutputType = outputType;
 	}
 }
 
@@ -84,6 +114,8 @@ public interface ITypeDeclaration
 	Color col { get; }
 	string InputKnob_TexPath { get; }
 	string OutputKnob_TexPath { get; }
+	Type InputType { get; }
+	Type OutputType { get; }
 }
 
 // TODO: Node Editor: Built-In Connection Types
@@ -93,4 +125,15 @@ public class FloatType : ITypeDeclaration
 	public Color col { get { return Color.cyan; } }
 	public string InputKnob_TexPath { get { return "Textures/In_Knob.png"; } }
 	public string OutputKnob_TexPath { get { return "Textures/Out_Knob.png"; } }
+	public Type InputType { get { return null; } }
+	public Type OutputType { get { return typeof(FloatValue); } }
 }
+
+[Serializable]
+public class FloatValue
+{
+	[NonSerialized]
+	public float value;
+}
+
+

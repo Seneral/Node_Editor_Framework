@@ -140,7 +140,7 @@ public static class NodeEditor
 		Rect ScaledCanvasRect = ScaleRect (curEditorState.canvasRect, curEditorState.zoomPos + curEditorState.canvasRect.position, new Vector2 (curEditorState.zoom, curEditorState.zoom));
 		ScaledCanvasRect.y += 23; // Header tab height
 
-		if (curNodeCanvas != NodeEditorWindow.mainNodeCanvas) 
+		if (curNodeCanvas != NodeEditorWindow.MainNodeCanvas) 
 			GUI.DrawTexture (ScaledCanvasRect, Background);
 
 		// Now continue drawing using the new clipping group
@@ -171,7 +171,7 @@ public static class NodeEditor
 			DrawNodeCurve(curEditorState.connectOutput.GetGUIKnob().center, ScreenToGUIPos(mousePos) + curEditorState.zoomPos * curEditorState.zoom, ConnectionTypes.GetTypeData(curEditorState.connectOutput.type).col);
 			NodeEditorWindow.editor.Repaint ();
 		}
-		if (curNodeCanvas != NodeEditorWindow.mainNodeCanvas)
+		if (curNodeCanvas != NodeEditorWindow.MainNodeCanvas)
 			return;
 		// Draw the nodes
 		for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
@@ -211,7 +211,9 @@ public static class NodeEditor
 		GUI.matrix = GUIMatrix;
 		GUI.EndGroup ();
 		if (curNodeCanvas.parent == null)
+		{
 			GUI.BeginGroup (new Rect (0, 23, NodeEditorWindow.editor.position.width, NodeEditorWindow.editor.position.height));
+		}
 		else 
 		{
 			Rect parentGroupRect = ScaleRect (curEditorState.parent.canvasRect, curEditorState.parent.zoomPos + curEditorState.parent.canvasRect.position, new Vector2 (curEditorState.parent.zoom, curEditorState.parent.zoom));
@@ -435,6 +437,8 @@ public static class NodeEditor
 					if (nodeOutput != null)
 					{ // Output Node -> New Connection drawn from this
 						curEditorState.connectOutput = nodeOutput;
+						curEditorState.connectMousePos = mousePos;
+
 						e.Use();
 					}
 					else 
@@ -627,11 +631,16 @@ public static class NodeEditor
 			break;
 
 		default:
+			var createPos = ScreenToGUIPos(mousePos);
+			if (cbObj.nodeOutput != null && (curEditorState.connectMousePos - mousePos).sqrMagnitude < 50)
+			{
+				createPos = new Vector2(cbObj.nodeOutput.body.rect.xMax+50, cbObj.nodeOutput.body.rect.yMin);
+			}
 			foreach (Node node in NodeTypes.nodes.Keys)
 			{
 				if (node.GetID == cbObj.message) 
 				{
-					var newNode = node.Create (ScreenToGUIPos (mousePos));
+					var newNode = node.Create (createPos);
                     newNode.InitBase();
                     // If nodeOutput is defined, link it to the first input of the same type
                     if(cbObj.nodeOutput != null)
@@ -811,7 +820,6 @@ public static class NodeEditor
 		for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
 		{
 			NodeOutput output = node.Outputs [outCnt];
-			output.value = null;
 			for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
 				ClearCalculation (output.connections [conCnt].body);
 		}
