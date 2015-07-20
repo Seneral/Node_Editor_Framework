@@ -26,10 +26,7 @@ public class DisplayNode : Node
 	
 	public override void NodeGUI () 
 	{
-		GUILayout.BeginHorizontal ();
-		GUILayout.Label (new GUIContent ("Value : " + (assigned? value.ToString () : ""), "The input value to display"));
-		PlaceGUIInputKnobHere(0);
-		GUILayout.EndHorizontal ();
+		Inputs [0].DisplayLayout (new GUIContent ("Value : " + (assigned? value.ToString () : ""), "The input value to display"));
 	}
 	
 	public override bool Calculate () 

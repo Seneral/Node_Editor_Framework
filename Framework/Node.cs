@@ -113,49 +113,20 @@ public abstract class Node : ScriptableObject
 	/// Call this method in your NodeGUI to setup an output knob aligning with the y position of the last GUILayout control drawn.
 	/// </summary>
 	/// <param name="outputIdx">The index of the output in the Node's Outputs list</param>
-	protected void PlaceGUIOutputKnobHere(int outputIdx)
+	protected void OutputKnob (int outputIdx)
 	{
 		if (Event.current.type == EventType.Repaint)
-			Outputs[outputIdx].SetRect(GUILayoutUtility.GetLastRect());
+			Outputs[outputIdx].SetRect (GUILayoutUtility.GetLastRect ());
 	}
-
+	
 	/// <summary>
 	/// Call this method in your NodeGUI to setup an input knob aligning with the y position of the last GUILayout control drawn.
 	/// </summary>
 	/// <param name="inputIdx">The index of the input in the Node's Inputs list</param>
-	protected void PlaceGUIInputKnobHere(int inputIdx)
+	protected void InputKnob (int inputIdx)
 	{
 		if (Event.current.type == EventType.Repaint)
-			Inputs[inputIdx].SetRect(GUILayoutUtility.GetLastRect());
-	}
-
-	/// <summary>
-	/// Mimic's UnityEditor.EditorGUILayout.TextField in taking a label and a string and returning the edited string.
-	/// </summary>
-	/// <param name="label">The label text</param>
-	/// <param name="text">The value</param>
-	/// <returns>the updated value</returns>
-	protected string PlaceGUITextField(string label, string text)
-	{
-		GUILayout.BeginHorizontal();
-		GUILayout.Label(label, GUILayout.Width(146));
-		var res = GUILayout.TextField(text);
-		GUILayout.EndHorizontal();
-		return res;
-	}
-	/// <summary>
-	/// Mimic's UnityEditor.EditorGUILayout.TextField in taking a label and a string and returning the edited string.
-	/// </summary>
-	/// <param name="label">The label text</param>
-	/// <param name="text">The value</param>
-	/// <returns>the updated value</returns>
-	protected string PlaceGUITextField(GUIContent label, string text)
-	{
-		GUILayout.BeginHorizontal();
-		GUILayout.Label(label, GUILayout.Width(146));
-		var res = GUILayout.TextField(text);
-		GUILayout.EndHorizontal();
-		return res;
+			Inputs[inputIdx].SetRect (GUILayoutUtility.GetLastRect ());
 	}
 
 	/// <summary>

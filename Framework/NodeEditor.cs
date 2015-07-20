@@ -40,12 +40,9 @@ public static class NodeEditor
 	{
 		if (!initiated) 
 		{
-#if UNITY_EDITOR
-			InputKnob = UnityEditor.AssetDatabase.LoadAssetAtPath (editorPath + "Textures/In_Knob.png", typeof(Texture2D)) as Texture2D;
-			OutputKnob = UnityEditor.AssetDatabase.LoadAssetAtPath (editorPath + "Textures/Out_Knob.png", typeof(Texture2D)) as Texture2D;
-
-			Background = UnityEditor.AssetDatabase.LoadAssetAtPath (editorPath + "Textures/background.png", typeof(Texture2D)) as Texture2D;
-#endif
+			InputKnob = LoadTexture ("Textures/In_Knob.png");
+			OutputKnob = LoadTexture ("Textures/Out_Knob.png");
+			Background = LoadTexture ("Textures/background.png");
 
 			ConnectionTypes.FetchTypes ();
 			NodeTypes.FetchNodes ();
@@ -347,6 +344,22 @@ public static class NodeEditor
 	}
 
 	/// <summary>
+	/// Loads a texture in both the editor and at runtime (coming soon)
+	/// </summary>
+	public static Texture2D LoadTexture (string texPath)
+	{
+		#if UNITY_EDITOR
+		var fullPath = System.IO.Path.Combine (editorPath, texPath);
+		var resTexture = UnityEditor.AssetDatabase.LoadAssetAtPath (fullPath, typeof(Texture2D)) as Texture2D;
+		if (resTexture == null)
+			UnityEngine.Debug.LogError (string.Format ("NodeEditor: Texture not found at '{0}', did you install Node_Editor correctly in the 'Plugins' folder?", fullPath));
+		return resTexture;
+		#else
+		return null;
+		#endif
+	}
+
+	/// <summary>
 	/// Create a 1x1 tex with color col
 	/// </summary>
 	public static Texture2D ColorToTex (Color col) 
@@ -462,7 +475,7 @@ public static class NodeEditor
 					curEditorState.panWindow = true;
 					e.delta = Vector2.zero;
 				}
-				else if (e.button == 1) 
+				else if (e.button == 1 && curEditorState.connectOutput == null) 
 				{ // Right click -> Editor Context Click
 #if UNITY_EDITOR
 					UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
@@ -471,7 +484,6 @@ public static class NodeEditor
 					{
 						menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes [node]), false, ContextCallback, new callbackObject (node.GetID, curNodeCanvas, curEditorState));
 					}
-					//menu.AddSeparator ("");
 					
 					menu.ShowAsContext ();
 #endif
@@ -493,7 +505,7 @@ public static class NodeEditor
 						Node.ApplyConnection (curEditorState.connectOutput, clickedInput);
 					}
 				}
-                else
+                else if (e.button == 1)
                 { // Show menu containing all node types that can take curEditorState.connectOutput as an input
 #if UNITY_EDITOR
 					UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
@@ -504,12 +516,11 @@ public static class NodeEditor
                         {
                             if (input.type == curEditorState.connectOutput.type)
                             {
-                                menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[node]), false, ContextCallback, new callbackObject(node.GetID, curNodeCanvas, curEditorState, null, curEditorState.connectOutput));
+                                menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[node]), false, ContextCallback, new callbackObject (node.GetID, curNodeCanvas, curEditorState, null, curEditorState.connectOutput));
                                 break;
                             }
                         }
 					}
-					//menu.AddSeparator ("");
 					
 					menu.ShowAsContext ();
 #endif 
@@ -631,35 +642,27 @@ public static class NodeEditor
 			break;
 
 		default:
-			var createPos = ScreenToGUIPos(mousePos);
+			var createPos = ScreenToGUIPos (mousePos);
 			if (cbObj.nodeOutput != null && (curEditorState.connectMousePos - mousePos).sqrMagnitude < 50)
-			{
 				createPos = new Vector2(cbObj.nodeOutput.body.rect.xMax+50, cbObj.nodeOutput.body.rect.yMin);
-			}
+
 			foreach (Node node in NodeTypes.nodes.Keys)
 			{
 				if (node.GetID == cbObj.message) 
 				{
 					var newNode = node.Create (createPos);
-                    newNode.InitBase();
-                    // If nodeOutput is defined, link it to the first input of the same type
-                    if(cbObj.nodeOutput != null)
-                    {
+                    newNode.InitBase ();
+                    if (cbObj.nodeOutput != null)
+					{ // If nodeOutput is defined, link it to the first input of the same type
                         foreach (var input in newNode.Inputs)
                         {
-                            if (input.type == cbObj.nodeOutput.type)
-                            {
-                                if (Node.CanApplyConnection (cbObj.nodeOutput, input))
-                                { // If it can connect (type is equals, it does not cause recursion, ...)
-                                    Node.ApplyConnection (cbObj.nodeOutput, input);
-                                    break;
-                                }
+                            if (Node.CanApplyConnection (cbObj.nodeOutput, input))
+                            { // If it can connect (type is equals, it does not cause recursion, ...)
+                                Node.ApplyConnection (cbObj.nodeOutput, input);
+                                break;
                             }
                         }
                     }
-
-
-					break;
 				}
 			}
 			break;

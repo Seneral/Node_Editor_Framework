@@ -13,8 +13,8 @@ public class NodeEditorWindow : EditorWindow
 		{
 			if (_editor == null)
 			{
-				CreateEditor();
-				_editor.Repaint();
+				CreateEditor ();
+				_editor.Repaint ();
 			}
 			return _editor;
 		}
@@ -38,20 +38,18 @@ public class NodeEditorWindow : EditorWindow
 	{
 		_editor = GetWindow<NodeEditorWindow> ("Node Editor");
 		_editor.minSize = new Vector2 (800, 600);
+		_editor.NewNodeCanvas ();
 	}
 
 	#region GUI
 
 	public void OnGUI () 
 	{
-		if (!mainNodeCanvas || !mainEditorState)
-		{
-			NewNodeCanvas ();
+		bool created = editor != null; // always true, just to call editor
 			// Example of creating Nodes and Connections through code
 //			CalcNode calcNode1 = CalcNode.Create (new Rect (200, 200, 200, 100));
 //			CalcNode calcNode2 = CalcNode.Create (new Rect (600, 200, 200, 100));
 //			Node.ApplyConnection (calcNode1.Outputs [0], calcNode2.Inputs [0]);
-		}
 		NodeEditor.checkInit ();
 		
 		mainEditorState.canvasRect = canvasWindowRect;

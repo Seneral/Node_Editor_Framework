@@ -36,25 +36,20 @@ public class CalcNode : Node
 
 		if (Inputs [0].connection != null)
 			GUILayout.Label (Inputs [0].name);
-#if UNITY_EDITOR
 		else
-			Input1Val = UnityEditor.EditorGUILayout.FloatField (Input1Val);
-#endif
-		PlaceGUIInputKnobHere(0);
+			Input1Val = GUIExt.FloatField (Input1Val, this);
+		InputKnob (0);
 		// --
 		if (Inputs [1].connection != null)
 			GUILayout.Label (Inputs [1].name);
-#if UNITY_EDITOR
 		else
-			Input2Val = UnityEditor.EditorGUILayout.FloatField (Input2Val);
-#endif
-		PlaceGUIInputKnobHere(1);
+			Input2Val = GUIExt.FloatField (Input2Val, this);
+		InputKnob (1);
 
 		GUILayout.EndVertical ();
 		GUILayout.BeginVertical ();
 
 		Outputs [0].DisplayLayout ();
-		// We take that this time, because it has a GuiStyle to aligned to the right :)
 
 		GUILayout.EndVertical ();
 		GUILayout.EndHorizontal ();

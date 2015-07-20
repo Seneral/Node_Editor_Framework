@@ -56,8 +56,8 @@ public static class ConnectionTypes
 		foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.GetInterfaces ().Contains (typeof (ITypeDeclaration)))) 
 		{
 			ITypeDeclaration typeDecl = assembly.CreateInstance (type.Name) as ITypeDeclaration;
-			Texture2D InputKnob = LoadTexture(typeDecl.InputKnob_TexPath);
-			Texture2D OutputKnob = LoadTexture(typeDecl.OutputKnob_TexPath);
+			Texture2D InputKnob = NodeEditor.LoadTexture(typeDecl.InputKnob_TexPath);
+			Texture2D OutputKnob = NodeEditor.LoadTexture(typeDecl.OutputKnob_TexPath);
 			types.Add(typeDecl.name, new TypeData(typeDecl.col, InputKnob, OutputKnob, typeDecl.InputType, typeDecl.OutputType));
 		}
 
@@ -67,26 +67,11 @@ public static class ConnectionTypes
 			foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.GetInterfaces ().Contains (typeof (ITypeDeclaration)))) 
 			{
 				ITypeDeclaration typeDecl = assembly.CreateInstance (type.Name) as ITypeDeclaration;
-				Texture2D InputKnob = LoadTexture(typeDecl.InputKnob_TexPath);
-				Texture2D OutputKnob = LoadTexture(typeDecl.OutputKnob_TexPath);
+				Texture2D InputKnob = NodeEditor.LoadTexture(typeDecl.InputKnob_TexPath);
+				Texture2D OutputKnob = NodeEditor.LoadTexture(typeDecl.OutputKnob_TexPath);
 				types.Add (typeDecl.name, new TypeData (typeDecl.col, InputKnob, OutputKnob, typeDecl.InputType, typeDecl.OutputType));
 			}
 		}
-	}
-
-	private static Texture2D LoadTexture(string texPath)
-	{
-#if UNITY_EDITOR
-		var fullPath = System.IO.Path.Combine(NodeEditor.editorPath, texPath);
-		var resTexture = UnityEditor.AssetDatabase.LoadAssetAtPath(fullPath, typeof(Texture2D)) as Texture2D;
-		if (resTexture == null)
-		{
-			UnityEngine.Debug.LogError(string.Format("Node_Editor: Texture not found at '{0}', did you install Node_Editor correctly in the 'Plugins' folder?", fullPath));
-		}
-		return resTexture;
-#else
-		return null;
-#endif
 	}
 }
 

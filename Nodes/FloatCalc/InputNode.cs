@@ -25,8 +25,8 @@ public class InputNode : Node
 
 	public override void NodeGUI () 
 	{
-		value = EditorGUILayout.FloatField (new GUIContent ("Value", "The input value of type float"), value);
-		PlaceGUIOutputKnobHere(0);
+		value = GUIExt.FloatField (new GUIContent ("Value", "The input value of type float"), value, this);
+		OutputKnob (0);
 
 		if (GUI.changed)
 			NodeEditor.RecalculateFrom (this);

@@ -18,9 +18,9 @@ public class StateNode : Node, ISerializationCallbackReceiver
 	public override Node Create(Vector2 pos)
 	{
 		var node = CreateInstance<StateNode>();
-		node.rect = new Rect(pos.x, pos.y, 350, 90);
-		node.CreateOutput("Leave", "Transition");
-		node.CreateInput("Enter", "Transition");
+		node.rect = new Rect (pos.x, pos.y, 150, 50);
+		node.CreateOutput ("Leave", "Transition");
+		node.CreateInput ("Enter", "Transition");
 		return node;
 	}
 	[HideInInspector]
@@ -28,34 +28,28 @@ public class StateNode : Node, ISerializationCallbackReceiver
 	private List<StateTrigger> triggers;
 	public override void DrawConnections() 
 	{
-		base.DrawConnections();
-		var output = Outputs[0];
-		var connections = output.connections;
+		base.DrawConnections ();
 
-		for (int i = 0; i < connections.Count; i++)
+		NodeOutput output = Outputs [0];
+		for (int cnt = 0; cnt < output.connections.Count; cnt++)
 		{
-			var connection = connections[i];
-			var start = output.GetGUIKnob().center;
-			var end = connection.GetGUIKnob().center;
-
-			Vector3 startPos = new Vector3(start.x, start.y);
-			Vector3 endPos = new Vector3(end.x, end.y);
-			Vector3 startTan = startPos + Vector3.right * 50;
-			Vector3 endTan = endPos + Vector3.left * 50;
-			var stateTrigger = connection.GetValue<StateTrigger>();
+			NodeInput con = output.connections [cnt];
+			Vector2 bezierCenter = Vector2.Lerp (output.GetGUIKnob ().center, con.GetGUIKnob().center, 0.5f);
+			StateTrigger stateTrigger = con.GetValue<StateTrigger>();
 			if (stateTrigger.trigger == null)
 				stateTrigger.trigger = "";
 
-			var points = UnityEditor.Handles.MakeBezierPoints(startPos, endPos, startTan, endTan, 4);
-			stateTrigger.trigger = GUI.TextField(new Rect(points[2].x - 35, points[2].y - 10, 70, 20), stateTrigger.trigger);
+			Rect rect = new Rect (0, 0, 70, 20);
+			rect.center = bezierCenter;
+			stateTrigger.trigger = GUI.TextField (rect, stateTrigger.trigger);
 		}
 	}
 
 	public override void NodeGUI()
 	{
-		stateName = PlaceGUITextField("State Name", stateName);
-		PlaceGUIInputKnobHere(0);
-		PlaceGUIOutputKnobHere(0);
+		stateName = GUIExt.TextField (new GUIContent ("State Name"), stateName);
+		InputKnob (0);
+		OutputKnob (0);
 	}
 
 	public override bool Calculate()
