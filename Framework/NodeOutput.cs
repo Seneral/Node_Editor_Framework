@@ -22,16 +22,12 @@ public class NodeOutput : ScriptableObject
 		where T : class, new()
 	{
 		if (valueType == null)
-		{
 			valueType = ConnectionTypes.GetOutputType(type);
-		}
 
 		if (valueType == typeof(T))
 		{
 			if (value == null)
-			{
 				value = new T();
-			}
 			return (T)value;
 		}
 		UnityEngine.Debug.LogError("Trying to GetValue<" + typeof(T).FullName + "> for Output Type: " + type);
@@ -43,16 +39,12 @@ public class NodeOutput : ScriptableObject
 		where T : class, new()
 	{
 		if (valueType == null)
-		{
 			valueType = ConnectionTypes.GetOutputType(type);
-		}
 
 		if (valueType == typeof(T))
 		{
 			if (value == null)
-			{
 				value = new T();
-			}
 			return (T)value;
 		}
 		UnityEngine.Debug.LogError("Trying to SetValue<" + typeof(T).FullName + "> for Output Type: " + type);

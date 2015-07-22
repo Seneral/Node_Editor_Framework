@@ -23,6 +23,7 @@ public static class NodeEditor
 	public static Texture2D InputKnob;
 	public static Texture2D OutputKnob;
 	public static Texture2D Background;
+	public static Texture2D AALineTex;
 	public static GUIStyle nodeBox;
 	public static GUIStyle nodeButton;
 	public static GUIStyle nodeLabel;
@@ -44,12 +45,18 @@ public static class NodeEditor
 			OutputKnob = LoadTexture ("Textures/Out_Knob.png");
 			Background = LoadTexture ("Textures/background.png");
 
+			AALineTex = LoadTexture ("Textures/AALine.png");
+
 			ConnectionTypes.FetchTypes ();
 			NodeTypes.FetchNodes ();
 
 			// Styles
 			nodeBox = new GUIStyle (GUI.skin.box);
-			nodeBox.normal.background = ColorToTex (new Color (0.5f, 0.5f, 0.5f));
+#if UNITY_EDITOR
+			nodeBox.normal.background = ColorToTex (UnityEditor.EditorGUIUtility.isProSkin? new Color (0.5f, 0.5f, 0.5f) : new Color (0.2f, 0.2f, 0.2f));
+#else
+			nodeBox.normal.background = ColorToTex ( new Color (0.2f, 0.2f, 0.2f));
+#endif
 			nodeBox.normal.textColor = new Color (0.7f, 0.7f, 0.7f);
 
 			nodeButton = new GUIStyle (GUI.skin.button);
@@ -165,7 +172,7 @@ public static class NodeEditor
 		}
 		if (curEditorState.connectOutput != null)
 		{ // Draw the currently drawn connection
-			DrawNodeCurve(curEditorState.connectOutput.GetGUIKnob().center, ScreenToGUIPos(mousePos) + curEditorState.zoomPos * curEditorState.zoom, ConnectionTypes.GetTypeData(curEditorState.connectOutput.type).col);
+			DrawNodeCurve (curEditorState.connectOutput.GetGUIKnob ().center, ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, ConnectionTypes.GetTypeData (curEditorState.connectOutput.type).col);
 			NodeEditorWindow.editor.Repaint ();
 		}
 		if (curNodeCanvas != NodeEditorWindow.MainNodeCanvas)
@@ -291,11 +298,60 @@ public static class NodeEditor
 		Vector3 endTan = endPos + Vector3.left * 50;
 		Color shadowColor = new Color (0, 0, 0, 0.1f);
 
-#if UNITY_EDITOR
 		for (int i = 0; i < 3; i++) // Draw a shadow with 3 shades
-			UnityEditor.Handles.DrawBezier (startPos, endPos, startTan, endTan, shadowColor, null, (i + 1) * 5); // increasing width for fading shadow
-		UnityEditor.Handles.DrawBezier(startPos, endPos, startTan, endTan, col * Color.gray, null, 3);
+			DrawBezier (startPos, endPos, startTan, endTan, shadowColor, null, (i + 1) * 7); // increasing width for fading shadow
+		DrawBezier (startPos, endPos, startTan, endTan, col * Color.gray, null, 5);
+	}
+
+	/// <summary>
+	/// Draws a Bezier curve just as UnityEditor.Handles.DrawBezier
+	/// </summary>
+	public static void DrawBezier (Vector2 startPos, Vector2 endPos, Vector2 startTan, Vector2 endTan, Color col, Texture2D tex, float width)
+	{
+#if UNITY_EDITOR
+		UnityEditor.Handles.DrawBezier (startPos, endPos, startTan, endTan, col, tex, width);
+#else
+		int segmentCount = (int)(((startPos-startTan).magnitude + (startTan-endTan).magnitude + (endTan-endPos).magnitude) / 10);
+		tex = tex != null? Tint (tex, col) : Tint (AALineTex, col);
+		Vector2 curPoint = startPos;
+		for (int cnt = 1; cnt <= segmentCount; cnt++) 
+		{
+			float t = (float)cnt/segmentCount;
+			Vector2 nextPoint = new Vector2 (startPos.x * Mathf.Pow (1-t, 3) + 
+			                                 startTan.x * 3 * Mathf.Pow (1-t, 2) * t + 
+			                                 endTan.x 	* 3 * (1-t) * Mathf.Pow (t, 2) + 
+			                                 endPos.x 	* Mathf.Pow (t, 3),
+
+			                                 startPos.y * Mathf.Pow (1-t, 3) + 
+			                                 startTan.y * 3 * Mathf.Pow (1-t, 2) * t + 
+			                                 endTan.y 	* 3 * (1-t) * Mathf.Pow (t, 2) + 
+			                                 endPos.y 	* Mathf.Pow (t, 3));
+			DrawLine (curPoint, nextPoint, col, tex, width);
+			curPoint = nextPoint;
+		}
 #endif
+	}
+
+	public static void DrawLine (Vector2 startPos, Vector2 endPos, Color col, Texture2D tex, float width)
+	{
+		Vector2 dir = endPos - startPos;
+		float angle = Mathf.Rad2Deg * Mathf.Atan (dir.y / dir.x);
+		if (dir.x < 0)
+			angle += 180;
+
+		float widthHalf = Mathf.Ceil (width / 2);
+
+		Matrix4x4 GUIMatrix = GUI.matrix;
+		Color GUIColor = GUI.color;
+		
+		GUI.color = col;
+		GUIUtility.RotateAroundPivot (angle, startPos);
+		
+		GUI.DrawTexture (new Rect (startPos.x, startPos.y - widthHalf, dir.magnitude, width), 
+		                 tex != null? tex : ColorToTex (Color.white));
+		
+		GUI.matrix = GUIMatrix;
+		GUI.color = GUIColor;
 	}
 
 	/// <summary>
@@ -348,15 +404,18 @@ public static class NodeEditor
 	/// </summary>
 	public static Texture2D LoadTexture (string texPath)
 	{
-		#if UNITY_EDITOR
-		var fullPath = System.IO.Path.Combine (editorPath, texPath);
-		var resTexture = UnityEditor.AssetDatabase.LoadAssetAtPath (fullPath, typeof(Texture2D)) as Texture2D;
-		if (resTexture == null)
-			UnityEngine.Debug.LogError (string.Format ("NodeEditor: Texture not found at '{0}', did you install Node_Editor correctly in the 'Plugins' folder?", fullPath));
-		return resTexture;
-		#else
-		return null;
-		#endif
+#if UNITY_EDITOR
+		string fullPath = System.IO.Path.Combine (editorPath, texPath);
+		Texture2D tex = UnityEditor.AssetDatabase.LoadAssetAtPath (fullPath, typeof (Texture2D)) as Texture2D;
+		if (tex == null)
+			Debug.LogError (string.Format ("NodeEditor: Texture not found at '{0}', did you install Node_Editor correctly in the 'Plugins' folder?", fullPath));
+		return tex;
+#else
+		Texture2D tex = Resources.Load<Texture2D> (texPath);
+		if (tex == null)
+			Debug.LogError (string.Format ("NodeEditor: Texture not found at '{0}' in any Resource Folder!", texPath));
+		return tex;
+#endif
 	}
 
 	/// <summary>

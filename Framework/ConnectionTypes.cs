@@ -12,18 +12,18 @@ public static class ConnectionTypes
 
 	// Static consistent information about types
 	static Dictionary<string, TypeData> types = new Dictionary<string, TypeData> ();
-	public static TypeData GetTypeData(string typeName)
+	public static TypeData GetTypeData (string typeName)
 	{
 		if (types == null || types.Count == 0)
 			FetchTypes();
 		TypeData res;
-		if( types.TryGetValue(typeName, out res) )
+		if (types.TryGetValue(typeName, out res) )
 			return res;
 		UnityEngine.Debug.LogError("No TypeData defined for: " + typeName);
 		return types.First().Value;
 	}
 
-	public static Type GetInputType(string typeName)
+	public static Type GetInputType (string typeName)
 	{
 		if (types == null || types.Count == 0)
 			FetchTypes();
@@ -34,7 +34,7 @@ public static class ConnectionTypes
 		return NullType;
 	}
 
-	public static Type GetOutputType(string typeName)
+	public static Type GetOutputType (string typeName)
 	{
 		if (types == null || types.Count == 0)
 			FetchTypes();

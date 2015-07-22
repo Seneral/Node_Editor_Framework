@@ -58,3 +58,8 @@ public class NodeAttribute : Attribute
 		contextText = ReplacedContextText;
 	}
 }
+
+
+
+
+

@@ -16,18 +16,16 @@ public class NodeInput : ScriptableObject
 	private object value = null;
 	private static System.Type valueType;
 
-	public T GetValue<T>()
+	public T GetValue<T> ()
 		where T : class, new()
 	{
-		if( valueType == null || valueType == typeof(ConnectionTypes))
+		if (valueType == null || valueType == typeof(ConnectionTypes))
 			valueType = ConnectionTypes.GetInputType(type);
 
 		if (valueType == typeof(T))
 		{
 			if (value == null)
-			{
 				value = new T();
-			}
 			return (T)value;
 		}
 		UnityEngine.Debug.LogError("Trying to GetValue<" + typeof(T).FullName+ "> for Input Type: " + type);
@@ -37,7 +35,7 @@ public class NodeInput : ScriptableObject
 	public void SetValue<T>(T value)
 		where T : class, new()
 	{
-		if( type == null)
+		if (type == null)
 		{
 			// race condition during load, just accept the incoming value. 
 			this.value = value;
@@ -47,13 +45,9 @@ public class NodeInput : ScriptableObject
 			valueType = ConnectionTypes.GetInputType(type);
 
 		if (valueType == typeof(T))
-		{
 			this.value = value;
-		}
 		else
-		{
 			UnityEngine.Debug.LogError("Trying to SetValue<" + typeof(T).FullName + "> for Input Type: " + type);
-		}
 	}
 
 
