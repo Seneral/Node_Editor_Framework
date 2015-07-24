@@ -34,21 +34,38 @@ public static class NodeEditor
 
 	[NonSerialized]
 	private static bool initiated = false;
+	[NonSerialized]
+	public static bool InitiationError = false;
 	
-	public static bool checkInit () 
+	public static void checkInit () 
 	{
-		if (!initiated) 
+		if (!initiated && !InitiationError) 
 		{
+// Does NOT need conversion
+#if UNITY_EDITOR
+			Object script = UnityEditor.AssetDatabase.LoadAssetAtPath (editorPath + "Framework/NodeEditor.cs", typeof(Object));
+			if (script == null) 
+			{
+				Debug.LogError ("Node Editor: Not installed in default directory '" + editorPath + "'! Please modify the editorPath variable in the source!");
+				InitiationError = true;
+				return;
+			}
+#endif
+
 			Background = LoadTexture ("Textures/background.png");
 			AALineTex = LoadTexture ("Textures/AALine.png");
-			if (!Background || !AALineTex)
-				return initiated = false;
+			if (!Background || !AALineTex) 
+			{
+				InitiationError = true;
+				return;
+			}
 
 			ConnectionTypes.FetchTypes ();
 			NodeTypes.FetchNodes ();
 
 			// Styles
 			nodeBox = new GUIStyle (GUI.skin.box);
+// Does NOT need conversion
 #if UNITY_EDITOR
 			nodeBox.normal.background = ColorToTex (UnityEditor.EditorGUIUtility.isProSkin? new Color (0.5f, 0.5f, 0.5f) : new Color (0.2f, 0.2f, 0.2f));
 #else
@@ -65,7 +82,7 @@ public static class NodeEditor
 			nodeLabelBold.fontStyle = FontStyle.Bold;
 			nodeLabelBold.wordWrap = false;
 		}
-		return initiated = true;
+		return;
 	}
 	
 	#endregion

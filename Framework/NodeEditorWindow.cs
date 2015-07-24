@@ -6,20 +6,24 @@ using System.Collections.Generic;
 public class NodeEditorWindow : EditorWindow 
 {
 	// Information about current instances
-	static NodeEditorWindow _editor;
+	private static NodeEditorWindow _editor;
 	public static NodeEditorWindow editor
 	{
 		get
 		{
-			if (_editor == null)
-			{
-				CreateEditor ();
-				_editor.Repaint ();
-			}
+			AssureHasEditor ();
 			return _editor;
 		}
 	}
-
+	public static void AssureHasEditor () 
+	{
+		if (_editor == null)
+		{
+			CreateEditor ();
+			_editor.Repaint ();
+		}
+	}
+	
 	public static NodeCanvas MainNodeCanvas { get { return editor.mainNodeCanvas; } }
 	public static NodeEditorState MainEditorState { get { return editor.mainEditorState; } }
 
@@ -45,7 +49,9 @@ public class NodeEditorWindow : EditorWindow
 
 	public void OnGUI () 
 	{
-		if (editor == null || !NodeEditor.checkInit ()) 
+		NodeEditor.checkInit ();
+		AssureHasEditor ();
+		if (NodeEditor.InitiationError) 
 		{
 			GUILayout.Label ("Initiation failed! Check console for more information!");
 			return;
