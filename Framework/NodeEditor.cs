@@ -20,8 +20,6 @@ public static class NodeEditor
 	public static int knobSize = 18;
 
 	// Static textures and styles
-	public static Texture2D InputKnob;
-	public static Texture2D OutputKnob;
 	public static Texture2D Background;
 	public static Texture2D AALineTex;
 	public static GUIStyle nodeBox;
@@ -37,15 +35,14 @@ public static class NodeEditor
 	[NonSerialized]
 	private static bool initiated = false;
 	
-	public static void checkInit () 
+	public static bool checkInit () 
 	{
 		if (!initiated) 
 		{
-			InputKnob = LoadTexture ("Textures/In_Knob.png");
-			OutputKnob = LoadTexture ("Textures/Out_Knob.png");
 			Background = LoadTexture ("Textures/background.png");
-
 			AALineTex = LoadTexture ("Textures/AALine.png");
+			if (!Background || !AALineTex)
+				return initiated = false;
 
 			ConnectionTypes.FetchTypes ();
 			NodeTypes.FetchNodes ();
@@ -67,9 +64,8 @@ public static class NodeEditor
 			nodeLabelBold = new GUIStyle (nodeLabel);
 			nodeLabelBold.fontStyle = FontStyle.Bold;
 			nodeLabelBold.wordWrap = false;
-			
-			initiated = true;
 		}
+		return initiated = true;
 	}
 	
 	#endregion

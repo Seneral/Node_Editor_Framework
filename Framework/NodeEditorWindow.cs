@@ -45,13 +45,16 @@ public class NodeEditorWindow : EditorWindow
 
 	public void OnGUI () 
 	{
-		bool created = editor != null; // always true, just to call editor
-			// Example of creating Nodes and Connections through code
-//			CalcNode calcNode1 = CalcNode.Create (new Rect (200, 200, 200, 100));
-//			CalcNode calcNode2 = CalcNode.Create (new Rect (600, 200, 200, 100));
-//			Node.ApplyConnection (calcNode1.Outputs [0], calcNode2.Inputs [0]);
-		NodeEditor.checkInit ();
-		
+		if (editor == null || !NodeEditor.checkInit ()) 
+		{
+			GUILayout.Label ("Initiation failed! Check console for more information!");
+			return;
+		}
+		// Example of creating Nodes and Connections through code
+		//		CalcNode calcNode1 = CalcNode.Create (new Rect (200, 200, 200, 100));
+		//		CalcNode calcNode2 = CalcNode.Create (new Rect (600, 200, 200, 100));
+		//		Node.ApplyConnection (calcNode1.Outputs [0], calcNode2.Inputs [0]);
+
 		mainEditorState.canvasRect = canvasWindowRect;
 		try
 		{
