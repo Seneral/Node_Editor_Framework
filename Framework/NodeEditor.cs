@@ -309,11 +309,8 @@ public static class NodeEditor
 		Vector3 endPos = new Vector3 (end.x, end.y);
 		Vector3 startTan = startPos + Vector3.right * 50;
 		Vector3 endTan = endPos + Vector3.left * 50;
-		Color shadowColor = new Color (0, 0, 0, 0.1f);
 
-		for (int i = 0; i < 3; i++) // Draw a shadow with 3 shades
-			DrawBezier (startPos, endPos, startTan, endTan, shadowColor, null, (i + 1) * 7); // increasing width for fading shadow
-		DrawBezier (startPos, endPos, startTan, endTan, col * Color.gray, null, 5);
+		DrawBezier (startPos, endPos, startTan, endTan, col, null, 3, 3, 4);
 	}
 
 	/// <summary>
@@ -321,15 +318,31 @@ public static class NodeEditor
 	/// </summary>
 	public static void DrawBezier (Vector2 startPos, Vector2 endPos, Vector2 startTan, Vector2 endTan, Color col, Texture2D tex, float width)
 	{
+		DrawBezier (startPos, endPos, startTan, endTan, col, tex, width, 0, 0);
+	}
+
+	/// <summary>
+	/// Draws a Bezier curve just as UnityEditor.Handles.DrawBezier
+	/// </summary>
+	public static void DrawBezier (Vector2 startPos, Vector2 endPos, Vector2 startTan, Vector2 endTan, Color col, Texture2D tex, float width, float shadowShadeCount, float shadeWidth)
+	{
 #if UNITY_EDITOR
-		UnityEditor.Handles.DrawBezier (startPos, endPos, startTan, endTan, col, tex, width);
-#else
-		int segmentCount = (int)(((startPos-startTan).magnitude + (startTan-endTan).magnitude + (endTan-endPos).magnitude) / 10);
-		tex = tex != null? Tint (tex, col) : Tint (AALineTex, col);
-		Vector2 curPoint = startPos;
-		for (int cnt = 1; cnt <= segmentCount; cnt++) 
+		if (shadowShadeCount != 0) 
 		{
-			float t = (float)cnt/segmentCount;
+			for (int cnt = 0; cnt < shadowShadeCount; cnt++)
+				UnityEditor.Handles.DrawBezier (startPos, endPos, startTan, endTan, new Color (0, 0, 0, 0.1f), null, (cnt+1) * shadeWidth);
+		}
+		UnityEditor.Handles.DrawBezier (startPos, endPos, startTan, endTan, col * Color.gray, tex, width);
+#else
+		if (Event.current.type != EventType.Repaint)
+			return;
+
+		int segmentCount = (int)(((startPos-startTan).magnitude + (startTan-endTan).magnitude + (endTan-endPos).magnitude) / 15);
+		//tex = tex != null? Tint (tex, col) : Tint (AALineTex, col);
+		Vector2 curPoint = startPos;
+		for (int segCnt = 1; segCnt <= segmentCount; segCnt++) 
+		{
+			float t = (float)segCnt/segmentCount;
 			Vector2 nextPoint = new Vector2 (startPos.x * Mathf.Pow (1-t, 3) + 
 			                                 startTan.x * 3 * Mathf.Pow (1-t, 2) * t + 
 			                                 endTan.x 	* 3 * (1-t) * Mathf.Pow (t, 2) + 
@@ -339,7 +352,12 @@ public static class NodeEditor
 			                                 startTan.y * 3 * Mathf.Pow (1-t, 2) * t + 
 			                                 endTan.y 	* 3 * (1-t) * Mathf.Pow (t, 2) + 
 			                                 endPos.y 	* Mathf.Pow (t, 3));
-			DrawLine (curPoint, nextPoint, col, tex, width);
+			if (shadowShadeCount != 0) 
+			{
+				for (int cnt = 0; cnt < shadowShadeCount; cnt++)
+					DrawLine (curPoint, nextPoint, new Color (0, 0, 0, 0.05f), null, (cnt+1) * shadeWidth);
+			}
+			DrawLine (curPoint, nextPoint, col, null, width / 2);
 			curPoint = nextPoint;
 		}
 #endif
@@ -347,24 +365,46 @@ public static class NodeEditor
 
 	public static void DrawLine (Vector2 startPos, Vector2 endPos, Color col, Texture2D tex, float width)
 	{
-		Vector2 dir = endPos - startPos;
-		float angle = Mathf.Rad2Deg * Mathf.Atan (dir.y / dir.x);
-		if (dir.x < 0)
-			angle += 180;
+		if (Event.current.type != EventType.Repaint)
+			return;
 
-		float widthHalf = Mathf.Ceil (width / 2);
+		if (tex == null) 
+		{
+			Vector2 dirPerp = new Vector2 ((endPos-startPos).y, -(endPos-startPos).x).normalized;
 
-		Matrix4x4 GUIMatrix = GUI.matrix;
-		Color GUIColor = GUI.color;
-		
-		GUI.color = col;
-		GUIUtility.RotateAroundPivot (angle, startPos);
-		
-		GUI.DrawTexture (new Rect (startPos.x, startPos.y - widthHalf, dir.magnitude, width), 
-		                 tex != null? tex : ColorToTex (Color.white));
-		
-		GUI.matrix = GUIMatrix;
-		GUI.color = GUIColor;
+			startPos = startPos - dirPerp * width / 2;
+			endPos = endPos - dirPerp * width / 2;
+			
+			for (int cnt = 0; cnt < width*2; cnt++) 
+			{
+				GL.Begin (GL.LINES);
+				GL.Color (col);
+				GL.Vertex (startPos + dirPerp * cnt / 2);
+				GL.Vertex (endPos + dirPerp * cnt / 2);
+				GL.End ();
+			}
+		}
+		else 
+		{
+			Vector2 dir = endPos - startPos;
+			float angle = Mathf.Rad2Deg * Mathf.Atan (dir.y / dir.x);
+			if (dir.x < 0)
+				angle += 180;
+			
+			float widthHalf = width / 2;
+			
+			Matrix4x4 GUIMatrix = GUI.matrix;
+			Color GUIColor = GUI.color;
+			
+			GUI.color = col;
+			GUIUtility.RotateAroundPivot (angle, startPos);
+			
+			GUI.DrawTexture (new Rect (startPos.x, startPos.y - widthHalf, dir.magnitude, width), 
+			                 tex != null? tex : ColorToTex (Color.white));
+			
+			GUI.matrix = GUIMatrix;
+			GUI.color = GUIColor;
+		}
 	}
 
 	/// <summary>
