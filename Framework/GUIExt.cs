@@ -22,7 +22,10 @@ public static class GUIExt
 	private static string activeFloatField;
 //	private static float startSlideValue = 0;
 //	private static float startSlidePos = 0;
+#if UNITY_EDITOR
+#else
 	private static Dictionary<string, string> floatFields = new Dictionary<string, string> ();
+#endif
 	/// <summary>
 	/// Mimics UnityEditor.EditorGUILayout.FloatField by taking a float and returning the edited float.
 	/// </summary>

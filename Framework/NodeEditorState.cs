@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using NodeEditorFramework;
 
+namespace NodeEditorFramework 
+{
 public class NodeEditorState : ScriptableObject 
 { // The class that holds the state of an NodeCanvas inside a NodeEditor
 	public NodeCanvas canvas;
@@ -23,4 +26,5 @@ public class NodeEditorState : ScriptableObject
 
 	public Rect canvasRect; // the rect this is drawn into
 	public Vector2 zoomPos { get { return canvasRect.size/2; } }
+}
 }

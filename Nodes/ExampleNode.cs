@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using NodeEditorFramework;
 
 [System.Serializable]
 [Node (true, "Example")]

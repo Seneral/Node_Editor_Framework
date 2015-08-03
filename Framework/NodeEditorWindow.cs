@@ -2,7 +2,10 @@
 using UnityEditor;
 using System;
 using System.Collections.Generic;
+using NodeEditorFramework;
 
+namespace NodeEditorFramework
+{
 public class NodeEditorWindow : EditorWindow 
 {
 	// Information about current instances
@@ -178,4 +181,5 @@ public class NodeEditorWindow : EditorWindow
 	}
 	
 	#endregion
+}
 }

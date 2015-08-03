@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using NodeEditorFramework;
 
 [System.Serializable]
 [Node(false, "State Machine/State")]

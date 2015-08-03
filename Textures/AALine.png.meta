@@ -8,7 +8,7 @@ TextureImporter:
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
-    linearTexture: 0
+    linearTexture: 1
     correctGamma: 0
     fadeOut: 0
     borderMipMap: 0
@@ -35,9 +35,9 @@ TextureImporter:
     wrapMode: 0
   nPOTScale: 0
   lightmap: 0
-  rGBM: 2
+  rGBM: 0
   compressionQuality: 50
-  spriteMode: 1
+  spriteMode: 0
   spriteExtrude: 1
   spriteMeshType: 0
   alignment: 0
