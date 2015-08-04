@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿//#define NODE_EDITOR_LINE_CONNECTION
+
+using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
 using System.IO;
@@ -44,7 +46,6 @@ namespace NodeEditorFramework
 		{
 			if (!initiated && !InitiationError) 
 			{
-	// Does NOT need conversion
 	#if UNITY_EDITOR
 				Object script = UnityEditor.AssetDatabase.LoadAssetAtPath (editorPath + "Framework/NodeEditor.cs", typeof(Object));
 				if (script == null) 
@@ -65,15 +66,18 @@ namespace NodeEditorFramework
 
 				ConnectionTypes.FetchTypes ();
 				NodeTypes.FetchNodes ();
+				NodeEditorCallbacks.SetupReceivers ();
+				NodeEditorCallbacks.IssueOnEditorStartUp ();
 
 				// Styles
 				nodeBox = new GUIStyle (GUI.skin.box);
-	// Does NOT need conversion
+
 	#if UNITY_EDITOR
 				nodeBox.normal.background = ColorToTex (UnityEditor.EditorGUIUtility.isProSkin? new Color (0.5f, 0.5f, 0.5f) : new Color (0.2f, 0.2f, 0.2f));
 	#else
 				nodeBox.normal.background = ColorToTex ( new Color (0.2f, 0.2f, 0.2f));
 	#endif
+
 				nodeBox.normal.textColor = new Color (0.7f, 0.7f, 0.7f);
 
 				nodeButton = new GUIStyle (GUI.skin.button);
@@ -84,6 +88,8 @@ namespace NodeEditorFramework
 				nodeLabelBold = new GUIStyle (nodeLabel);
 				nodeLabelBold.fontStyle = FontStyle.Bold;
 				nodeLabelBold.wordWrap = false;
+
+				initiated = true;
 			}
 			return;
 		}
@@ -302,13 +308,14 @@ namespace NodeEditorFramework
 			if (curEditorState.activeNode == node)
 				headerStyle.fontStyle = FontStyle.Bold;
 			GUI.Label (headerRect, new GUIContent (node.name), headerStyle);
+			GUI.changed = false;
 			GUILayout.BeginArea (bodyRect, GUI.skin.box);
 			node.NodeGUI ();
 			GUILayout.EndArea ();
 		}
 
 		/// <summary>
-		/// Draws a node curve from start to end (with three shades of shadows)
+		/// Draws a node connection from start to end
 		/// </summary>
 		public static void DrawConnection (Vector2 startPos, Vector2 endPos, Color col) 
 		{
@@ -504,9 +511,7 @@ namespace NodeEditorFramework
 
 	#if UNITY_EDITOR
 			if (clickedNode != null)
-			{
 				UnityEditor.Selection.activeObject = clickedNode;
-			}
 	#endif
 
 			switch (e.type) 
@@ -527,6 +532,7 @@ namespace NodeEditorFramework
 				{ // A click on a node
 					if (e.button == 1)
 					{ // Right click -> Node Context Click
+						// TODO: Node Editor: Editor-Independancy - GenericMenu conversion
 	#if UNITY_EDITOR
 						UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
 						
@@ -553,9 +559,7 @@ namespace NodeEditorFramework
 							if (nodeInput != null && nodeInput.connection != null)
 							{ // Input node -> Loose and edit Connection
 								curEditorState.connectOutput = nodeInput.connection;
-								nodeInput.connection.connections.Remove (nodeInput);
-								nodeInput.connection = null;
-								RecalculateFrom (clickedNode);
+								Node.RemoveConnection (nodeInput);
 								e.Use();
 							}
 						}
@@ -570,6 +574,7 @@ namespace NodeEditorFramework
 					}
 					else if (e.button == 1 && curEditorState.connectOutput == null) 
 					{ // Right click -> Editor Context Click
+						// TODO: Node Editor: Editor-Independancy - GenericMenu conversion
 	#if UNITY_EDITOR
 						UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
 
@@ -600,6 +605,7 @@ namespace NodeEditorFramework
 					}
 	                else if (e.button == 1)
 	                { // Show menu containing all node types that can take curEditorState.connectOutput as an input
+						// TODO: Node Editor: Editor-Independancy - GenericMenu conversion
 	#if UNITY_EDITOR
 						UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
 	                    // Iterate through all compatible nodes
@@ -672,6 +678,7 @@ namespace NodeEditorFramework
 			if (curEditorState.dragNode && curEditorState.activeNode != null && GUIUtility.hotControl == 0) 
 			{ // Drag the active node with the current mouse delta
 				curEditorState.activeNode.rect.position += e.delta / 2 * curEditorState.zoom;
+				NodeEditorCallbacks.IssueOnMoveNode (curEditorState.activeNode);
 				NodeEditorWindow.editor.Repaint ();
 			} 
 			else
@@ -721,7 +728,7 @@ namespace NodeEditorFramework
 			{
 			case "deleteNode":
 				if (cbObj.node != null) 
-					cbObj.node.Delete ();
+					NodeEditorCallbacks.IssueOnDeleteNode (cbObj.node);
 				break;
 				
 			case "duplicateNode":
@@ -735,19 +742,20 @@ namespace NodeEditorFramework
 				break;
 
 			default:
-				var createPos = ScreenToGUIPos (mousePos);
+				Vector2 createPos = ScreenToGUIPos (mousePos);
 				if (cbObj.nodeOutput != null && (curEditorState.connectMousePos - mousePos).sqrMagnitude < 50)
-					createPos = new Vector2(cbObj.nodeOutput.body.rect.xMax+50, cbObj.nodeOutput.body.rect.yMin);
+					createPos = new Vector2 (cbObj.nodeOutput.body.rect.xMax+50, cbObj.nodeOutput.body.rect.yMin);
 
 				foreach (Node node in NodeTypes.nodes.Keys)
 				{
 					if (node.GetID == cbObj.message) 
 					{
-						var newNode = node.Create (createPos);
+						Node newNode = node.Create (createPos);
 	                    newNode.InitBase ();
+						NodeEditorCallbacks.IssueOnAddNode (newNode);
 	                    if (cbObj.nodeOutput != null)
 						{ // If nodeOutput is defined, link it to the first input of the same type
-	                        foreach (var input in newNode.Inputs)
+	                        foreach (NodeInput input in newNode.Inputs)
 	                        {
 	                            if (Node.CanApplyConnection (cbObj.nodeOutput, input))
 	                            { // If it can connect (type is equals, it does not cause recursion, ...)
@@ -930,10 +938,13 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static List<NodeEditorState> LoadEditorStates (string path) 
 		{
-	#if UNITY_EDITOR
 			if (String.IsNullOrEmpty (path))
 				return null;
-			UnityEngine.Object[] objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
+	#if UNITY_EDITOR
+			Object[] objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
+	#else
+			Object[] objects = Resources.LoadAll (path);
+	#endif
 			if (objects.Length == 0) 
 				return null;
 			
@@ -942,14 +953,17 @@ namespace NodeEditorFramework
 			for (int cnt = 0; cnt < objects.Length; cnt++) 
 			{
 				if (objects [cnt].GetType () == typeof (NodeEditorState)) 
+				{
 					editorStates.Add (objects [cnt] as NodeEditorState);
+					NodeEditorCallbacks.IssueOnLoadEditorState (editorStates[editorStates.Count-1]);
+				}
 			}
-			
+
+	#if UNITY_EDITOR
 			UnityEditor.AssetDatabase.Refresh ();
-			return editorStates;
-	#else
-			return null;
 	#endif
+
+			return editorStates;
 		}
 
 		/// <summary>
@@ -957,9 +971,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void SaveNodeCanvas (NodeCanvas nodeCanvas, string path, params NodeEditorState[] editorStates) 
 		{
-	#if UNITY_EDITOR
 			if (String.IsNullOrEmpty (path))
 				return;
+	#if UNITY_EDITOR
 			string existingPath = UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas);
 			if (!String.IsNullOrEmpty (existingPath))
 			{
@@ -986,7 +1000,10 @@ namespace NodeEditorFramework
 			}
 			UnityEditor.AssetDatabase.SaveAssets ();
 			UnityEditor.AssetDatabase.Refresh ();
+	#else
+			// TODO: Node Editor: Need to implement ingame-saving (Resources, AsssetBundles, ... won't work)
 	#endif
+			NodeEditorCallbacks.IssueOnSaveCanvas (nodeCanvas);
 		}
 		
 		/// <summary>
@@ -994,10 +1011,13 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static NodeCanvas LoadNodeCanvas (string path) 
 		{
-	#if UNITY_EDITOR
 			if (String.IsNullOrEmpty (path))
 				return null;
-			UnityEngine.Object[] objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
+	#if UNITY_EDITOR
+			Object[] objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
+	#else
+			Object[] objects = Resources.LoadAll (path);
+	#endif
 			if (objects.Length == 0) 
 				return null;
 			NodeCanvas nodeCanvas = null;
@@ -1009,13 +1029,11 @@ namespace NodeEditorFramework
 			}
 			if (nodeCanvas == null)
 				return null;
-			
+	#if UNITY_EDITOR
 			UnityEditor.AssetDatabase.Refresh ();
-			
+	#endif	
+			NodeEditorCallbacks.IssueOnLoadCanvas (nodeCanvas);
 			return nodeCanvas;
-	#else
-			return null;
-	#endif
 		}
 
 		#endregion

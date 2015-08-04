@@ -310,7 +310,17 @@ namespace NodeEditorFramework
 				output.connections.Add (input);
 
 				NodeEditor.RecalculateFrom (input.body);
+
+				NodeEditorCallbacks.IssueOnAddConnection (input);
 			}
+		}
+
+		public static void RemoveConnection (NodeInput input)
+		{
+			NodeEditorCallbacks.IssueOnRemoveConnection (input);
+			input.connection.connections.Remove (input);
+			input.connection = null;
+			NodeEditor.RecalculateFrom (input.body);
 		}
 
 		#endregion

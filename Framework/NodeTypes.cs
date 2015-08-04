@@ -48,6 +48,11 @@ namespace NodeEditorFramework
 	//		foreach (Node node in nodes.Keys)
 	//			Debug.Log (node.name + " fetched.");
 		}
+
+		public static T getDefault<T> () where T : Node
+		{
+			return nodes.Keys.Single<Node> ((Node node) => node.GetType () == typeof (T)) as T;
+		}
 	}
 
 	public class NodeAttribute : Attribute 

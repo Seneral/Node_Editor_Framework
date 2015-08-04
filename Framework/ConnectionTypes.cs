@@ -125,7 +125,6 @@ namespace NodeEditorFramework
 	[Serializable]
 	public class FloatValue
 	{
-		public FloatValue () {}
 		[NonSerialized]
 		public float value;
 	}
