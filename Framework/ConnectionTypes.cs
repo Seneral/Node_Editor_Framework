@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using System.Text;
 using System.Linq;
 using System.Reflection;
 using System.Diagnostics;
@@ -54,32 +55,27 @@ namespace NodeEditorFramework
 		public static void FetchTypes () 
 		{ // Search the current and (if the NodeEditor is packed into a .dll) the calling one
 			types = new Dictionary<string, TypeData> ();
-			
-			Assembly assembly = Assembly.GetExecutingAssembly ();
-			foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.GetInterfaces ().Contains (typeof (ITypeDeclaration)))) 
+
+			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ()
+				.Where ((Assembly a) => a.FullName.StartsWith ("Assembly-"))
+					.ToList (); // This filters out all script assemblies
+			if (!scriptAssemblies.Contains (Assembly.GetExecutingAssembly ()))
+				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
+			foreach (Assembly assembly in scriptAssemblies) 
 			{
-				ITypeDeclaration typeDecl = assembly.CreateInstance (type.FullName) as ITypeDeclaration;
-				if (typeDecl == null) 
+				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.GetInterfaces ().Contains (typeof (ITypeDeclaration)))) 
 				{
-					UnityEngine.Debug.LogError ("Error with Type Declaration " + type.FullName);
-					return;
+					ITypeDeclaration typeDecl = assembly.CreateInstance (type.FullName) as ITypeDeclaration;
+					if (typeDecl == null) 
+					{
+						UnityEngine.Debug.LogError ("Error with Type Declaration " + type.FullName);
+						return;
+					}
+					Texture2D InputKnob = NodeEditor.LoadTexture(typeDecl.InputKnob_TexPath);
+					Texture2D OutputKnob = NodeEditor.LoadTexture(typeDecl.OutputKnob_TexPath);
+					types.Add(typeDecl.name, new TypeData(typeDecl.col, InputKnob, OutputKnob, typeDecl.InputType, typeDecl.OutputType));
 				}
-				Texture2D InputKnob = NodeEditor.LoadTexture(typeDecl.InputKnob_TexPath);
-				Texture2D OutputKnob = NodeEditor.LoadTexture(typeDecl.OutputKnob_TexPath);
-				types.Add(typeDecl.name, new TypeData(typeDecl.col, InputKnob, OutputKnob, typeDecl.InputType, typeDecl.OutputType));
 			}
-			
-//			if (assembly != Assembly.GetCallingAssembly ())
-//			{
-//				assembly = Assembly.GetCallingAssembly ();
-//				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.GetInterfaces ().Contains (typeof (ITypeDeclaration)))) 
-//				{
-//					ITypeDeclaration typeDecl = assembly.CreateInstance (type.FullName) as ITypeDeclaration;
-//					Texture2D InputKnob = NodeEditor.LoadTexture(typeDecl.InputKnob_TexPath);
-//					Texture2D OutputKnob = NodeEditor.LoadTexture(typeDecl.OutputKnob_TexPath);
-//					types.Add (typeDecl.name, new TypeData (typeDecl.col, InputKnob, OutputKnob, typeDecl.InputType, typeDecl.OutputType));
-//				}
-//			}
 		}
 	}
 

@@ -266,7 +266,7 @@ namespace NodeEditorFramework
 				UnityEditor.AssetDatabase.ImportAsset (UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas));
 			}
 	#endif
-			OnDelete ();
+			NodeEditorCallbacks.IssueOnDeleteNode (this);
 		}
 		
 		#endregion

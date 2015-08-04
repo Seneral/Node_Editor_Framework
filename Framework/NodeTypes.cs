@@ -18,32 +18,25 @@ namespace NodeEditorFramework
 		{
 			nodes = new Dictionary<Node, string> ();
 
-			Assembly assembly = Assembly.GetExecutingAssembly ();
-			foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.IsSubclassOf (typeof (Node)))) 
+			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ()
+				.Where ((Assembly a) => a.FullName.StartsWith ("Assembly-"))
+					.ToList (); // This filters out all script assemblies
+			if (!scriptAssemblies.Contains (Assembly.GetExecutingAssembly ()))
+				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
+			foreach (Assembly assembly in scriptAssemblies) 
 			{
-				object[] nodeAttributes = type.GetCustomAttributes (typeof (NodeAttribute), false);
-				if (nodeAttributes.Length == 0 || !(nodeAttributes [0] as NodeAttribute).hide)
+				Debug.Log (assembly.FullName);
+				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.IsSubclassOf (typeof (Node)))) 
 				{
-					Node node = ScriptableObject.CreateInstance (type.Name) as Node; // Create a 'raw' instance (not setup using the appropriate Create function)
-					node = node.Create (Vector2.zero); // From that, call the appropriate Create Method to init the previously 'raw' instance
-					nodes.Add (node, nodeAttributes.Length == 0? node.name : (nodeAttributes [0] as NodeAttribute).contextText);
+					object[] nodeAttributes = type.GetCustomAttributes (typeof (NodeAttribute), false);
+					if (nodeAttributes.Length == 0 || !(nodeAttributes [0] as NodeAttribute).hide)
+					{
+						Node node = ScriptableObject.CreateInstance (type.Name) as Node; // Create a 'raw' instance (not setup using the appropriate Create function)
+						node = node.Create (Vector2.zero); // From that, call the appropriate Create Method to init the previously 'raw' instance
+						nodes.Add (node, nodeAttributes.Length == 0? node.name : (nodeAttributes [0] as NodeAttribute).contextText);
+					}
 				}
 			}
-
-	//		if (assembly != Assembly.GetCallingAssembly ())
-	//		{
-	//			assembly = Assembly.GetCallingAssembly ();
-	//			foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.IsSubclassOf (typeof (Node)))) 
-	//			{
-	//				object[] nodeAttributes = type.GetCustomAttributes (typeof (NodeAttribute), false);
-	//				if (nodeAttributes.Length == 0 || !(nodeAttributes [0] as NodeAttribute).hide)
-	//				{
-	//					Node node = ScriptableObject.CreateInstance (type.Name) as Node; // Create a 'raw' instance (not setup using the appropriate Create function)
-	//					node = node.Create (Vector2.zero); // From that, call the appropriate Create Method to init the previously 'raw' instance
-	//					nodes.Add (node, nodeAttributes.Length == 0? node.name : (nodeAttributes [0] as NodeAttribute).contextText);
-	//				}
-	//			}
-	//		}
 
 	//		foreach (Node node in nodes.Keys)
 	//			Debug.Log (node.name + " fetched.");

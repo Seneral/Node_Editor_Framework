@@ -728,7 +728,7 @@ namespace NodeEditorFramework
 			{
 			case "deleteNode":
 				if (cbObj.node != null) 
-					NodeEditorCallbacks.IssueOnDeleteNode (cbObj.node);
+					cbObj.node.Delete ();
 				break;
 				
 			case "duplicateNode":
