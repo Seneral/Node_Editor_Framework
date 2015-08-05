@@ -69,7 +69,7 @@ namespace NodeEditorFramework
 			{
 				NodeEditor.DrawCanvas(mainNodeCanvas, mainEditorState);
 			}
-			catch (Exception e)
+			catch (UnityException e)
 			{
 				// on exceptions in drawing flush the canvas to avoid locking the ui.
 				NewNodeCanvas();

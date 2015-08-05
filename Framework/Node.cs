@@ -53,7 +53,7 @@ namespace NodeEditorFramework
 		{
 			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 			{
-				if (Inputs[inCnt].connection == null || Inputs[inCnt].connection.GetValue<FloatValue> () == null)
+				if (Inputs[inCnt].connection == null || Inputs[inCnt].connection.IsValueNull)
 					return false;
 			}
 			return true;
@@ -61,23 +61,11 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Checks if there are any unassigned inputs.
 		/// </summary>
-		public bool hasNullInputs () 
+		public bool hasUnassignedInputs () 
 		{
 			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 			{
 				if (Inputs [inCnt].connection == null)
-					return true;
-			}
-			return false;
-		}
-		/// <summary>
-		/// Checks if there are any null-value inputs.
-		/// </summary>
-		public bool hasNullInputValues () 
-		{
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-			{
-				if (Inputs[inCnt].connection != null && Inputs[inCnt].connection.GetValue<FloatValue> () == null)
 					return true;
 			}
 			return false;
@@ -139,8 +127,6 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Call this method to create an output on your node
 		/// </summary>
-		/// <param name="outputName">the name of the output</param>
-		/// <param name="outputType">the type of the output</param>
 		public void CreateOutput(string outputName, string outputType)
 		{
 			NodeOutput.Create(this, outputName, outputType);
@@ -149,8 +135,6 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Call this method to create an input on your node
 		/// </summary>
-		/// <param name="inputName">the name of the input</param>
-		/// <param name="inputType">the type of the input</param>
 		public void CreateInput(string inputName, string inputType)
 		{
 			NodeInput.Create(this, inputName, inputType);

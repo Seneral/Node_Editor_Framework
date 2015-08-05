@@ -22,10 +22,10 @@ public class CalcNode : Node
 		node.name = "Calc Node";
 		node.rect = new Rect (pos.x, pos.y, 200, 100);
 		
-		NodeInput.Create (node, "Input 1", "Float");
-		NodeInput.Create (node, "Input 2", "Float");
+		node.CreateInput ("Input 1", "Float");
+		node.CreateInput ("Input 2", "Float");
 		
-		NodeOutput.Create (node, "Output 1", "Float");
+		node.CreateOutput ("Output 1", "Float");
 
 		return node;
 	}
@@ -63,24 +63,24 @@ public class CalcNode : Node
 
 	public override bool Calculate () 
 	{
-		if (Inputs[0].connection != null && Inputs[0].connection.GetValue<FloatValue> () != null)
-			Input1Val = (float)Inputs[0].connection.GetValue<FloatValue> ().value;
-		if (Inputs[1].connection != null && Inputs[1].connection.GetValue<FloatValue> () != null)
-			Input2Val = (float)Inputs[1].connection.GetValue<FloatValue> ().value;
+		if (Inputs[0].connection != null)
+			Input1Val = Inputs[0].connection.GetValue<float> ();
+		if (Inputs[1].connection != null)
+			Input2Val = Inputs[1].connection.GetValue<float> ();
 
 		switch (type) 
 		{
 		case CalcType.Add:
-				Outputs[0].GetValue<FloatValue> ().value = Input1Val + Input2Val;
+			Outputs[0].SetValue<float> (Input1Val + Input2Val);
 			break;
 		case CalcType.Substract:
-			Outputs[0].GetValue<FloatValue> ().value = Input1Val - Input2Val;
+			Outputs[0].SetValue<float> (Input1Val - Input2Val);
 			break;
 		case CalcType.Multiply:
-			Outputs[0].GetValue<FloatValue> ().value = Input1Val * Input2Val;
+			Outputs[0].SetValue<float> (Input1Val * Input2Val);
 			break;
 		case CalcType.Divide:
-			Outputs[0].GetValue<FloatValue> ().value = Input1Val / Input2Val;
+			Outputs[0].SetValue<float> (Input1Val / Input2Val);
 			break;
 		}
 

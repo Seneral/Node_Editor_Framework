@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections.Generic;
 using NodeEditorFramework;
 
@@ -18,41 +19,64 @@ namespace NodeEditorFramework
 
 		[System.NonSerialized]
 		private object value = null;
+		private System.Type valueType;
 
-		private static System.Type valueType;
+		public bool IsValueNull { get { return value == null; } }
 
-		public T GetValue<T>()
-			where T : class, new()
+		/// <summary>
+		/// Gets the output value.
+		/// </summary>
+		/// <returns>Value, if null default(T) (-> For reference types, null. For value types, default value)</returns>
+		public T GetValue<T> ()
 		{
 			if (valueType == null)
 				valueType = ConnectionTypes.GetOutputType(type);
-
 			if (valueType == typeof(T))
 			{
 				if (value == null)
-					value = new T();
+					value = getDefault<T> ();
 				return (T)value;
 			}
-			UnityEngine.Debug.LogError("Trying to GetValue<" + typeof(T).FullName + "> for Output Type: " + type);
-
-			return null;
+			UnityEngine.Debug.LogError ("Trying to GetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
+			return getDefault<T> ();
 		}
 
-		public T SetValue<T>()
-			where T : class, new()
+		/// <summary>
+		/// Sets the value.
+		/// </summary>
+		public void SetValue<T> (T Value)
 		{
 			if (valueType == null)
 				valueType = ConnectionTypes.GetOutputType(type);
-
 			if (valueType == typeof(T))
-			{
-				if (value == null)
-					value = new T();
-				return (T)value;
-			}
-			UnityEngine.Debug.LogError("Trying to SetValue<" + typeof(T).FullName + "> for Output Type: " + type);
+				value = Value;
+			else
+				UnityEngine.Debug.LogError("Trying to SetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
+		}
 
-			return null;
+		/// <summary>
+		/// Resets the value to null.
+		/// </summary>
+		public void ResetValue () 
+		{
+			value = null;
+		}
+
+		/// <summary>
+		/// Returns for value types the default value; for reference types:, the default constructor if existant, else null
+		/// </summary>
+		public static T getDefault<T> ()
+		{
+			T var;
+			if (typeof(T).GetConstructor (Type.EmptyTypes) != null)
+			{ // Try to create using an empty constructor if existant
+				var = Activator.CreateInstance<T> ();
+			}
+			else
+			{ // Else try to get default. Returns null only on reference types
+				var = default(T);
+			}
+			return var;
 		}
 
 		/// <summary>

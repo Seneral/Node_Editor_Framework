@@ -1,9 +1,7 @@
 ﻿using UnityEngine;
-using System.Collections;
 using NodeEditorFramework;
 
-[System.Serializable]
-[Node (true, "Example")]
+[Node (true, "Example Node")]
 public class ExampleNode : Node 
 {
 	public const string ID = "exampleNode";
@@ -13,22 +11,31 @@ public class ExampleNode : Node
 	{
 		ExampleNode node = CreateInstance<ExampleNode> ();
 		
-		node.rect = new Rect (pos.x, pos.y, 100, 50);
+		node.rect = new Rect (pos.x, pos.y, 150, 60);
 		node.name = "Example Node";
 		
-		NodeInput.Create (node, "Value", "Float");
-		NodeOutput.Create (node, "Output val", "Float");
-
+		node.CreateInput ("Value", "Float");
+		node.CreateOutput ("Output val", "Float");
+		
 		return node;
 	}
 	
 	public override void NodeGUI () 
 	{
 		GUILayout.Label ("This is a custom Node!");
+
+		GUILayout.BeginHorizontal ();
+		GUILayout.BeginVertical ();
+
+		Inputs [0].DisplayLayout ();
+
+		GUILayout.EndVertical ();
+		GUILayout.BeginVertical ();
 		
-		GUILayout.Label ("Input");
-		if (Event.current.type == EventType.Repaint)
-			Inputs [0].SetRect (GUILayoutUtility.GetLastRect ());
+		Outputs [0].DisplayLayout ();
+		
+		GUILayout.EndVertical ();
+		GUILayout.EndHorizontal ();
 		
 	}
 	
@@ -36,7 +43,7 @@ public class ExampleNode : Node
 	{
 		if (!allInputsReady ())
 			return false;
-		Outputs[0].GetValue<FloatValue>().value = Inputs[0].connection.GetValue<FloatValue>().value * 5;
+		Outputs[0].SetValue<float> (Inputs[0].connection.GetValue<float> () * 5);
 		return true;
 	}
 }

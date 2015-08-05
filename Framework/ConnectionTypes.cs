@@ -1,10 +1,7 @@
 ﻿using UnityEngine;
 using System;
-using System.Text;
 using System.Linq;
 using System.Reflection;
-using System.Diagnostics;
-using System.Collections;
 using System.Collections.Generic;
 using NodeEditorFramework;
 
@@ -115,13 +112,6 @@ namespace NodeEditorFramework
 		public string InputKnob_TexPath { get { return "Textures/In_Knob.png"; } }
 		public string OutputKnob_TexPath { get { return "Textures/Out_Knob.png"; } }
 		public Type InputType { get { return null; } }
-		public Type OutputType { get { return typeof(FloatValue); } }
-	}
-
-	[Serializable]
-	public class FloatValue
-	{
-		[NonSerialized]
-		public float value;
+		public Type OutputType { get { return typeof(float); } }
 	}
 }

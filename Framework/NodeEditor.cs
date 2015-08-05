@@ -746,24 +746,22 @@ namespace NodeEditorFramework
 				if (cbObj.nodeOutput != null && (curEditorState.connectMousePos - mousePos).sqrMagnitude < 50)
 					createPos = new Vector2 (cbObj.nodeOutput.body.rect.xMax+50, cbObj.nodeOutput.body.rect.yMin);
 
-				foreach (Node node in NodeTypes.nodes.Keys)
-				{
-					if (node.GetID == cbObj.message) 
+				Node node = NodeTypes.getDefaultNode (cbObj.message);
+				if (node == null)
+					break;
+
+				node = node.Create (createPos);
+				node.InitBase ();
+				NodeEditorCallbacks.IssueOnAddNode (node);
+				if (cbObj.nodeOutput != null)
+				{ // If nodeOutput is defined, link it to the first input of the same type
+					foreach (NodeInput input in node.Inputs)
 					{
-						Node newNode = node.Create (createPos);
-	                    newNode.InitBase ();
-						NodeEditorCallbacks.IssueOnAddNode (newNode);
-	                    if (cbObj.nodeOutput != null)
-						{ // If nodeOutput is defined, link it to the first input of the same type
-	                        foreach (NodeInput input in newNode.Inputs)
-	                        {
-	                            if (Node.CanApplyConnection (cbObj.nodeOutput, input))
-	                            { // If it can connect (type is equals, it does not cause recursion, ...)
-	                                Node.ApplyConnection (cbObj.nodeOutput, input);
-	                                break;
-	                            }
-	                        }
-	                    }
+						if (Node.CanApplyConnection (cbObj.nodeOutput, input))
+						{ // If it can connect (type is equals, it does not cause recursion, ...)
+							Node.ApplyConnection (cbObj.nodeOutput, input);
+							break;
+						}
 					}
 				}
 				break;

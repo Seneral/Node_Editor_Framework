@@ -15,42 +15,15 @@ namespace NodeEditorFramework
 		public NodeOutput connection;
 		[HideInInspector]
 		public string type;
-		[NonSerialized]
-		private object value = null;
-		private static System.Type valueType;
 
 		public T GetValue<T> ()
-			where T : class, new()
 		{
-			if (valueType == null || valueType == typeof(ConnectionTypes))
-				valueType = ConnectionTypes.GetInputType(type);
-
-			if (valueType == typeof(T))
-			{
-				if (value == null)
-					value = new T();
-				return (T)value;
-			}
-			UnityEngine.Debug.LogError("Trying to GetValue<" + typeof(T).FullName+ "> for Input Type: " + type);
-			return null;
+			return connection.GetValue<T> ();
 		}
 
-		public void SetValue<T>(T value)
-			where T : class, new()
+		public void SetValue<T> (T value)
 		{
-			if (type == null)
-			{
-				// race condition during load, just accept the incoming value. 
-				this.value = value;
-				return;
-			}
-			if (valueType == null)
-				valueType = ConnectionTypes.GetInputType(type);
-
-			if (valueType == typeof(T))
-				this.value = value;
-			else
-				UnityEngine.Debug.LogError("Trying to SetValue<" + typeof(T).FullName + "> for Input Type: " + type);
+			connection.SetValue<T>(value);
 		}
 
 

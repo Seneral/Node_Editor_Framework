@@ -25,7 +25,6 @@ namespace NodeEditorFramework
 				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
 			foreach (Assembly assembly in scriptAssemblies) 
 			{
-				Debug.Log (assembly.FullName);
 				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.IsSubclassOf (typeof (Node)))) 
 				{
 					object[] nodeAttributes = type.GetCustomAttributes (typeof (NodeAttribute), false);
@@ -37,12 +36,13 @@ namespace NodeEditorFramework
 					}
 				}
 			}
-
-	//		foreach (Node node in nodes.Keys)
-	//			Debug.Log (node.name + " fetched.");
 		}
 
-		public static T getDefault<T> () where T : Node
+		public static Node getDefaultNode (string ID)
+		{
+			return nodes.Keys.Single<Node> ((Node node) => node.GetID == ID);
+		}
+		public static T getDefaultNode<T> () where T : Node
 		{
 			return nodes.Keys.Single<Node> ((Node node) => node.GetType () == typeof (T)) as T;
 		}
