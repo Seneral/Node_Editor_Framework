@@ -4,7 +4,7 @@ using System.Collections;
 using NodeEditorFramework;
 
 [System.Serializable]
-[Node (false, "Float/Input")]
+[Node (false, "Float/Input", false)]
 public class InputNode : Node 
 {
 	public const string ID = "inputNode";

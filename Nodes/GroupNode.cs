@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using NodeEditorFramework;
 
 [System.Serializable]
-[Node (true, "Group")]
+[Node (true, "Group", false)]
 public class GroupNode : Node 
 {
 	public const string ID = "groupNode";

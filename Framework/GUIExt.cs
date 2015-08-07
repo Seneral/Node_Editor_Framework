@@ -12,7 +12,7 @@ public static class GUIExt
 	public static string TextField (GUIContent label, string text)
 	{
 		GUILayout.BeginHorizontal ();
-		GUILayout.Label (label, GUILayout.Width(146));
+		GUILayout.Label (label, GUILayout.ExpandWidth (true)); // GUILayout.Width(146)
 		text = GUILayout.TextField (text);
 		GUILayout.EndHorizontal ();
 		return text;

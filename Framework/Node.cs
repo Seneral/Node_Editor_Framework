@@ -9,12 +9,18 @@ namespace NodeEditorFramework
 	{
 		[HideInInspector]
 		public Rect rect = new Rect ();
+
+		// Calculation graph
 		[HideInInspector]
 		public List<NodeInput> Inputs = new List<NodeInput>();
 		[HideInInspector]
 		public List<NodeOutput> Outputs = new List<NodeOutput>();
 		[HideInInspector]
 		public bool calculated = true;
+
+		// State graph
+		public List<Transition> transitions = new List<Transition> ();
+
 		// Abstract member to get the ID of the node
 		public abstract string GetID { get; }
 
@@ -29,15 +35,11 @@ namespace NodeEditorFramework
 		/// </summary>
 		public abstract void NodeGUI ();
 
-#if NODE_EDITOR_STATEMACHINE
-		public virtual bool Calculate ();
-#else
 		/// <summary>
 		/// Function implemented by the children to calculate their outputs
 		/// Should return Success/Fail
 		/// </summary>
 		public abstract bool Calculate ();
-#endif
 		
 		/// <summary>
 		/// Optional callback when the node is deleted
@@ -207,7 +209,7 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Draws the node curves; splitted from knobs because of the render order
 		/// </summary>
-		public virtual void DrawConnections () 
+		public void DrawConnections () 
 		{
 			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 			{
@@ -218,6 +220,28 @@ namespace NodeEditorFramework
 					                          output.connections [conCnt].GetGUIKnob ().center,
 											  ConnectionTypes.GetTypeData(output.type).col);
 				}
+			}
+		}
+
+		/// <summary>
+		/// Draws the node transitions.
+		/// </summary>
+		public void DrawTransitions () 
+		{
+			for (int cnt = 0; cnt < transitions.Count; cnt++)
+			{
+				Vector2 StartPoint = transitions[cnt].startNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
+				Vector2 EndPoint = transitions[cnt].endNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
+				NodeEditor.DrawLine (StartPoint, EndPoint, Color.grey, null, 3);
+
+				Rect selectRect = new Rect (0, 0, 20, 20);
+				selectRect.center = Vector2.Lerp (StartPoint, EndPoint, 0.5f);
+
+				if (GUI.Button (selectRect, "#"))
+				{
+					// TODO: Select
+				}
+
 			}
 		}
 
@@ -299,12 +323,20 @@ namespace NodeEditorFramework
 			}
 		}
 
+		/// <summary>
+		/// Removes the connection from NodeInput.
+		/// </summary>
 		public static void RemoveConnection (NodeInput input)
 		{
 			NodeEditorCallbacks.IssueOnRemoveConnection (input);
 			input.connection.connections.Remove (input);
 			input.connection = null;
 			NodeEditor.RecalculateFrom (input.body);
+		}
+
+		public static void CreateTransition (Node from, Node to) 
+		{
+			from.transitions.Add (Transition.Create (from, to));
 		}
 
 		#endregion

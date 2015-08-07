@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using NodeEditorFramework;
 
-[Node (true, "Example Node")]
+[Node (true, "Example Node", false)]
 public class ExampleNode : Node 
 {
 	public const string ID = "exampleNode";

@@ -30,7 +30,7 @@ namespace NodeEditorFramework
 		public T GetValue<T> ()
 		{
 			if (valueType == null)
-				valueType = ConnectionTypes.GetOutputType(type);
+				valueType = ConnectionTypes.GetType(type);
 			if (valueType == typeof(T))
 			{
 				if (value == null)
@@ -47,7 +47,7 @@ namespace NodeEditorFramework
 		public void SetValue<T> (T Value)
 		{
 			if (valueType == null)
-				valueType = ConnectionTypes.GetOutputType(type);
+				valueType = ConnectionTypes.GetType(type);
 			if (valueType == typeof(T))
 				value = Value;
 			else

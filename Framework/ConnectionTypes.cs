@@ -24,25 +24,14 @@ namespace NodeEditorFramework
 			return types.First().Value;
 		}
 		
-		public static Type GetInputType (string typeName)
+		public static Type GetType (string typeName)
 		{
 			if (types == null || types.Count == 0)
 				FetchTypes();
 			TypeData res;
 			if (types.TryGetValue(typeName, out res))
-				return res.InputType ?? NullType;
-			UnityEngine.Debug.LogError("No TypeData defined for: " + typeName);
-			return NullType;
-		}
-		
-		public static Type GetOutputType (string typeName)
-		{
-			if (types == null || types.Count == 0)
-				FetchTypes();
-			TypeData res;
-			if (types.TryGetValue(typeName, out res))
-				return res.OutputType ?? NullType;
-			UnityEngine.Debug.LogError("No TypeData defined for: " + typeName);
+				return res.Type ?? NullType;
+			UnityEngine.Debug.LogError ("No TypeData defined for: " + typeName);
 			return NullType;
 		}
 		
@@ -70,7 +59,7 @@ namespace NodeEditorFramework
 					}
 					Texture2D InputKnob = NodeEditor.LoadTexture(typeDecl.InputKnob_TexPath);
 					Texture2D OutputKnob = NodeEditor.LoadTexture(typeDecl.OutputKnob_TexPath);
-					types.Add(typeDecl.name, new TypeData(typeDecl.col, InputKnob, OutputKnob, typeDecl.InputType, typeDecl.OutputType));
+					types.Add(typeDecl.name, new TypeData(typeDecl.col, InputKnob, OutputKnob, typeDecl.Type));
 				}
 			}
 		}
@@ -81,16 +70,14 @@ namespace NodeEditorFramework
 		public Color col;
 		public Texture2D InputKnob;
 		public Texture2D OutputKnob;
-		public Type InputType;
-		public Type OutputType;
+		public Type Type;
 		
-		public TypeData (Color color, Texture2D inKnob, Texture2D outKnob, Type inputType, Type outputType) 
+		public TypeData (Color color, Texture2D inKnob, Texture2D outKnob, Type type) 
 		{
 			col = color;
 			InputKnob = NodeEditor.Tint (inKnob, color);
 			OutputKnob = NodeEditor.Tint (outKnob, color);
-			InputType = inputType;
-			OutputType = outputType;
+			Type = type;
 		}
 	}
 
@@ -100,8 +87,7 @@ namespace NodeEditorFramework
 		Color col { get; }
 		string InputKnob_TexPath { get; }
 		string OutputKnob_TexPath { get; }
-		Type InputType { get; }
-		Type OutputType { get; }
+		Type Type { get; }
 	}
 
 	// TODO: Node Editor: Built-In Connection Types
@@ -111,7 +97,6 @@ namespace NodeEditorFramework
 		public Color col { get { return Color.cyan; } }
 		public string InputKnob_TexPath { get { return "Textures/In_Knob.png"; } }
 		public string OutputKnob_TexPath { get { return "Textures/Out_Knob.png"; } }
-		public Type InputType { get { return null; } }
-		public Type OutputType { get { return typeof(float); } }
+		public Type Type { get { return typeof(float); } }
 	}
 }
