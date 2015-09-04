@@ -73,7 +73,7 @@ namespace NodeEditorFramework
 			mainEditorState.canvasRect = canvasWindowRect;
 			try
 			{
-				NodeEditor.DrawCanvas (mainNodeCanvas, mainEditorState);
+				NodeEditor.DrawCanvas (mainNodeCanvas, mainEditorState, new Rect (0, 23, position.width, position.height));
 			}
 			catch (UnityException e)
 			{ // on exceptions in drawing flush the canvas to avoid locking the ui.

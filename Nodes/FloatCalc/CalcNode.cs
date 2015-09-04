@@ -55,7 +55,11 @@ public class CalcNode : Node
 		GUILayout.EndVertical ();
 		GUILayout.EndHorizontal ();
 
+#if UNITY_EDITOR
 		type = (CalcType)UnityEditor.EditorGUILayout.EnumPopup (new GUIContent ("Calculation Type", "The type of calculation performed on Input 1 and Input 2"), type);
+#else
+		GUILayout.Label (new GUIContent ("Calculation Type", "The type of calculation performed on Input 1 and Input 2"), type.ToString ());
+#endif
 
 		if (GUI.changed)
 			NodeEditor.RecalculateFrom (this);

@@ -103,11 +103,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void DrawCanvas (NodeCanvas nodeCanvas, NodeEditorState editorState)  
 		{
-#if UNITY_EDITOR
-			DrawCanvas (nodeCanvas, editorState, new Rect (0, 23, NodeEditorWindow.editor.position.width, NodeEditorWindow.editor.position.height));
-#else
 			DrawCanvas (nodeCanvas, editorState, new Rect ());
-#endif
 		}
 
 		/// <summary>
@@ -246,7 +242,7 @@ namespace NodeEditorFramework
 					NodeEditorState nestedEditor = curEditorState.childs [editorCnt];
 					nestedEditor.canvasRect.position += curEditorState.zoomPanAdjust;
 					//GUI.DrawTexture (nestedEditor.canvasRect, Background);
-					DrawCanvas (nestedEditor.canvas, nestedEditor);
+					DrawCanvas (nestedEditor.canvas, nestedEditor, curEditorState.canvasRect);
 					nestedEditor.canvasRect.position -= curEditorState.zoomPanAdjust;
 				}
 			}

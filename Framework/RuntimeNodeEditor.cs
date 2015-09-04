@@ -9,12 +9,12 @@ public class RuntimeNodeEditor : MonoBehaviour
 	public NodeCanvas canvas;
 	public NodeEditorState state;
 
-	private Rect screenRect;
+	private Rect rootRect;
 	public Rect canvasRect;
 
 	public void Start () 
 	{
-		screenRect = new Rect (0, 0, Screen.width, Screen.height);
+		rootRect = new Rect (0, 0, Screen.width, Screen.height);
 		canvasRect = new Rect (10, 10, Screen.width-20, Screen.height-20);
 
 		if (!string.IsNullOrEmpty (CanvasString) && (canvas == null || state == null))
@@ -34,14 +34,15 @@ public class RuntimeNodeEditor : MonoBehaviour
 
 			try
 			{
-				GUI.BeginGroup (screenRect);
-
-				// NO other groups here, yet, or remove the scaling part
-
-				state.canvasRect = canvasRect; // <- Custom rect comes here
-				NodeEditor.DrawCanvas (canvas, state, screenRect);
-
+				GUI.BeginGroup (rootRect); // One group is allowed only
+				// NO other groups possible here!!
+				state.canvasRect = canvasRect; // <- Canvas rect goes here
+				NodeEditor.DrawCanvas (canvas, state, rootRect);
 				GUI.EndGroup ();
+
+				// No root group
+//				state.canvasRect = canvasRect; // <- Custom rect comes here
+//				NodeEditor.DrawCanvas (canvas, state);
 			}
 			catch (UnityException e)
 			{ // on exceptions in drawing flush the canvas to avoid locking the ui.
