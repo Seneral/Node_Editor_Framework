@@ -10,23 +10,41 @@ namespace NodeEditorFramework
 		public NodeEditorState parent;
 		public List<NodeEditorState> childs = new List<NodeEditorState> ();
 
-		public bool drawing = true;
+		// Canvas options
+		public bool drawing = true; // whether to draw the canvas
 
-		public Node activeNode; // active Node
-		public Node focusedNode; // active Node
+		// Selection
+		public Node focusedNode; // under mouse
+		// Only one of these is ever active:
+		private Node _activeNode;
+		public Node activeNode
+		{
+			get { return _activeNode; }
+			set { _selectedTransition = null; _activeNode = value; } 
+		}
+		private Transition _selectedTransition;
+		public Transition selectedTransition 
+		{
+			get { return _selectedTransition; }
+			set { _activeNode = null; _selectedTransition = value; } 
+		}
 
-		public bool dragNode = false; // whether the active node is dragged
-		public Node makeTransition; // the Node which currently a transition is made from
-		public NodeOutput connectOutput; // the output, always on the activeNode, which is currently drawn a new connection from
-		public Vector2 connectMousePos; // the mouse pos at the time of setting connectOutput
+		// Active Node State
+		public bool dragNode = false;
 
-		public bool navigate = false; // navigate ('N') feature
-		public bool panWindow = false; // panning the window
-		public Vector2 panOffset = new Vector2 (); // the pan offset
-		public Vector2 zoomPanAdjust; // The offset to adjust the Node pos with before drawing, related to canvasRect.center and zoom
-		public float zoom = 1; // Ranges in 0.2er-steps from 0.6-2.0; applied 1/zoom; TODO: Node Editor Feature: Zoom
+		// Connections / Transitions
+		public Node makeTransition; // make transition from node
+		public NodeOutput connectOutput; // connection this output
 
-		public Rect canvasRect; // the rect this is drawn into
-		public Vector2 zoomPos { get { return canvasRect.size/2; } }
+		// Navigation State
+		public bool navigate = false; // navigation ('N')
+		public bool panWindow = false; // window panning
+		public Vector2 panOffset = new Vector2 (); // pan offset
+		public float zoom = 1; // zoom; Ranges in 0.2er-steps from 0.6-2.0; applied 1/zoom;
+
+		// Global variables
+		public Rect canvasRect; // canvas Rect
+		public Vector2 zoomPos { get { return canvasRect.size/2; } } // zoom center in canvas space
+		public Vector2 zoomPanAdjust; // calculated value to offset elements with when zooming
 	}
 }

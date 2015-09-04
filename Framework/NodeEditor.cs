@@ -18,7 +18,7 @@ namespace NodeEditorFramework
 		public static NodeCanvas curNodeCanvas;
 		public static NodeEditorState curEditorState;
 
-		private static Action Repaint;
+		public static Action Repaint;
 
 		// Quick access
 		public static Vector2 mousePos;
@@ -73,13 +73,11 @@ namespace NodeEditorFramework
 
 				// Styles
 				nodeBox = new GUIStyle (GUI.skin.box);
-
 	#if UNITY_EDITOR
 				nodeBox.normal.background = ColorToTex (UnityEditor.EditorGUIUtility.isProSkin? new Color (0.5f, 0.5f, 0.5f) : new Color (0.2f, 0.2f, 0.2f));
 	#else
 				nodeBox.normal.background = ColorToTex ( new Color (0.2f, 0.2f, 0.2f));
 	#endif
-
 				nodeBox.normal.textColor = new Color (0.7f, 0.7f, 0.7f);
 
 				nodeButton = new GUIStyle (GUI.skin.button);
@@ -103,16 +101,25 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Draws the Node Canvas on the screen in the rect specified by editorState. Has to be called out of any GUI Group or area because of zooming.
 		/// </summary>
-		public static void DrawCanvas (NodeCanvas nodeCanvas, NodeEditorState editorState, Action repaint)  
+		public static void DrawCanvas (NodeCanvas nodeCanvas, NodeEditorState editorState)  
+		{
+#if UNITY_EDITOR
+			DrawCanvas (nodeCanvas, editorState, new Rect (0, 23, NodeEditorWindow.editor.position.width, NodeEditorWindow.editor.position.height));
+#else
+			DrawCanvas (nodeCanvas, editorState, new Rect ());
+#endif
+		}
+
+		/// <summary>
+		/// Draws the Node Canvas on the screen in the rect specified by editorState. Has to be called out of any GUI Group or area because of zooming.
+		/// </summary>
+		public static void DrawCanvas (NodeCanvas nodeCanvas, NodeEditorState editorState, Rect previousGroup)  
 		{
 			if (!editorState.drawing)
 				return;
 
 			curNodeCanvas = nodeCanvas;
 			curEditorState = editorState;
-
-			if (repaint != null)
-				Repaint += repaint;
 
 	//		if (curEditorState.parent != null) 
 	//			curEditorState.canvasRect.position += curEditorState.parent.zoomPanAdjust;
@@ -165,14 +172,15 @@ namespace NodeEditorFramework
 			#region Scale Setup
 
 			// End the default clipping group
-			GUI.EndGroup ();
+			if (previousGroup != new Rect ())
+				GUI.EndGroup ();
 
 			// The Rect of the new clipping group to draw our nodes in
 			Rect ScaledCanvasRect = ScaleRect (curEditorState.canvasRect, curEditorState.zoomPos + curEditorState.canvasRect.position, new Vector2 (curEditorState.zoom, curEditorState.zoom));
-			ScaledCanvasRect.y += 23; // Header tab height
+			ScaledCanvasRect.y += previousGroup.y; // Header tab height
 
-			if (curNodeCanvas != NodeEditorWindow.MainNodeCanvas) 
-				GUI.DrawTexture (ScaledCanvasRect, Background);
+//			if (curNodeCanvas != NodeEditorWindow.MainNodeCanvas) 
+//				GUI.DrawTexture (ScaledCanvasRect, Background);
 
 			// Now continue drawing using the new clipping group
 			GUI.BeginGroup (ScaledCanvasRect);
@@ -217,25 +225,18 @@ namespace NodeEditorFramework
 					Repaint ();
 			}
 
+			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
+				curNodeCanvas.nodes [nodeCnt].DrawTransitions ();
+
+			// Draw the nodes
+			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++)
+				NodeEditor.DrawNode (curNodeCanvas.nodes [nodeCnt]);
+
 			// Draw the Node connectors; Seperated because of render order
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
 				curNodeCanvas.nodes [nodeCnt].DrawConnections ();
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
 				curNodeCanvas.nodes [nodeCnt].DrawKnobs ();
-			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
-				curNodeCanvas.nodes [nodeCnt].DrawTransitions ();
-
-			// Draw the nodes
-			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
-			{
-				Node node = curNodeCanvas.nodes [nodeCnt];
-				//if (node != curEditorState.activeNode)
-				NodeEditor.DrawNode (node);
-			}
-			
-			// Draw the active Node ontop
-	//		if (editorState.activeNode != null)
-	//			NodeEditor.DrawNode (curEditorState.activeNode);
 
 			// Draw any node groups out there. Has to be drawn here, because they still need to scale according to their parents, but they mustn't be drawn inside a GUI group
 			for (int editorCnt = 0; editorCnt < curEditorState.childs.Count; editorCnt++) 
@@ -245,7 +246,7 @@ namespace NodeEditorFramework
 					NodeEditorState nestedEditor = curEditorState.childs [editorCnt];
 					nestedEditor.canvasRect.position += curEditorState.zoomPanAdjust;
 					//GUI.DrawTexture (nestedEditor.canvasRect, Background);
-					DrawCanvas (nestedEditor.canvas, nestedEditor, Repaint);
+					DrawCanvas (nestedEditor.canvas, nestedEditor);
 					nestedEditor.canvasRect.position -= curEditorState.zoomPanAdjust;
 				}
 			}
@@ -258,12 +259,13 @@ namespace NodeEditorFramework
 			GUI.EndGroup ();
 			if (curNodeCanvas.parent == null)
 			{
-				GUI.BeginGroup (new Rect (0, 23, NodeEditorWindow.editor.position.width, NodeEditorWindow.editor.position.height));
+				if (previousGroup != new Rect ())
+					GUI.BeginGroup (previousGroup);
 			}
 			else 
 			{
 				Rect parentGroupRect = ScaleRect (curEditorState.parent.canvasRect, curEditorState.parent.zoomPos + curEditorState.parent.canvasRect.position, new Vector2 (curEditorState.parent.zoom, curEditorState.parent.zoom));
-				parentGroupRect.y += 23; // Header tab height
+				parentGroupRect.y += previousGroup.y; // Header tab height
 				GUI.BeginGroup (parentGroupRect);
 			}
 			// Check events with less priority than node GUI controls
@@ -570,7 +572,6 @@ namespace NodeEditorFramework
 							if (nodeOutput != null)
 							{ // Output Node -> New Connection drawn from this
 								curEditorState.connectOutput = nodeOutput;
-								curEditorState.connectMousePos = mousePos;
 								e.Use();
 							}
 							else 
@@ -835,6 +836,9 @@ namespace NodeEditorFramework
 
 				break;
 			}
+
+			if (NodeEditor.Repaint != null)
+				NodeEditor.Repaint ();
 		}
 
 		public class callbackObject 
@@ -1001,14 +1005,14 @@ namespace NodeEditorFramework
 		public static List<NodeEditorState> LoadEditorStates (string path) 
 		{
 			if (String.IsNullOrEmpty (path))
-				return null;
+				return new List<NodeEditorState> ();
 	#if UNITY_EDITOR
 			Object[] objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
 	#else
 			Object[] objects = Resources.LoadAll (path);
 	#endif
 			if (objects.Length == 0) 
-				return null;
+				return new List<NodeEditorState> ();
 			
 			// Obtain the editorStates in that asset file
 			List<NodeEditorState> editorStates = new List<NodeEditorState> ();

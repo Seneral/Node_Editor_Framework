@@ -46,6 +46,12 @@ namespace NodeEditorFramework
 			_editor = GetWindow<NodeEditorWindow> ("Node Editor");
 			_editor.minSize = new Vector2 (800, 600);
 			_editor.NewNodeCanvas ();
+			NodeEditor.Repaint += _editor.Repaint;
+		}
+
+		public void OnDestroy () 
+		{
+			NodeEditor.Repaint -= _editor.Repaint;
 		}
 
 		#region GUI
@@ -67,14 +73,13 @@ namespace NodeEditorFramework
 			mainEditorState.canvasRect = canvasWindowRect;
 			try
 			{
-				NodeEditor.DrawCanvas(mainNodeCanvas, mainEditorState, Repaint);
+				NodeEditor.DrawCanvas (mainNodeCanvas, mainEditorState);
 			}
 			catch (UnityException e)
-			{
-				// on exceptions in drawing flush the canvas to avoid locking the ui.
-				NewNodeCanvas();
-				Debug.LogError("Unloaded Canvas due to exception in Draw!");
-				Debug.LogException(e);
+			{ // on exceptions in drawing flush the canvas to avoid locking the ui.
+				NewNodeCanvas ();
+				Debug.LogError ("Unloaded Canvas due to exception in Draw!");
+				Debug.LogException (e);
 			}		
 			// Draw Side Window
 			sideWindowWidth = Math.Min (600, Math.Max (200, (int)(position.width / 5)));

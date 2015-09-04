@@ -38,13 +38,13 @@ public class CalcNode : Node
 		if (Inputs [0].connection != null)
 			GUILayout.Label (Inputs [0].name);
 		else
-			Input1Val = GUIExt.FloatField (Input1Val, this);
+			Input1Val = GUIExt.FloatField (Input1Val, this, "Input1");
 		InputKnob (0);
 		// --
 		if (Inputs [1].connection != null)
 			GUILayout.Label (Inputs [1].name);
 		else
-			Input2Val = GUIExt.FloatField (Input2Val, this);
+			Input2Val = GUIExt.FloatField (Input2Val, this, "Input2");
 		InputKnob (1);
 
 		GUILayout.EndVertical ();

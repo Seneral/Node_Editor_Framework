@@ -26,7 +26,7 @@ public class InputNode : Node
 
 	public override void NodeGUI () 
 	{
-		value = GUIExt.FloatField (new GUIContent ("Value", "The input value of type float"), value, this);
+		value = GUIExt.FloatField (new GUIContent ("Value", "The input value of type float"), value, this, "Value");
 		OutputKnob (0);
 
 		if (GUI.changed)
