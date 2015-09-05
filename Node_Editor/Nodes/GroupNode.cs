@@ -49,8 +49,9 @@ public class GroupNode : Node
 			string path = UnityEditor.EditorUtility.OpenFilePanel ("Load Node Canvas", NodeEditor.editorPath + "Saves/", "asset");
 			if (!path.Contains (Application.dataPath)) 
 			{
-				if (path != String.Empty)
-					NodeEditorWindow.editor.ShowNotification (new GUIContent ("You should select an asset inside your project folder!"));
+				// TODO: Generic Notification
+				//if (path != String.Empty)
+					//ShowNotification (new GUIContent ("You should select an asset inside your project folder!"));
 				return;
 			}
 			path = path.Replace (Application.dataPath, "Assets");

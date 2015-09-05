@@ -52,7 +52,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void DisplayLayout (GUIContent content) 
 		{
-			GUIStyle style = new GUIStyle (UnityEditor.EditorStyles.label);
+			GUIStyle style = new GUIStyle (GUI.skin.label);
 			GUILayout.Label (content, style);
 			if (Event.current.type == EventType.Repaint) 
 				SetRect (GUILayoutUtility.GetLastRect ());

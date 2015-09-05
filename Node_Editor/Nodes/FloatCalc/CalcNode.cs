@@ -38,13 +38,13 @@ public class CalcNode : Node
 		if (Inputs [0].connection != null)
 			GUILayout.Label (Inputs [0].name);
 		else
-			Input1Val = GUIExt.FloatField (Input1Val, this, "Input1");
+			Input1Val = GUIExt.FloatField (GUIContent.none, Input1Val);
 		InputKnob (0);
 		// --
 		if (Inputs [1].connection != null)
 			GUILayout.Label (Inputs [1].name);
 		else
-			Input2Val = GUIExt.FloatField (Input2Val, this, "Input2");
+			Input2Val = GUIExt.FloatField (GUIContent.none, Input2Val);
 		InputKnob (1);
 
 		GUILayout.EndVertical ();
@@ -58,7 +58,7 @@ public class CalcNode : Node
 #if UNITY_EDITOR
 		type = (CalcType)UnityEditor.EditorGUILayout.EnumPopup (new GUIContent ("Calculation Type", "The type of calculation performed on Input 1 and Input 2"), type);
 #else
-		GUILayout.Label (new GUIContent ("Calculation Type", "The type of calculation performed on Input 1 and Input 2"), type.ToString ());
+		GUILayout.Label (new GUIContent ("Calculation Type: " + type.ToString (), "The type of calculation performed on Input 1 and Input 2"));
 #endif
 
 		if (GUI.changed)

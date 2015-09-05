@@ -36,6 +36,7 @@ namespace NodeEditorFramework
 
 		// Constants
 		public const string editorPath = "Assets/Plugins/Node_Editor/";
+		public const string resourcePath = "Assets/Plugins/Node_Editor/Resources/";
 
 		#region Setup
 
@@ -76,7 +77,7 @@ namespace NodeEditorFramework
 	#if UNITY_EDITOR
 				nodeBox.normal.background = ColorToTex (UnityEditor.EditorGUIUtility.isProSkin? new Color (0.5f, 0.5f, 0.5f) : new Color (0.2f, 0.2f, 0.2f));
 	#else
-				nodeBox.normal.background = ColorToTex ( new Color (0.2f, 0.2f, 0.2f));
+				nodeBox.normal.background = ColorToTex (new Color (0.2f, 0.2f, 0.2f));
 	#endif
 				nodeBox.normal.textColor = new Color (0.7f, 0.7f, 0.7f);
 
@@ -119,7 +120,7 @@ namespace NodeEditorFramework
 
 	//		if (curEditorState.parent != null) 
 	//			curEditorState.canvasRect.position += curEditorState.parent.zoomPanAdjust;
-
+			
 			if (Event.current.type == EventType.Repaint) 
 			{ // Draw Background when Repainting
 				GUI.BeginClip (curEditorState.canvasRect);
@@ -234,6 +235,7 @@ namespace NodeEditorFramework
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
 				curNodeCanvas.nodes [nodeCnt].DrawKnobs ();
 
+
 			// Draw any node groups out there. Has to be drawn here, because they still need to scale according to their parents, but they mustn't be drawn inside a GUI group
 			for (int editorCnt = 0; editorCnt < curEditorState.childs.Count; editorCnt++) 
 			{
@@ -248,6 +250,7 @@ namespace NodeEditorFramework
 			}
 			curNodeCanvas = nodeCanvas;
 			curEditorState = editorState;
+
 
 			// End scaling group
 			// Set default matrix and clipping group for the rest
@@ -460,12 +463,13 @@ namespace NodeEditorFramework
 		public static Texture2D LoadTexture (string texPath)
 		{
 	#if UNITY_EDITOR
-			string fullPath = System.IO.Path.Combine (editorPath, texPath);
+			string fullPath = System.IO.Path.Combine (resourcePath, texPath);
 			Texture2D tex = UnityEditor.AssetDatabase.LoadAssetAtPath (fullPath, typeof (Texture2D)) as Texture2D;
 			if (tex == null)
 				Debug.LogError (string.Format ("NodeEditor: Texture not found at '{0}', did you install Node_Editor correctly in the 'Plugins' folder?", fullPath));
 			return tex;
 	#else
+			texPath = texPath.Split ('.') [0];
 			Texture2D tex = Resources.Load<Texture2D> (texPath);
 			if (tex == null)
 				Debug.LogError (string.Format ("NodeEditor: Texture not found at '{0}' in any Resource Folder!", texPath));
@@ -523,8 +527,12 @@ namespace NodeEditorFramework
 			if (insideCanvas && (e.type == EventType.MouseDown || e.type == EventType.MouseUp))
 			{
 				curEditorState.focusedNode = NodeEditor.NodeAtPosition (e.mousePosition);
-				if (e.button == 0)
+				if (e.button == 0) 
+				{
 					curEditorState.activeNode = curEditorState.focusedNode;
+					if (Repaint != null)
+						Repaint ();
+				}
 			}
 
 	#if UNITY_EDITOR
@@ -701,28 +709,34 @@ namespace NodeEditorFramework
 					Repaint ();
 				
 				break;
-				
-			}
-
-			// Some features that need constant updating
-			if (curEditorState.panWindow) 
-			{ // Scroll everything with the current mouse delta
-				curEditorState.panOffset += e.delta / 2 * curEditorState.zoom;
-				for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
-					curNodeCanvas.nodes [nodeCnt].rect.position += e.delta / 2 * curEditorState.zoom;
-				if (Repaint != null)
-					Repaint ();
-			}
 			
-			if (curEditorState.dragNode && curEditorState.activeNode != null && GUIUtility.hotControl == 0) 
-			{ // Drag the active node with the current mouse delta
-				curEditorState.activeNode.rect.position += e.delta / 2 * curEditorState.zoom;
-				NodeEditorCallbacks.IssueOnMoveNode (curEditorState.activeNode);
-				if (Repaint != null)
-					Repaint ();
-			} 
-			else
-				curEditorState.dragNode = false;
+			case EventType.MouseDrag:
+
+				if (curEditorState.panWindow) 
+				{ // Scroll everything with the current mouse delta
+					curEditorState.panOffset += e.delta * curEditorState.zoom;
+					for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
+						curNodeCanvas.nodes [nodeCnt].rect.position += e.delta * curEditorState.zoom;
+					e.delta = Vector2.zero;
+					if (Repaint != null)
+						Repaint ();
+				}
+				else 
+					curEditorState.panWindow = false;
+				
+				if (curEditorState.dragNode && curEditorState.activeNode != null && GUIUtility.hotControl == 0) 
+				{ // Drag the active node with the current mouse delta
+					curEditorState.activeNode.rect.position += e.delta * curEditorState.zoom;
+					NodeEditorCallbacks.IssueOnMoveNode (curEditorState.activeNode);
+					e.delta = Vector2.zero;
+					if (Repaint != null)
+						Repaint ();
+				} 
+				else
+					curEditorState.dragNode = false;
+
+				break;
+			}
 		}
 		
 		/// <summary>
@@ -751,6 +765,8 @@ namespace NodeEditorFramework
 					curEditorState.dragNode = true;
 					// Because this is the delta from when it was last checked, we have to reset it each time
 					e.delta = Vector2.zero;
+					if (Repaint != null)
+						Repaint ();
 				}
 			}
 		}

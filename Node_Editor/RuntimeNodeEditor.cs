@@ -15,13 +15,17 @@ public class RuntimeNodeEditor : MonoBehaviour
 	public void Start () 
 	{
 		rootRect = new Rect (0, 0, Screen.width, Screen.height);
-		canvasRect = new Rect (10, 10, Screen.width-20, Screen.height-20);
+		canvasRect = new Rect (0, 0, Screen.width, Screen.height);
 
 		if (!string.IsNullOrEmpty (CanvasString) && (canvas == null || state == null))
 			LoadNodeCanvas (CanvasString);
+		else
+			NodeEditor.RecalculateAll (canvas);
+
+
 	}
 
-	public void OnGUI () 
+	public void OnGUI ()
 	{
 		if (canvas != null && state != null) 
 		{

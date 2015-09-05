@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using UnityEditor;
 using System.Collections;
 using NodeEditorFramework;
 
@@ -26,7 +25,7 @@ public class InputNode : Node
 
 	public override void NodeGUI () 
 	{
-		value = GUIExt.FloatField (new GUIContent ("Value", "The input value of type float"), value, this, "Value");
+		value = GUIExt.FloatField (new GUIContent ("Value", "The input value of type float"), value);
 		OutputKnob (0);
 
 		if (GUI.changed)

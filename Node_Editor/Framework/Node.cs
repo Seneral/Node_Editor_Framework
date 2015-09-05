@@ -297,7 +297,8 @@ namespace NodeEditorFramework
 
 			if (output.body.isChildOf (input.body)) 
 			{
-				NodeEditorWindow.editor.ShowNotification (new GUIContent ("Recursion detected!"));
+				// TODO: Generic Notification
+				//ShowNotification (new GUIContent ("Recursion detected!"));
 				return false;
 			}
 			return true;

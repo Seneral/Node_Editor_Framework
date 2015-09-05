@@ -94,11 +94,11 @@ namespace NodeEditorFramework
 			GUILayout.Label (new GUIContent ("Do note that changes will be saved automatically!", "All changes are automatically saved to the currently opened canvas (see above) if it's present in the Project view."), NodeEditor.nodeLabel);
 			if (GUILayout.Button (new GUIContent ("Save Canvas", "Saves the canvas as a new Canvas Asset File in the Assets Folder"))) 
 			{
-				SaveNodeCanvas (EditorUtility.SaveFilePanelInProject ("Save Node Canvas", "Node Canvas", "asset", "Saving to a file is only needed once.", NodeEditor.editorPath + "Saves/"));
+				SaveNodeCanvas (EditorUtility.SaveFilePanelInProject ("Save Node Canvas", "Node Canvas", "asset", "Saving to a file is only needed once.", NodeEditor.resourcePath + "Saves/"));
 			}
 			if (GUILayout.Button (new GUIContent ("Load Canvas", "Loads the canvas from a Canvas Asset File in the Assets Folder"), NodeEditor.nodeButton)) 
 			{
-				string path = EditorUtility.OpenFilePanel ("Load Node Canvas", NodeEditor.editorPath + "Saves/", "asset");
+				string path = EditorUtility.OpenFilePanel ("Load Node Canvas", NodeEditor.resourcePath + "Saves/", "asset");
 				if (!path.Contains (Application.dataPath)) 
 				{
 					if (path != String.Empty)

@@ -104,7 +104,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void DisplayLayout (GUIContent content) 
 		{
-			GUIStyle style = new GUIStyle (UnityEditor.EditorStyles.label);
+			GUIStyle style = new GUIStyle (GUI.skin.label);
 			style.alignment = TextAnchor.MiddleRight;
 			GUILayout.Label (content, style);
 			if (Event.current.type == EventType.Repaint) 
