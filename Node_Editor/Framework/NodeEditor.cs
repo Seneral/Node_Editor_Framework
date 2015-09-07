@@ -572,9 +572,11 @@ namespace NodeEditorFramework
 //	#endif		
 						menu.AddItem (new GUIContent ("Delete Node"), false, ContextCallback, new callbackObject ("deleteNode", curNodeCanvas, curEditorState));
 						menu.AddItem (new GUIContent ("Duplicate Node"), false, ContextCallback, new callbackObject ("duplicateNode", curNodeCanvas, curEditorState));
-
 						if (NodeTypes.getNodeData (curEditorState.focusedNode).transitions)
+						{
+							menu.AddSeparator ("Seperator");
 							menu.AddItem (new GUIContent ("Make Transition"), false, ContextCallback, new callbackObject ("startTransition", curNodeCanvas, curEditorState));
+						}
 
 						menu.ShowAsContext ();
 

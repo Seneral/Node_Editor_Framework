@@ -164,7 +164,7 @@ public static class GUIExt
 
 
 
-	private static GUIStyle seperator;
+	public static GUIStyle seperator;
 	
 	public static Texture2D ColorToTex (Color col) 
 	{
@@ -174,7 +174,7 @@ public static class GUIExt
 		return tex;
 	}
 	
-	private static void setupSeperator () 
+	public static void setupSeperator () 
 	{
 		if (seperator == null) 
 		{
@@ -194,6 +194,16 @@ public static class GUIExt
 		
 		GUILayout.Box (GUIContent.none, seperator, new GUILayoutOption[] { GUILayout.Height (1) });
 	}
+
+	/// <summary>
+	/// A GUI Function which simulates the default seperator
+	/// </summary>
+	public static void Seperator (Rect rect) 
+	{
+		setupSeperator ();
+		
+		GUI.Box (new Rect (rect.x, rect.y, rect.width, 1), GUIContent.none, seperator);
+	}
 }
 
 public class GenericMenu 
@@ -206,12 +216,14 @@ public class GenericMenu
 	private static GUIStyle selectedStyle;
 	private static Texture2D expandRight;
 	private static float itemHeight;
+	public static GUIStyle seperator;
 
 	private List<MenuItem> menuItems = new List<MenuItem> ();
 	private Rect position;
 
 	private string selectedPath = "";
 	private MenuItem groupToDraw;
+	private float currentItemHeight;
 
 
 	private static GenericMenu activeMenu;
@@ -232,9 +244,13 @@ public class GenericMenu
 		backgroundStyle.contentOffset = new Vector2 (2, 2);
 		itemStyle = new GUIStyle (GUI.skin.label);
 		selectedStyle = new GUIStyle (GUI.skin.label);
-		selectedStyle.normal.background = GUIExt.ColorToTex (new Color (0.8f, 0.8f, 0.8f));
+		selectedStyle.normal.background = GUIExt.ColorToTex (new Color (0.75f, 0.75f, 0.75f));
 		expandRight = NodeEditorFramework.NodeEditor.LoadTexture ("Textures/expandRight.png");
 		itemHeight = itemStyle.CalcHeight (new GUIContent ("text"), 100);
+
+		seperator = new GUIStyle();
+		seperator.normal.background = GUIExt.ColorToTex (new Color (0.6f, 0.6f, 0.6f));
+		seperator.margin = new RectOffset(0, 0, 7, 7);
 	}
 
 #region Creation
@@ -245,21 +261,21 @@ public class GenericMenu
 		if (path.Contains ('/'))
 		{ // is inside a group
 			string[] subContents = path.Split ('/');
-			path = subContents[0];
+			string folderPath = subContents[0];
 
 			// top level group
-			MenuItem parent = menuItems.Find ((MenuItem item) => item.content.text == subContents[0]);
+			MenuItem parent = menuItems.Find ((MenuItem item) => item.content != null && item.content.text == folderPath);
 			if (parent == null)
-				menuItems.Add (parent = new MenuItem (path, new GUIContent (subContents[0]), 0));
+				menuItems.Add (parent = new MenuItem (folderPath, new GUIContent (folderPath), 0));
 
 			// additional level groups
 			for (int groupCnt = 1; groupCnt < subContents.Length-1; groupCnt++)
 			{
-				string groupName = subContents[groupCnt];
-				path += "/" + groupName;
-				MenuItem subGroup = parent.subItems.Find ((MenuItem item) => item.content.text == groupName);
+				string folder = subContents[groupCnt];
+				folderPath += "/" + folder;
+				MenuItem subGroup = parent.subItems.Find ((MenuItem item) => item.content != null && item.content.text == folder);
 				if (subGroup == null)
-					parent.subItems.Add (subGroup = new MenuItem (path, new GUIContent (groupName), 0));
+					parent.subItems.Add (subGroup = new MenuItem (folderPath, new GUIContent (folder), 0));
 				parent = subGroup;
 			}
 
@@ -357,10 +373,11 @@ public class GenericMenu
 		clickRect.yMin -= 20;
 		bool inRect = clickRect.Contains (Event.current.mousePosition);
 
+		currentItemHeight = backgroundStyle.contentOffset.y;
 		GUI.BeginGroup (extendRect (rect, backgroundStyle.contentOffset), GUIContent.none, backgroundStyle);
 		for (int itemCnt = 0; itemCnt < menuItems.Count; itemCnt++)
 		{
-			DrawItem (menuItems, itemCnt, rect);
+			DrawItem (menuItems[itemCnt], rect);
 			if (activeMenu == null) 
 				break;
 		}
@@ -369,50 +386,43 @@ public class GenericMenu
 		return inRect;
 	}
 
-	private void DrawItem (List<MenuItem> menuItems, int index, Rect groupRect) 
+	private void DrawItem (MenuItem item, Rect groupRect) 
 	{
-		if (menuItems[index].separator)
-			GUIExt.Seperator ();
+		if (item.separator) 
+		{
+			GUI.Box (new Rect (backgroundStyle.contentOffset.x+1, currentItemHeight+1, groupRect.width-2, 1), GUIContent.none, seperator);
+			currentItemHeight += 3;
+		}
 		else 
 		{
-			MenuItem item = menuItems[index];
+			Rect labelRect = new Rect (backgroundStyle.contentOffset.x, currentItemHeight, groupRect.width, itemHeight);
 
 			bool selected = selectedPath.Contains (item.path);
-			GUIStyle style = selected?selectedStyle:itemStyle;
-
-			float itemYPos = backgroundStyle.contentOffset.y;
-			for (int itemCnt = 0; itemCnt < index; itemCnt++)
-				itemYPos += menuItems[index].separator? 5 : itemHeight;
-			Rect labelRect = new Rect (backgroundStyle.contentOffset.x, itemYPos, groupRect.width, itemHeight);// GUILayoutUtility.GetRect (item.content, style, GUILayout.Width (groupRect.width));
-
-			if (item.group) 
-			{
-				GUI.Label (new Rect (labelRect.x, labelRect.y, labelRect.width, labelRect.height), 
-				           item.content, style);
-				GUI.DrawTexture (new Rect (labelRect.x+labelRect.width-12, labelRect.y+(labelRect.height-12)/2, 12, 12),
-				                 expandRight);
-			}
-			else 
-			{
-				if (GUI.Button (labelRect, item.content, style)) 
-				{
-					ExecuteMenuItem (item);
-					activeMenu = null;
-					return;
-				}
-			}
-			
-			if (item.group && selected)
-			{
-				item.groupPos = new Rect (groupRect.x+groupRect.width+4, groupRect.y+itemYPos-2, 0, 0);
-				groupToDraw = item;
-			}
-
 			if (labelRect.Contains (Event.current.mousePosition))
 			{
 				selectedPath = item.path;
 				selected = true;
 			}
+
+			GUI.Label (labelRect, item.content, selected? selectedStyle : itemStyle);
+
+			if (item.group) 
+			{
+				GUI.DrawTexture (new Rect (labelRect.x+labelRect.width-12, labelRect.y+(labelRect.height-12)/2, 12, 12), expandRight);
+				if (selected)
+				{
+					item.groupPos = new Rect (groupRect.x+groupRect.width+4, groupRect.y+currentItemHeight-2, 0, 0);
+					groupToDraw = item;
+				}
+			}
+			else if (selected && (Event.current.type == EventType.MouseDown || Event.current.button != 1 && Event.current.type == EventType.MouseUp))
+			{
+				ExecuteMenuItem (item);
+				activeMenu = null;
+				Event.current.Use ();
+			}
+
+			currentItemHeight += itemHeight;
 		}
 	}
 
@@ -428,16 +438,16 @@ public class GenericMenu
 	private static Rect calculateRect (Vector2 position, List<MenuItem> menuItems) 
 	{
 		Vector2 size;
-		float width = 0, height = 0;
+		float width = 40, height = 0;
 
 		for (int itemCnt = 0; itemCnt < menuItems.Count; itemCnt++)
 		{
 			MenuItem item = menuItems[itemCnt];
 			if (item.separator)
-				height += 5;
+				height += 3;
 			else
 			{
-				width = Mathf.Max (width, itemStyle.CalcSize (item.content).x + (item.group? 12 : 0));
+				width = Mathf.Max (width, itemStyle.CalcSize (item.content).x + (item.group? 22 : 10));
 				height += itemHeight;
 			}
 		}
