@@ -21,8 +21,6 @@ public class RuntimeNodeEditor : MonoBehaviour
 			LoadNodeCanvas (CanvasString);
 		else
 			NodeEditor.RecalculateAll (canvas);
-
-
 	}
 
 	public void OnGUI ()

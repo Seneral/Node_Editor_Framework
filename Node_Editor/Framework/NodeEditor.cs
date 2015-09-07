@@ -41,7 +41,7 @@ namespace NodeEditorFramework
 		#region Setup
 
 		[NonSerialized]
-		private static bool initiated = false;
+		public static bool initiated = false;
 		[NonSerialized]
 		public static bool InitiationError = false;
 		
@@ -73,6 +73,7 @@ namespace NodeEditorFramework
 				NodeEditorCallbacks.IssueOnEditorStartUp ();
 
 				// Styles
+
 				nodeBox = new GUIStyle (GUI.skin.box);
 	#if UNITY_EDITOR
 				nodeBox.normal.background = ColorToTex (UnityEditor.EditorGUIUtility.isProSkin? new Color (0.5f, 0.5f, 0.5f) : new Color (0.2f, 0.2f, 0.2f));
@@ -82,6 +83,7 @@ namespace NodeEditorFramework
 				nodeBox.normal.textColor = new Color (0.7f, 0.7f, 0.7f);
 
 				nodeButton = new GUIStyle (GUI.skin.button);
+				nodeButton.normal.background = LoadTexture ("Textures/NE_Button.png");
 
 				nodeLabel = new GUIStyle (GUI.skin.label);
 				nodeLabel.normal.textColor = new Color (0.7f, 0.7f, 0.7f);
@@ -92,7 +94,6 @@ namespace NodeEditorFramework
 
 				initiated = true;
 			}
-			return;
 		}
 		
 		#endregion
@@ -118,8 +119,10 @@ namespace NodeEditorFramework
 			curNodeCanvas = nodeCanvas;
 			curEditorState = editorState;
 
-	//		if (curEditorState.parent != null) 
-	//			curEditorState.canvasRect.position += curEditorState.parent.zoomPanAdjust;
+	//#if !UNITY_EDITOR
+			if (Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint) // Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseDrag || Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseMove
+				GenericMenu.DrawActive ();
+	//#endif
 			
 			if (Event.current.type == EventType.Repaint) 
 			{ // Draw Background when Repainting
@@ -146,8 +149,6 @@ namespace NodeEditorFramework
 				GUI.EndClip ();
 			}
 
-	//		if (curEditorState.parent != null) 
-	//			curEditorState.canvasRect.position -= curEditorState.parent.zoomPanAdjust - curEditorState.parent.zoomPos;
 
 			// Fetch all nested nodeEditors and set their canvasRects to be ignored by input, 
 			// so it can be handled later, and note it down, as it will be drawn later ontop
@@ -160,9 +161,10 @@ namespace NodeEditorFramework
 					ignoreInput.Add (GUIToScreenRect (nestedEditor.canvasRect));
 				}
 			}
-			
+
 			// Check the inputs
 			InputEvents (ignoreInput);
+
 
 			// We want to scale our nodes, but as GUI.matrix also scales our widnow's clipping group, 
 			// we have to scale it up first to receive a correct one as a result
@@ -175,9 +177,6 @@ namespace NodeEditorFramework
 			// The Rect of the new clipping group to draw our nodes in
 			Rect ScaledCanvasRect = ScaleRect (curEditorState.canvasRect, curEditorState.zoomPos + curEditorState.canvasRect.position, new Vector2 (curEditorState.zoom, curEditorState.zoom));
 			ScaledCanvasRect.y += previousGroup.y; // Header tab height
-
-//			if (curNodeCanvas != NodeEditorWindow.MainNodeCanvas) 
-//				GUI.DrawTexture (ScaledCanvasRect, Background);
 
 			// Now continue drawing using the new clipping group
 			GUI.BeginGroup (ScaledCanvasRect);
@@ -195,6 +194,7 @@ namespace NodeEditorFramework
 			GUIUtility.ScaleAroundPivot (new Vector2 (1/curEditorState.zoom, 1/curEditorState.zoom), curEditorState.zoomPanAdjust);
 
 			#endregion
+
 
 			// Some features which require drawing (zoomed)
 			if (curEditorState.navigate) 
@@ -221,6 +221,7 @@ namespace NodeEditorFramework
 				if (Repaint != null)
 					Repaint ();
 			}
+
 
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
 				curNodeCanvas.nodes [nodeCnt].DrawTransitions ();
@@ -267,8 +268,14 @@ namespace NodeEditorFramework
 				parentGroupRect.y += previousGroup.y; // Header tab height
 				GUI.BeginGroup (parentGroupRect);
 			}
+
 			// Check events with less priority than node GUI controls
 			LateEvents (ignoreInput);
+
+//#if !UNITY_EDITOR
+			if (Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint)
+				GenericMenu.DrawActive ();
+//#endif
 		}
 		
 		#endregion
@@ -513,6 +520,9 @@ namespace NodeEditorFramework
 			Event e = Event.current;
 			mousePos = e.mousePosition;
 
+			if (GenericMenu.current != null)
+				return;
+
 			bool insideCanvas = curEditorState.canvasRect.Contains (e.mousePosition);
 			for (int ignoreCnt = 0; ignoreCnt < ignoreInput.Count; ignoreCnt++) 
 			{
@@ -555,9 +565,11 @@ namespace NodeEditorFramework
 					if (e.button == 1)
 					{ // Right click -> Node Context Click
 						// TODO: Node Editor: Editor-Independancy - GenericMenu conversion
-	#if UNITY_EDITOR
-						UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
-						
+//	#if UNITY_EDITOR
+//						UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
+//	#else
+						GenericMenu menu = new GenericMenu ();
+//	#endif		
 						menu.AddItem (new GUIContent ("Delete Node"), false, ContextCallback, new callbackObject ("deleteNode", curNodeCanvas, curEditorState));
 						menu.AddItem (new GUIContent ("Duplicate Node"), false, ContextCallback, new callbackObject ("duplicateNode", curNodeCanvas, curEditorState));
 
@@ -565,7 +577,7 @@ namespace NodeEditorFramework
 							menu.AddItem (new GUIContent ("Make Transition"), false, ContextCallback, new callbackObject ("startTransition", curNodeCanvas, curEditorState));
 
 						menu.ShowAsContext ();
-	#endif
+
 						e.Use ();
 					}
 					else if (e.button == 0)
@@ -603,8 +615,12 @@ namespace NodeEditorFramework
 						// TODO: Node Editor: Editor-Independancy - GenericMenu conversion
 						if (curEditorState.connectOutput != null || curEditorState.makeTransition != null) 
 						{
-	#if UNITY_EDITOR
-							UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
+//							#if UNITY_EDITOR
+//							UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
+//							#else
+							GenericMenu menu = new GenericMenu ();
+//							#endif	
+
 							// Iterate through all compatible nodes
 							foreach (Node node in NodeTypes.nodes.Keys)
 							{
@@ -626,12 +642,14 @@ namespace NodeEditorFramework
 							}
 							
 							menu.ShowAsContext ();
-	#endif
 						}
 						else 
 						{
-	#if UNITY_EDITOR	
-							UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
+//							#if UNITY_EDITOR
+//							UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
+//							#else
+							GenericMenu menu = new GenericMenu ();
+//							#endif		
 
 							foreach (Node node in NodeTypes.nodes.Keys) 
 							{
@@ -639,9 +657,8 @@ namespace NodeEditorFramework
 							}
 							
 							menu.ShowAsContext ();
-	#endif
 						}
-						e.Use();
+						e.Use ();
 					}
 				}
 				

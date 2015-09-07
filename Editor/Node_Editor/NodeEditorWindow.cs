@@ -47,6 +47,7 @@ namespace NodeEditorFramework
 			_editor.minSize = new Vector2 (800, 600);
 			_editor.NewNodeCanvas ();
 			NodeEditor.Repaint += _editor.Repaint;
+			NodeEditor.initiated = false;
 		}
 
 		public void OnDestroy () 
@@ -92,7 +93,7 @@ namespace NodeEditorFramework
 		{
 			GUILayout.Label (new GUIContent ("Node Editor (" + openedCanvas + ")", "The currently opened canvas in the Node Editor"), NodeEditor.nodeLabelBold);
 			GUILayout.Label (new GUIContent ("Do note that changes will be saved automatically!", "All changes are automatically saved to the currently opened canvas (see above) if it's present in the Project view."), NodeEditor.nodeLabel);
-			if (GUILayout.Button (new GUIContent ("Save Canvas", "Saves the canvas as a new Canvas Asset File in the Assets Folder"))) 
+			if (GUILayout.Button (new GUIContent ("Save Canvas", "Saves the canvas as a new Canvas Asset File in the Assets Folder"), NodeEditor.nodeButton)) 
 			{
 				SaveNodeCanvas (EditorUtility.SaveFilePanelInProject ("Save Node Canvas", "Node Canvas", "asset", "Saving to a file is only needed once.", NodeEditor.resourcePath + "Saves/"));
 			}
