@@ -9,18 +9,21 @@ public class RuntimeNodeEditor : MonoBehaviour
 	public NodeCanvas canvas;
 	public NodeEditorState state;
 
-	private Rect rootRect;
+	public Rect rootRect;
+	public Rect subRootRect;
 	public Rect canvasRect;
 
 	public void Start () 
 	{
-		rootRect = new Rect (0, 0, Screen.width, Screen.height);
-		canvasRect = new Rect (0, 0, Screen.width, Screen.height);
+		//rootRect = new Rect (0, 0, Screen.width, Screen.height);
+		//canvasRect = new Rect (0, 0, Screen.width, Screen.height);
 
 		if (!string.IsNullOrEmpty (CanvasString) && (canvas == null || state == null))
 			LoadNodeCanvas (CanvasString);
 		else
 			NodeEditor.RecalculateAll (canvas);
+
+		NodeEditor.initiated = false;
 	}
 
 	public void OnGUI ()
@@ -36,15 +39,18 @@ public class RuntimeNodeEditor : MonoBehaviour
 
 			try
 			{
-				GUI.BeginGroup (rootRect); // One group is allowed only
-				// NO other groups possible here!!
-				state.canvasRect = canvasRect; // <- Canvas rect goes here
-				NodeEditor.DrawCanvas (canvas, state, rootRect);
-				GUI.EndGroup ();
+				//GUI.BeginGroup (rootRect, NodeEditorGUI.nodeSkin.box);
 
-				// No root group
-//				state.canvasRect = canvasRect; // <- Custom rect comes here
-//				NodeEditor.DrawCanvas (canvas, state);
+				//GUILayout.FlexibleSpace ();
+
+				//GUI.BeginGroup (subRootRect, NodeEditorGUI.nodeSkin.box);
+
+				state.canvasRect = new Rect (0, 0, Screen.width, Screen.height);
+				NodeEditor.DrawCanvas (canvas, state);
+
+				//GUI.EndGroup ();
+
+				//GUI.EndGroup ();
 			}
 			catch (UnityException e)
 			{ // on exceptions in drawing flush the canvas to avoid locking the ui.

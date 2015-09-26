@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
 using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using NodeEditorFramework;
 
@@ -25,14 +24,6 @@ namespace NodeEditorFramework
 
 		// Settings
 		public static int knobSize = 18;
-
-		// Static textures and styles
-		public static Texture2D Background;
-		public static Texture2D AALineTex;
-		public static GUIStyle nodeBox;
-		public static GUIStyle nodeButton;
-		public static GUIStyle nodeLabel;
-		public static GUIStyle nodeLabelBold;
 
 		// Constants
 		public const string editorPath = "Assets/Plugins/Node_Editor/";
@@ -59,38 +50,17 @@ namespace NodeEditorFramework
 				}
 	#endif
 
-				Background = LoadTexture ("Textures/background.png");
-				AALineTex = LoadTexture ("Textures/AALine.png");
-				if (!Background || !AALineTex) 
-				{
-					InitiationError = true;
-					return;
-				}
-
 				ConnectionTypes.FetchTypes ();
+
 				NodeTypes.FetchNodes ();
+
 				NodeEditorCallbacks.SetupReceivers ();
 				NodeEditorCallbacks.IssueOnEditorStartUp ();
 
-				// Styles
+				if (!NodeEditorGUI.Init ())
+					InitiationError = true;
 
-				nodeBox = new GUIStyle (GUI.skin.box);
-	#if UNITY_EDITOR
-				nodeBox.normal.background = ColorToTex (UnityEditor.EditorGUIUtility.isProSkin? new Color (0.5f, 0.5f, 0.5f) : new Color (0.2f, 0.2f, 0.2f));
-	#else
-				nodeBox.normal.background = ColorToTex (new Color (0.2f, 0.2f, 0.2f));
-	#endif
-				nodeBox.normal.textColor = new Color (0.7f, 0.7f, 0.7f);
-
-				nodeButton = new GUIStyle (GUI.skin.button);
-				nodeButton.normal.background = LoadTexture ("Textures/NE_Button.png");
-
-				nodeLabel = new GUIStyle (GUI.skin.label);
-				nodeLabel.normal.textColor = new Color (0.7f, 0.7f, 0.7f);
-
-				nodeLabelBold = new GUIStyle (nodeLabel);
-				nodeLabelBold.fontStyle = FontStyle.Bold;
-				nodeLabelBold.wordWrap = false;
+				GUIScaleUtility.Init ();
 
 				initiated = true;
 			}
@@ -101,40 +71,51 @@ namespace NodeEditorFramework
 		#region GUI
 
 		/// <summary>
-		/// Draws the Node Canvas on the screen in the rect specified by editorState. Has to be called out of any GUI Group or area because of zooming.
+		/// Draws the Node Canvas on the screen in the rect specified by editorState
 		/// </summary>
 		public static void DrawCanvas (NodeCanvas nodeCanvas, NodeEditorState editorState)  
 		{
-			DrawCanvas (nodeCanvas, editorState, new Rect ());
+			if (!editorState.drawing)
+				return;
+			
+			NodeEditorGUI.StartNodeGUI ();
+			
+			if (Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint)
+				GenericMenu.DrawActive ();
+			
+			DrawSubCanvas (nodeCanvas, editorState);
+			
+			if (Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint)
+				GenericMenu.DrawActive ();
+			
+			NodeEditorGUI.EndNodeGUI ();
 		}
 
 		/// <summary>
-		/// Draws the Node Canvas on the screen in the rect specified by editorState. Has to be called out of any GUI Group or area because of zooming.
+		/// Draws the Node Canvas on the screen in the rect specified by editorState
 		/// </summary>
-		public static void DrawCanvas (NodeCanvas nodeCanvas, NodeEditorState editorState, Rect previousGroup)  
+		public static void DrawSubCanvas (NodeCanvas nodeCanvas, NodeEditorState editorState)  
 		{
 			if (!editorState.drawing)
 				return;
-
+			
+			NodeCanvas prevNodeCanvas = curNodeCanvas;
+			NodeEditorState prevEditorState = curEditorState;
+			
 			curNodeCanvas = nodeCanvas;
 			curEditorState = editorState;
-
-	//#if !UNITY_EDITOR
-			if (Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint) // Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseDrag || Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseMove
-				GenericMenu.DrawActive ();
-	//#endif
 			
 			if (Event.current.type == EventType.Repaint) 
 			{ // Draw Background when Repainting
 				GUI.BeginClip (curEditorState.canvasRect);
-
-				float width = Background.width / curEditorState.zoom;
-				float height = Background.height / curEditorState.zoom;
+				
+				float width = NodeEditorGUI.Background.width / curEditorState.zoom;
+				float height = NodeEditorGUI.Background.height / curEditorState.zoom;
 				Vector2 offset = new Vector2 ((curEditorState.panOffset.x / curEditorState.zoom)%width - width, 
 				                              (curEditorState.panOffset.y / curEditorState.zoom)%height - height);
 				int tileX = Mathf.CeilToInt ((curEditorState.canvasRect.width + (width - offset.x)) / width);
 				int tileY = Mathf.CeilToInt ((curEditorState.canvasRect.height + (height - offset.y)) / height);
-
+				
 				for (int x = 0; x < tileX; x++) 
 				{
 					for (int y = 0; y < tileY; y++) 
@@ -142,66 +123,31 @@ namespace NodeEditorFramework
 						Rect texRect = new Rect (offset.x + x*width, 
 						                         offset.y + y*height, 
 						                         width, height);
-
-						GUI.DrawTexture (texRect, Background);
+						
+						GUI.DrawTexture (texRect, NodeEditorGUI.Background);
 					}
 				}
 				GUI.EndClip ();
 			}
-
-
-			// Fetch all nested nodeEditors and set their canvasRects to be ignored by input, 
-			// so it can be handled later, and note it down, as it will be drawn later ontop
-			List<Rect> ignoreInput = new List<Rect> ();
-			for (int childCnt = 0; childCnt < curEditorState.childs.Count; childCnt++) 
-			{
-				if (curEditorState.childs [childCnt].drawing)
-				{
-					NodeEditorState nestedEditor = curEditorState.childs [childCnt];
-					ignoreInput.Add (GUIToScreenRect (nestedEditor.canvasRect));
-				}
-			}
-
-			// Check the inputs
-			InputEvents (ignoreInput);
-
-
-			// We want to scale our nodes, but as GUI.matrix also scales our widnow's clipping group, 
-			// we have to scale it up first to receive a correct one as a result
-			#region Scale Setup
-
-			// End the default clipping group
-			if (previousGroup != new Rect ())
-				GUI.EndGroup ();
-
-			// The Rect of the new clipping group to draw our nodes in
-			Rect ScaledCanvasRect = ScaleRect (curEditorState.canvasRect, curEditorState.zoomPos + curEditorState.canvasRect.position, new Vector2 (curEditorState.zoom, curEditorState.zoom));
-			ScaledCanvasRect.y += previousGroup.y; // Header tab height
-
-			// Now continue drawing using the new clipping group
-			GUI.BeginGroup (ScaledCanvasRect);
-			ScaledCanvasRect.position = Vector2.zero; // Adjust because we entered the new group
-
-			// Because I currently found no way to actually scale to the center of the window rather than (0, 0),
-			// I'm going to cheat and just pan it accordingly to let it appear as if it would scroll to the center
-			// Note, due to that, other controls are still scaled to (0, 0)
-			curEditorState.zoomPanAdjust = ScaledCanvasRect.center - curEditorState.canvasRect.size/2 + curEditorState.zoomPos;
 			
-			// Take a matrix backup to restore back later on
-			Matrix4x4 GUIMatrix = GUI.matrix;
+			// Check the inputs
+			InputEvents (curEditorState.ignoreInput);
+			curEditorState.ignoreInput = new List<Rect> ();
 
-			// Scale GUI.matrix. After that we have the correct clipping group again.
-			GUIUtility.ScaleAroundPivot (new Vector2 (1/curEditorState.zoom, 1/curEditorState.zoom), curEditorState.zoomPanAdjust);
 
-			#endregion
+			// We're using a custom scale methode, as default one is messing up clipping rect
+			Rect canvasRect = curEditorState.canvasRect;
+			curEditorState.zoomPanAdjust = GUIScaleUtility.BeginScale (ref canvasRect, curEditorState.zoomPos, curEditorState.zoom, true);
+			//GUILayout.Label ("Scaling is Great!"); -> Test by changin the last bool parameter
 
+			// ---- BEGIN SCALE ----
 
 			// Some features which require drawing (zoomed)
 			if (curEditorState.navigate) 
 			{ // Draw a curve to the origin/active node for orientation purposes
-				DrawLine (curEditorState.activeNode != null? curEditorState.activeNode.rect.center + curEditorState.zoomPanAdjust : curEditorState.panOffset, 
-				          ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
-				          Color.black, null, 3); 
+				NodeEditorGUI.DrawLine (curEditorState.activeNode != null? curEditorState.activeNode.rect.center + curEditorState.zoomPanAdjust : curEditorState.panOffset, 
+				                        ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
+				                        Color.black, null, 3); 
 				if (Repaint != null)
 					Repaint ();
 			}
@@ -215,67 +161,37 @@ namespace NodeEditorFramework
 			}
 			if (curEditorState.makeTransition != null)
 			{ // Draw the currently made transition
-				DrawLine (curEditorState.makeTransition.rect.center + curEditorState.zoomPanAdjust, 
-				          ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
-				          Color.grey, null, 3); 
+				NodeEditorGUI.DrawLine (curEditorState.makeTransition.rect.center + curEditorState.zoomPanAdjust, 
+				                        ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
+				                        Color.grey, null, 3); 
 				if (Repaint != null)
 					Repaint ();
 			}
-
-
+			
+			// Draw the transitions. Has to be called before nodes as transitions originate from node centers
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
 				curNodeCanvas.nodes [nodeCnt].DrawTransitions ();
-
+			
 			// Draw the nodes
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++)
-				NodeEditor.DrawNode (curNodeCanvas.nodes [nodeCnt]);
-
+				DrawNode (curNodeCanvas.nodes [nodeCnt]);
+			
 			// Draw the Node connectors; Seperated because of render order
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
 				curNodeCanvas.nodes [nodeCnt].DrawConnections ();
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
 				curNodeCanvas.nodes [nodeCnt].DrawKnobs ();
-
-
-			// Draw any node groups out there. Has to be drawn here, because they still need to scale according to their parents, but they mustn't be drawn inside a GUI group
-			for (int editorCnt = 0; editorCnt < curEditorState.childs.Count; editorCnt++) 
-			{
-				if (curEditorState.childs [editorCnt].drawing)
-				{
-					NodeEditorState nestedEditor = curEditorState.childs [editorCnt];
-					nestedEditor.canvasRect.position += curEditorState.zoomPanAdjust;
-					//GUI.DrawTexture (nestedEditor.canvasRect, Background);
-					DrawCanvas (nestedEditor.canvas, nestedEditor, curEditorState.canvasRect);
-					nestedEditor.canvasRect.position -= curEditorState.zoomPanAdjust;
-				}
-			}
-			curNodeCanvas = nodeCanvas;
-			curEditorState = editorState;
-
+			
+			// ---- END SCALE ----
 
 			// End scaling group
-			// Set default matrix and clipping group for the rest
-			GUI.matrix = GUIMatrix;
-			GUI.EndGroup ();
-			if (curNodeCanvas.parent == null)
-			{
-				if (previousGroup != new Rect ())
-					GUI.BeginGroup (previousGroup);
-			}
-			else 
-			{
-				Rect parentGroupRect = ScaleRect (curEditorState.parent.canvasRect, curEditorState.parent.zoomPos + curEditorState.parent.canvasRect.position, new Vector2 (curEditorState.parent.zoom, curEditorState.parent.zoom));
-				parentGroupRect.y += previousGroup.y; // Header tab height
-				GUI.BeginGroup (parentGroupRect);
-			}
-
+			GUIScaleUtility.EndScale ();
+			
 			// Check events with less priority than node GUI controls
-			LateEvents (ignoreInput);
-
-//#if !UNITY_EDITOR
-			if (Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint)
-				GenericMenu.DrawActive ();
-//#endif
+			LateEvents (curEditorState.ignoreInput);
+			
+			curNodeCanvas = prevNodeCanvas;
+			curEditorState = prevEditorState;
 		}
 		
 		#endregion
@@ -335,6 +251,13 @@ namespace NodeEditorFramework
 			GUI.changed = false;
 			GUILayout.BeginArea (bodyRect, GUI.skin.box);
 			node.NodeGUI ();
+
+//			if (GUI.changed) 
+//			{
+//				Vector2 size = GUIClipHierarchy.GetSizeOfCurrentGroupContent ();
+//				if (size != Vector2.zero)
+//					node.rect = new Rect (node.rect.x, node.rect.y, size.x, size.y+headerHeight);
+//			}
 			GUILayout.EndArea ();
 		}
 
@@ -346,87 +269,8 @@ namespace NodeEditorFramework
 #if NODE_EDITOR_LINE_CONNECTION
 			DrawLine (startPos, endPos, col * Color.gray, null, 3);
 #else
-			DrawBezier (startPos, endPos, startPos + Vector2.right * 50, endPos + Vector2.right * -50, col * Color.gray, null, 3);
+			NodeEditorGUI.DrawBezier (startPos, endPos, startPos + Vector2.right * 50, endPos + Vector2.right * -50, col * Color.gray, null, 3);
 #endif
-		}
-
-		/// <summary>
-		/// Draws a Bezier curve just as UnityEditor.Handles.DrawBezier
-		/// </summary>
-		public static void DrawBezier (Vector2 startPos, Vector2 endPos, Vector2 startTan, Vector2 endTan, Color col, Texture2D tex, float width)
-		{
-			if (Event.current.type != EventType.Repaint)
-				return;
-
-			if (tex == null)
-				tex = AALineTex;
-			tex = col == Color.white? tex : Tint (tex, col);
-
-			int segmentCount = (int)(((startPos-startTan).magnitude + (startTan-endTan).magnitude + (endTan-endPos).magnitude) / 10);
-			Vector2 curPoint = startPos;
-			for (int segCnt = 1; segCnt <= segmentCount; segCnt++) 
-			{
-				float t = (float)segCnt/segmentCount;
-				Vector2 nextPoint = new Vector2 (startPos.x * Mathf.Pow (1-t, 3) + 
-				                                 startTan.x * 3 * Mathf.Pow (1-t, 2) * t + 
-				                                 endTan.x 	* 3 * (1-t) * Mathf.Pow (t, 2) + 
-				                                 endPos.x 	* Mathf.Pow (t, 3),
-
-				                                 startPos.y * Mathf.Pow (1-t, 3) + 
-				                                 startTan.y * 3 * Mathf.Pow (1-t, 2) * t + 
-				                                 endTan.y 	* 3 * (1-t) * Mathf.Pow (t, 2) + 
-				                                 endPos.y 	* Mathf.Pow (t, 3));
-				DrawLine (curPoint, nextPoint, Color.white, tex, width);
-				curPoint = nextPoint;
-			}
-		}
-
-		public static void DrawLine (Vector2 startPos, Vector2 endPos, Color col, Texture2D tex, float width)
-		{
-			if (Event.current.type != EventType.Repaint)
-				return;
-			
-			if (width == 1)
-			{
-				GL.Begin (GL.LINES);
-				GL.Color (col);
-				GL.Vertex (startPos);
-				GL.Vertex (endPos);
-				GL.End ();
-			}
-			else 
-			{
-				if (tex == null)
-					tex = AALineTex;
-				tex = col == Color.white? tex : Tint (tex, col);
-
-				Vector2 perpWidthOffset = new Vector2 ((endPos-startPos).y, -(endPos-startPos).x).normalized * width / 2;
-
-				Material mat = new Material (Shader.Find ("Unlit/Transparent"));
-				mat.SetTexture ("_MainTex", tex);
-				mat.SetPass (0);
-
-				GL.Begin (GL.TRIANGLE_STRIP);
-				GL.TexCoord2 (0, 0);
-				GL.Vertex (startPos - perpWidthOffset);
-				GL.TexCoord2 (0, 1);
-				GL.Vertex (startPos + perpWidthOffset);
-				GL.TexCoord2 (1, 0);
-				GL.Vertex (endPos - perpWidthOffset);
-				GL.TexCoord2 (1, 1);
-				GL.Vertex (endPos + perpWidthOffset);
-				GL.End ();
-			}
-		}
-
-		/// <summary>
-		/// Scales the rect around the pivot with scale
-		/// </summary>
-		public static Rect ScaleRect (Rect rect, Vector2 pivot, Vector2 scale) 
-		{
-			rect.position = Vector2.Scale (rect.position - pivot, scale) + pivot;
-			rect.size = Vector2.Scale (rect.size, scale);
-			return rect;
 		}
 
 		/// <summary>
@@ -442,7 +286,7 @@ namespace NodeEditorFramework
 		public static Rect GUIToScreenRect (NodeEditorState editorState, Rect rect) 
 		{
 			rect.position += editorState.zoomPos;
-			rect = ScaleRect (rect, editorState.zoomPos, new Vector2 (1/editorState.zoom, 1/editorState.zoom));
+			rect = GUIScaleUtility.ScaleRect (rect, editorState.zoomPos, new Vector2 (1/editorState.zoom, 1/editorState.zoom));
 			rect.position += editorState.canvasRect.position;
 			return rect;
 		}
@@ -464,49 +308,7 @@ namespace NodeEditorFramework
 			return Vector2.Scale (pos - editorState.zoomPos - editorState.canvasRect.position, new Vector2 (editorState.zoom, editorState.zoom));
 		}
 
-		/// <summary>
-		/// Loads a texture in both the editor and at runtime (coming soon)
-		/// </summary>
-		public static Texture2D LoadTexture (string texPath)
-		{
-	#if UNITY_EDITOR
-			string fullPath = System.IO.Path.Combine (resourcePath, texPath);
-			Texture2D tex = UnityEditor.AssetDatabase.LoadAssetAtPath (fullPath, typeof (Texture2D)) as Texture2D;
-			if (tex == null)
-				Debug.LogError (string.Format ("NodeEditor: Texture not found at '{0}', did you install Node_Editor correctly in the 'Plugins' folder?", fullPath));
-			return tex;
-	#else
-			texPath = texPath.Split ('.') [0];
-			Texture2D tex = Resources.Load<Texture2D> (texPath);
-			if (tex == null)
-				Debug.LogError (string.Format ("NodeEditor: Texture not found at '{0}' in any Resource Folder!", texPath));
-			return tex;
-	#endif
-		}
 
-		/// <summary>
-		/// Create a 1x1 tex with color col
-		/// </summary>
-		public static Texture2D ColorToTex (Color col) 
-		{
-			Texture2D tex = new Texture2D (1, 1);
-			tex.SetPixel (1, 1, col);
-			tex.Apply ();
-			return tex;
-		}
-		
-		/// <summary>
-		/// Tint the texture with the color.
-		/// </summary>
-		public static Texture2D Tint (Texture2D tex, Color color) 
-		{
-			Texture2D tintedTex = UnityEngine.Object.Instantiate (tex);
-			for (int x = 0; x < tex.width; x++) 
-				for (int y = 0; y < tex.height; y++) 
-					tintedTex.SetPixel (x, y, tex.GetPixel (x, y) * color);
-			tintedTex.Apply ();
-			return tintedTex;
-		}
 		
 		#endregion
 		
@@ -532,6 +334,9 @@ namespace NodeEditorFramework
 					break;
 				}
 			}
+
+			if (!insideCanvas)
+				return;
 			
 			curEditorState.focusedNode = null;
 			if (insideCanvas && (e.type == EventType.MouseDown || e.type == EventType.MouseUp))
@@ -553,9 +358,6 @@ namespace NodeEditorFramework
 			switch (e.type) 
 			{
 			case EventType.MouseDown:
-
-				if (!insideCanvas)
-					break;
 
 				curEditorState.dragNode = false;
 				curEditorState.panWindow = false;
@@ -697,16 +499,14 @@ namespace NodeEditorFramework
 				
 			case EventType.ScrollWheel:
 
-				if (insideCanvas) 
-					curEditorState.zoom = Mathf.Min (2.0f, Mathf.Max (0.6f, curEditorState.zoom + e.delta.y / 15));
+				curEditorState.zoom = Mathf.Min (2.0f, Mathf.Max (0.6f, curEditorState.zoom + e.delta.y / 15));
 				if (Repaint != null)
 					Repaint ();
+
 				break;
 				
 			case EventType.KeyDown:
 
-				if (!insideCanvas)
-					break;
 				// TODO: Node Editor: Shortcuts
 				if (e.keyCode == KeyCode.N) // Start Navigating (curve to origin / active Node)
 					curEditorState.navigate = true;

@@ -3,6 +3,8 @@ using System.Globalization;
 using System.Linq;
 using System.Collections.Generic;
 
+using NodeEditorFramework;
+
 public static class GUIExt 
 {
 
@@ -157,6 +159,41 @@ public static class GUIExt
 		return value;
 	}
 
+	public static T ObjectField<T> (T obj, bool allowSceneObjects) where T : Object
+	{
+		return ObjectField<T> (GUIContent.none, obj, allowSceneObjects);
+	}
+
+	public static T ObjectField<T> (GUIContent label, T obj, bool allowSceneObjects) where T : Object
+	{
+#if UNITY_EDITOR
+		if (!Application.isPlaying)
+			obj = UnityEditor.EditorGUILayout.ObjectField (GUIContent.none, obj, typeof (T), allowSceneObjects) as T;
+#endif	
+		if (Application.isPlaying)
+		{
+			bool open = false;
+			if (typeof(T).Name == "UnityEngine.Texture2D") 
+			{
+				label.image = obj as Texture2D;
+				GUIStyle style = new GUIStyle (GUI.skin.box);
+				style.imagePosition = ImagePosition.ImageAbove;
+				open = GUILayout.Button (label, style);
+			}
+			else
+			{
+				GUIStyle style = new GUIStyle (GUI.skin.box);
+				open = GUILayout.Button (label, style);
+			}
+			if (open)
+			{
+				Debug.Log ("Selecting Object!");
+			}
+		}
+		return obj;
+	}
+
+
 	public static int SelectableListPopup (GUIContent[] contents, int selected) 
 	{
 		return selected;
@@ -212,8 +249,6 @@ public class GenericMenu
 	public delegate void MenuFunctionData (object userData);
 
 	private static GUIStyle backgroundStyle;
-	private static GUIStyle itemStyle;
-	private static GUIStyle selectedStyle;
 	private static Texture2D expandRight;
 	private static float itemHeight;
 	public static GUIStyle seperator;
@@ -242,11 +277,8 @@ public class GenericMenu
 	{
 		backgroundStyle = new GUIStyle (GUI.skin.box);
 		backgroundStyle.contentOffset = new Vector2 (2, 2);
-		itemStyle = new GUIStyle (GUI.skin.label);
-		selectedStyle = new GUIStyle (GUI.skin.label);
-		selectedStyle.normal.background = GUIExt.ColorToTex (new Color (0.75f, 0.75f, 0.75f));
-		expandRight = NodeEditorFramework.NodeEditor.LoadTexture ("Textures/expandRight.png");
-		itemHeight = itemStyle.CalcHeight (new GUIContent ("text"), 100);
+		expandRight = NodeEditorGUI.LoadTexture ("Textures/expandRight.png");
+		itemHeight = GUI.skin.label.CalcHeight (new GUIContent ("text"), 100);
 
 		seperator = new GUIStyle();
 		seperator.normal.background = GUIExt.ColorToTex (new Color (0.6f, 0.6f, 0.6f));
@@ -390,7 +422,8 @@ public class GenericMenu
 	{
 		if (item.separator) 
 		{
-			GUI.Box (new Rect (backgroundStyle.contentOffset.x+1, currentItemHeight+1, groupRect.width-2, 1), GUIContent.none, seperator);
+			if (Event.current.type == EventType.Repaint)
+				seperator.Draw (new Rect (backgroundStyle.contentOffset.x+1, currentItemHeight+1, groupRect.width-2, 1), GUIContent.none, "Seperator".GetHashCode ());
 			currentItemHeight += 3;
 		}
 		else 
@@ -404,7 +437,7 @@ public class GenericMenu
 				selected = true;
 			}
 
-			GUI.Label (labelRect, item.content, selected? selectedStyle : itemStyle);
+			GUI.Label (labelRect, item.content, selected? NodeEditorGUI.nodeLabelSelected : NodeEditorGUI.nodeLabel);
 
 			if (item.group) 
 			{
@@ -447,7 +480,7 @@ public class GenericMenu
 				height += 3;
 			else
 			{
-				width = Mathf.Max (width, itemStyle.CalcSize (item.content).x + (item.group? 22 : 10));
+				width = Mathf.Max (width, GUI.skin.label.CalcSize (item.content).x + (item.group? 22 : 10));
 				height += itemHeight;
 			}
 		}

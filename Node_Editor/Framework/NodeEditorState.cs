@@ -7,8 +7,8 @@ namespace NodeEditorFramework
 	public class NodeEditorState : ScriptableObject 
 	{ // The class that holds the state of an NodeCanvas inside a NodeEditor
 		public NodeCanvas canvas;
-		public NodeEditorState parent;
-		public List<NodeEditorState> childs = new List<NodeEditorState> ();
+
+		public List<Rect> ignoreInput = new List<Rect> ();
 
 		// Canvas options
 		public bool drawing = true; // whether to draw the canvas

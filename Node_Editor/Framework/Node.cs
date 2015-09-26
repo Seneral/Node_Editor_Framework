@@ -232,7 +232,7 @@ namespace NodeEditorFramework
 			{
 				Vector2 StartPoint = transitions[cnt].startNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
 				Vector2 EndPoint = transitions[cnt].endNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
-				NodeEditor.DrawLine (StartPoint, EndPoint, Color.grey, null, 3);
+				NodeEditorGUI.DrawLine (StartPoint, EndPoint, Color.grey, null, 3);
 
 				Rect selectRect = new Rect (0, 0, 20, 20);
 				selectRect.center = Vector2.Lerp (StartPoint, EndPoint, 0.5f);

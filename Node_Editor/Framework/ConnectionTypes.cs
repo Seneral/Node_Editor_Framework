@@ -57,8 +57,8 @@ namespace NodeEditorFramework
 						UnityEngine.Debug.LogError ("Error with Type Declaration " + type.FullName);
 						return;
 					}
-					Texture2D InputKnob = NodeEditor.LoadTexture(typeDecl.InputKnob_TexPath);
-					Texture2D OutputKnob = NodeEditor.LoadTexture(typeDecl.OutputKnob_TexPath);
+					Texture2D InputKnob = NodeEditorGUI.LoadTexture(typeDecl.InputKnob_TexPath);
+					Texture2D OutputKnob = NodeEditorGUI.LoadTexture(typeDecl.OutputKnob_TexPath);
 					types.Add(typeDecl.name, new TypeData(typeDecl.col, InputKnob, OutputKnob, typeDecl.Type));
 				}
 			}
@@ -75,8 +75,8 @@ namespace NodeEditorFramework
 		public TypeData (Color color, Texture2D inKnob, Texture2D outKnob, Type type) 
 		{
 			col = color;
-			InputKnob = NodeEditor.Tint (inKnob, color);
-			OutputKnob = NodeEditor.Tint (outKnob, color);
+			InputKnob = NodeEditorGUI.Tint (inKnob, color);
+			OutputKnob = NodeEditorGUI.Tint (outKnob, color);
 			Type = type;
 		}
 	}

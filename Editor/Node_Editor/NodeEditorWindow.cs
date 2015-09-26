@@ -60,12 +60,13 @@ namespace NodeEditorFramework
 		public void OnGUI () 
 		{
 			NodeEditor.checkInit ();
-			AssureHasEditor ();
 			if (NodeEditor.InitiationError) 
 			{
 				GUILayout.Label ("Initiation failed! Check console for more information!");
 				return;
 			}
+			AssureHasEditor ();
+
 			// Example of creating Nodes and Connections through code
 			//		CalcNode calcNode1 = CalcNode.Create (new Rect (200, 200, 200, 100));
 			//		CalcNode calcNode2 = CalcNode.Create (new Rect (600, 200, 200, 100));
@@ -74,7 +75,7 @@ namespace NodeEditorFramework
 			mainEditorState.canvasRect = canvasWindowRect;
 			try
 			{
-				NodeEditor.DrawCanvas (mainNodeCanvas, mainEditorState, new Rect (0, 23, position.width, position.height));
+				NodeEditor.DrawCanvas (mainNodeCanvas, mainEditorState);
 			}
 			catch (UnityException e)
 			{ // on exceptions in drawing flush the canvas to avoid locking the ui.
@@ -84,20 +85,22 @@ namespace NodeEditorFramework
 			}		
 			// Draw Side Window
 			sideWindowWidth = Math.Min (600, Math.Max (200, (int)(position.width / 5)));
-			GUILayout.BeginArea (sideWindowRect, NodeEditor.nodeBox);
+			NodeEditorGUI.StartNodeGUI ();
+			GUILayout.BeginArea (sideWindowRect, GUI.skin.box);
 			DrawSideWindow ();
 			GUILayout.EndArea ();
+			NodeEditorGUI.EndNodeGUI ();
 		}
 
 		public void DrawSideWindow () 
 		{
-			GUILayout.Label (new GUIContent ("Node Editor (" + openedCanvas + ")", "The currently opened canvas in the Node Editor"), NodeEditor.nodeLabelBold);
-			GUILayout.Label (new GUIContent ("Do note that changes will be saved automatically!", "All changes are automatically saved to the currently opened canvas (see above) if it's present in the Project view."), NodeEditor.nodeLabel);
-			if (GUILayout.Button (new GUIContent ("Save Canvas", "Saves the canvas as a new Canvas Asset File in the Assets Folder"), NodeEditor.nodeButton)) 
+			GUILayout.Label (new GUIContent ("Node Editor (" + openedCanvas + ")", "The currently opened canvas in the Node Editor"), NodeEditorGUI.nodeLabelBold);
+			GUILayout.Label (new GUIContent ("Do note that changes will be saved automatically!", "All changes are automatically saved to the currently opened canvas (see above) if it's present in the Project view."));
+			if (GUILayout.Button (new GUIContent ("Save Canvas", "Saves the canvas as a new Canvas Asset File in the Assets Folder"))) 
 			{
 				SaveNodeCanvas (EditorUtility.SaveFilePanelInProject ("Save Node Canvas", "Node Canvas", "asset", "Saving to a file is only needed once.", NodeEditor.resourcePath + "Saves/"));
 			}
-			if (GUILayout.Button (new GUIContent ("Load Canvas", "Loads the canvas from a Canvas Asset File in the Assets Folder"), NodeEditor.nodeButton)) 
+			if (GUILayout.Button (new GUIContent ("Load Canvas", "Loads the canvas from a Canvas Asset File in the Assets Folder"))) 
 			{
 				string path = EditorUtility.OpenFilePanel ("Load Node Canvas", NodeEditor.resourcePath + "Saves/", "asset");
 				if (!path.Contains (Application.dataPath)) 
@@ -109,14 +112,15 @@ namespace NodeEditorFramework
 				path = path.Replace (Application.dataPath, "Assets");
 				LoadNodeCanvas (path);
 			}
-			if (GUILayout.Button (new GUIContent ("New Canvas", "Creates a new Canvas (remember to save the previous one to a referenced Canvas Asset File at least once before! Else it'll be lost!)"), NodeEditor.nodeButton)) 
+			if (GUILayout.Button (new GUIContent ("New Canvas", "Creates a new Canvas (remember to save the previous one to a referenced Canvas Asset File at least once before! Else it'll be lost!)"))) 
 			{
 				NewNodeCanvas ();
 			}
-			if (GUILayout.Button (new GUIContent ("Recalculate All", "Starts to calculate from the beginning off."), NodeEditor.nodeButton)) 
+			if (GUILayout.Button (new GUIContent ("Recalculate All", "Starts to calculate from the beginning off."))) 
 			{
 				NodeEditor.RecalculateAll (mainNodeCanvas);
 			}
+
 			NodeEditor.knobSize = EditorGUILayout.IntSlider (new GUIContent ("Handle Size", "The size of the handles of the Node Inputs/Outputs"), NodeEditor.knobSize, 12, 20);
 			mainEditorState.zoom = EditorGUILayout.Slider (new GUIContent ("Zoom"), mainEditorState.zoom, 0.6f, 2);
 		}

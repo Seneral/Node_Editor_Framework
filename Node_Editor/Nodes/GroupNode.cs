@@ -19,15 +19,7 @@ public class GroupNode : Node
 	public Rect nodeRect;
 	public Rect openedRect 
 	{
-		get { return new Rect (rect.center.x - canvasSize.x/2, rect.y, canvasSize.x, canvasSize.y); }
-	}
-	public Rect canvasRect 
-	{
-		get
-		{
-			Rect rectWithMargin = openedRect;
-			return new Rect (rectWithMargin.x + borderWidth, rectWithMargin.y + 62 + borderWidth, rectWithMargin.width - borderWidth*2, rectWithMargin.height - 62-borderWidth*2);
-		}
+		get { return new Rect (rect.center.x - canvasSize.x/2 - borderWidth, rect.y, canvasSize.x + borderWidth*2, 62 + canvasSize.y + borderWidth); }
 	}
 	
 	public override Node Create (Vector2 pos) 
@@ -43,9 +35,9 @@ public class GroupNode : Node
 	public override void NodeGUI () 
 	{
 		GUILayout.BeginHorizontal ();
+#if UNITY_EDITOR
 		if (GUILayout.Button (new GUIContent ("Load", "Loads the group from an extern Canvas Asset File.")))
 		{
-#if UNITY_EDITOR
 			string path = UnityEditor.EditorUtility.OpenFilePanel ("Load Node Canvas", NodeEditor.editorPath + "Saves/", "asset");
 			if (!path.Contains (Application.dataPath)) 
 			{
@@ -56,18 +48,10 @@ public class GroupNode : Node
 			}
 			path = path.Replace (Application.dataPath, "Assets");
 
-			if (nodeGroupCanvas != null)
-				NodeEditor.curNodeCanvas.childs.Remove (nodeGroupCanvas);
 			nodeGroupCanvas = NodeEditor.LoadNodeCanvas (path);
-			nodeGroupCanvas.parent = NodeEditor.curNodeCanvas;
-			NodeEditor.curNodeCanvas.childs.Add (nodeGroupCanvas);
 
-			if (editorState != null)
-				NodeEditor.curEditorState.childs.Remove (editorState);
 			editorState = NodeEditor.LoadEditorStates (path) [0];
-			editorState.parent = NodeEditor.curEditorState;
 			editorState.drawing = edit;
-			NodeEditor.curEditorState.childs.Add (editorState);
 
 			if (nodeGroupCanvas != null) 
 			{ // Set the name
@@ -79,30 +63,21 @@ public class GroupNode : Node
 			}
 			else 
 				name = "Node Group";
+
 			//AdoptInputsOutputs ();
-#endif
 		}
 		if (GUILayout.Button (new GUIContent ("Save", "Saves the group as a new Canvas Asset File"))) 
 		{
-#if UNITY_EDITOR
 			NodeEditor.SaveNodeCanvas (nodeGroupCanvas, UnityEditor.EditorUtility.SaveFilePanelInProject ("Save Group Node Canvas", "Group Canvas", "asset", 
 			                                                                                              "Saving to a file is only needed once.", NodeEditor.editorPath + "Saves/"));
-#endif
 		}
+#endif
 		if (GUILayout.Button (new GUIContent ("New Group Canvas", "Creates a new Canvas (remember to save the previous one to a referenced Canvas Asset File at least once before! Else it'll be lost!)"))) 
 		{
-			if (nodeGroupCanvas != null)
-				NodeEditor.curNodeCanvas.childs.Remove (nodeGroupCanvas);
 			nodeGroupCanvas = CreateInstance<NodeCanvas> ();
-			nodeGroupCanvas.parent = NodeEditor.curNodeCanvas;
-			NodeEditor.curNodeCanvas.childs.Add (nodeGroupCanvas);
 
-			if (editorState != null)
-				NodeEditor.curEditorState.childs.Remove (editorState);
 			editorState = CreateInstance<NodeEditorState> ();
-			editorState.parent = NodeEditor.curEditorState;
 			editorState.drawing = edit;
-			NodeEditor.curEditorState.childs.Add (editorState);
 			editorState.name = "GroupNode_EditorState";
 		}
 		GUILayout.EndHorizontal ();
@@ -119,13 +94,12 @@ public class GroupNode : Node
 			{
 				rect = openedRect;
 				edit = true;
-				editorState.canvasRect = canvasRect;
+				editorState.canvasRect = GUILayoutUtility.GetRect (canvasSize.x, canvasSize.y, GUIStyle.none);
 				editorState.drawing = true;
 			}
 		}
 		else if (nodeGroupCanvas != null)
 		{
-			editorState.canvasRect = canvasRect;
 			if (GUILayout.Button ("Stop editing Node Canvas"))
 			{
 				nodeRect.position = openedRect.position + new Vector2 (canvasSize.x/2 - nodeRect.width/2, 0);
@@ -133,6 +107,18 @@ public class GroupNode : Node
 				edit = false;
 				editorState.drawing = false;
 			}
+
+			editorState.canvasRect = GUILayoutUtility.GetRect (canvasSize.x - 200, canvasSize.y, new GUILayoutOption[] { GUILayout.ExpandWidth (false) });
+			NodeEditor.curEditorState.ignoreInput.Add (NodeEditor.GUIToScreenRect (editorState.canvasRect));
+			NodeEditor.DrawSubCanvas (nodeGroupCanvas, editorState);
+
+			GUILayout.BeginArea (new Rect (canvasSize.x - 200 + 2, editorState.canvasRect.y + 42, 200, canvasSize.y), GUI.skin.box);
+
+			GUILayout.Label (new GUIContent ("Node Editor (" + nodeGroupCanvas.name + ")", "The currently opened canvas in the Node Editor"));
+
+			GUILayout.EndArea ();
+
+
 			// Node is drawn by parent nodeCanvas, usually the mainNodeCanvas, because the zoom feature requires it to be drawn outside of any GUI group
 		}
 	}
