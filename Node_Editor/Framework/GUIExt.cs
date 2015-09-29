@@ -31,6 +31,10 @@ public static class GUIExt
 	{
 		// Get rect and control for this float field for identification
 		Rect pos = GUILayoutUtility.GetRect (new GUIContent (value.ToString ()), GUI.skin.label, new GUILayoutOption[] { GUILayout.ExpandWidth (false), GUILayout.MinWidth (40) });
+
+		if (pos != new Rect (0, 0, 1, 1) && !pos.Contains (Event.current.mousePosition))
+			GUIUtility.keyboardControl = -1;
+
 		int floatFieldID = GUIUtility.GetControlID ("FloatField".GetHashCode (), FocusType.Keyboard, pos) + 1;
 		if (floatFieldID == 0)
 			return value;
