@@ -32,9 +32,6 @@ public static class GUIExt
 		// Get rect and control for this float field for identification
 		Rect pos = GUILayoutUtility.GetRect (new GUIContent (value.ToString ()), GUI.skin.label, new GUILayoutOption[] { GUILayout.ExpandWidth (false), GUILayout.MinWidth (40) });
 
-		if (pos != new Rect (0, 0, 1, 1) && !pos.Contains (Event.current.mousePosition))
-			GUIUtility.keyboardControl = -1;
-
 		int floatFieldID = GUIUtility.GetControlID ("FloatField".GetHashCode (), FocusType.Keyboard, pos) + 1;
 		if (floatFieldID == 0)
 			return value;
@@ -60,7 +57,9 @@ public static class GUIExt
 
 		// Try Parse if value got changed. If the string could not be parsed, ignore it and keep last value
 		bool parsed = true;
-		if (strValue != value.ToString ())
+		if (strValue == "")
+			value = activeFloatFieldLastValue = 0;
+		else if (strValue != value.ToString ())
 		{
 			float newValue;
 			parsed = float.TryParse (strValue, out newValue);

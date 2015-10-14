@@ -25,6 +25,9 @@ public static class GUIScaleUtility
 		}
 	}
 
+	public static MethodInfo GetMatrix;
+
+
 	public static List<Rect> currentRectStack { get; private set; }
 	private static List<List<Rect>> rectStackGroups;
 
@@ -42,17 +45,15 @@ public static class GUIScaleUtility
 //	private static FieldInfo LayoutEntryWidth;
 //	private static PropertyInfo LayoutEntryStyle;
 
-	private static Matrix4x4 cachedMatrix;
-
-
 	public static void Init () 
 	{
 		Assembly UnityEngine = Assembly.GetAssembly (typeof (UnityEngine.GUI));
 
 		Type GUIClipType = UnityEngine.GetType ("UnityEngine.GUIClip");
 
-		topmostRect = GUIClipType.GetProperty ("topmostRect");
+		topmostRect = GUIClipType.GetProperty ("topmostRect", BindingFlags.Static | BindingFlags.Public);
 		GetTopRect = GUIClipType.GetMethod ("GetTopRect", BindingFlags.Static | BindingFlags.NonPublic);
+		GetMatrix = GUIClipType.GetMethod ("GetMatrix", BindingFlags.Static | BindingFlags.NonPublic);
 
 		// As we can call Begin/Ends inside another, we need to save their states hierarchial in Lists:
 		currentRectStack = new List<Rect> ();
@@ -79,7 +80,13 @@ public static class GUIScaleUtility
 
 	}
 
-	// SCALE
+	#region Scale Area
+
+	/// <summary>
+	/// Begins a scaled local area. 
+	/// Returns vector to offset GUI controls with to account for zooming to the pivot. 
+	/// Using adjustGUILayout does that automatically for GUILayout rects.
+	/// </summary>
 	public static Vector2 BeginScale (ref Rect rect, Vector2 zoomPivot, float zoom, bool adjustGUILayout) 
 	{
 		GUIScaleUtility.BeginNoClip ();
@@ -92,12 +99,12 @@ public static class GUIScaleUtility
 		// Now continue drawing using the new clipping group
 		GUI.BeginGroup (rect);
 		rect.position = Vector2.zero; // Adjust because we entered the new group
-
+		
 		// Because I currently found no way to actually scale to the center of the window rather than (0, 0),
 		// I'm going to cheat and just pan it accordingly to let it appear as if it would scroll to the center
 		// Note, due to that, other controls are still scaled to (0, 0)
 		Vector2 zoomPosAdjust = rect.center - screenRect.size/2 + zoomPivot;
-
+		
 		// For GUILayout, we can make this adjustment here
 		adjustedGUILayout.Add (adjustGUILayout);
 		if (adjustGUILayout)
@@ -107,16 +114,19 @@ public static class GUIScaleUtility
 			GUILayout.BeginVertical ();
 			GUILayout.Space (rect.center.y - screenRect.size.y + zoomPivot.y);
 		}
-
+		
 		// Take a matrix backup to restore back later on
 		GUIMatrices.Add (GUI.matrix);
 		
 		// Scale GUI.matrix. After that we have the correct clipping group again.
 		GUIUtility.ScaleAroundPivot (new Vector2 (1/zoom, 1/zoom), zoomPosAdjust);
-
+		
 		return zoomPosAdjust;
 	}
-
+	
+	/// <summary>
+	/// Ends a scale region
+	/// </summary>
 	public static void EndScale () 
 	{
 		// Set last matrix and clipping group
@@ -124,7 +134,7 @@ public static class GUIScaleUtility
 			throw new UnityException ("GUIScaleutility: You are ending more scales than you are beginning!");
 		GUI.matrix = GUIMatrices[GUIMatrices.Count-1];
 		GUIMatrices.RemoveAt (GUIMatrices.Count-1);
-
+		
 		// End GUILayout zoomPosAdjustment
 		if (adjustedGUILayout[adjustedGUILayout.Count-1])
 		{
@@ -132,25 +142,102 @@ public static class GUIScaleUtility
 			GUILayout.EndHorizontal ();
 		}
 		adjustedGUILayout.RemoveAt (adjustedGUILayout.Count-1);
-
+		
 		GUI.EndGroup ();
 		
 		GUIScaleUtility.RestoreClips ();
 	}
 
-	
+	// FIXED VERSION FOR REFLECTION ERROR:
+
+//	/// <summary>
+//	/// Begins a scaled local area. 
+//	/// Returns vector to offset GUI controls with to account for zooming to the pivot. 
+//	/// Using adjustGUILayout does that automatically for GUILayout rects.
+//	/// </summary>
+//	public static Vector2 BeginScale (ref Rect rect, Vector2 zoomPivot, float zoom, bool adjustGUILayout) 
+//	{
+//		//GUIScaleUtility.BeginNoClip ();
+//		
+//		//Rect screenRect = GUIScaleUtility.InnerToScreenRect (rect);
+//		
+//		GUI.EndGroup ();
+//		Rect screenRect = rect;
+//		#if UNITY_EDITOR
+//		if (!Application.isPlaying)
+//			screenRect.y += 23;
+//		#endif
+//		// The Rect of the new clipping group to draw our nodes in
+//		rect = ScaleRect (screenRect, screenRect.position + zoomPivot, new Vector2 (zoom, zoom));
+//		
+//		// Now continue drawing using the new clipping group
+//		GUI.BeginGroup (rect);
+//		rect.position = Vector2.zero; // Adjust because we entered the new group
+//		
+//		// Because I currently found no way to actually scale to the center of the window rather than (0, 0),
+//		// I'm going to cheat and just pan it accordingly to let it appear as if it would scroll to the center
+//		// Note, due to that, other controls are still scaled to (0, 0)
+//		Vector2 zoomPosAdjust = rect.center - screenRect.size/2 + zoomPivot;
+//		
+//		// For GUILayout, we can make this adjustment here
+//		adjustedGUILayout.Add (adjustGUILayout);
+//		if (adjustGUILayout)
+//		{
+//			GUILayout.BeginHorizontal ();
+//			GUILayout.Space (rect.center.x - screenRect.size.x + zoomPivot.x);
+//			GUILayout.BeginVertical ();
+//			GUILayout.Space (rect.center.y - screenRect.size.y + zoomPivot.y);
+//		}
+//		
+//		// Take a matrix backup to restore back later on
+//		GUIMatrices.Add (GUI.matrix);
+//		
+//		// Scale GUI.matrix. After that we have the correct clipping group again.
+//		GUIUtility.ScaleAroundPivot (new Vector2 (1/zoom, 1/zoom), zoomPosAdjust);
+//		
+//		return zoomPosAdjust;
+//	}
+//	
+//	/// <summary>
+//	/// Ends a scale region
+//	/// </summary>
+//	public static void EndScale () 
+//	{
+//		// Set last matrix and clipping group
+//		if (GUIMatrices.Count == 0 || adjustedGUILayout.Count == 0)
+//			throw new UnityException ("GUIScaleutility: You are ending more scales than you are beginning!");
+//		GUI.matrix = GUIMatrices[GUIMatrices.Count-1];
+//		GUIMatrices.RemoveAt (GUIMatrices.Count-1);
+//		
+//		// End GUILayout zoomPosAdjustment
+//		if (adjustedGUILayout[adjustedGUILayout.Count-1])
+//		{
+//			GUILayout.EndVertical ();
+//			GUILayout.EndHorizontal ();
+//		}
+//		adjustedGUILayout.RemoveAt (adjustedGUILayout.Count-1);
+//		
+//		GUI.EndGroup ();
+//		
+//		#if UNITY_EDITOR
+//		if (!Application.isPlaying)
+//			GUI.BeginClip (new Rect (0, 23, Screen.width, Screen.height-23));
+//		else
+//			GUI.BeginClip (new Rect (0, 0, Screen.width, Screen.height));
+//		#else
+//		GUI.BeginClip (new Rect (0, 0, Screen.width, Screen.height));
+//		#endif
+//		
+//		//		GUIScaleUtility.RestoreClips ();
+//	}
+
+	#endregion
+
+	#region Clips Hierarchy
+
 	/// <summary>
-	/// Scales the rect around the pivot with scale
+	/// Begins a field without groups. They should be restored using RestoreClips
 	/// </summary>
-	public static Rect ScaleRect (Rect rect, Vector2 pivot, Vector2 scale) 
-	{
-		rect.position = Vector2.Scale (rect.position - pivot, scale) + pivot;
-		rect.size = Vector2.Scale (rect.size, scale);
-		return rect;
-	}
-
-	// CLIPS
-
 	public static void BeginNoClip () 
 	{
 		List<Rect> rectStackGroup = new List<Rect> ();
@@ -166,6 +253,9 @@ public static class GUIScaleUtility
 		currentRectStack.AddRange (rectStackGroup);
 	}
 
+	/// <summary>
+	/// Begins a field without the last count groups. They should be restored using RestoreClips
+	/// </summary>
 	public static void MoveClipsUp (int count) 
 	{
 		List<Rect> rectStackGroup = new List<Rect> ();
@@ -182,6 +272,9 @@ public static class GUIScaleUtility
 		currentRectStack.AddRange (rectStackGroup);
 	}
 
+	/// <summary>
+	///  Restores the clips removed in BeginNoClip or MoveClipsUp
+	/// </summary>
 	public static void RestoreClips () 
 	{
 		if (rectStackGroups.Count == 0)
@@ -199,9 +292,13 @@ public static class GUIScaleUtility
 		rectStackGroups.RemoveAt (rectStackGroups.Count-1);
 	}
 
+	#endregion
 
-	// LAYOUT & MATRIX
+	#region Layout & Matrix Ignores
 
+	/// <summary>
+	/// Ignores the current GUILayout cache and begins a new one
+	/// </summary>
 	public static void BeginNewLayout () 
 	{
 		Rect topMostClip = getTopRect;
@@ -211,50 +308,51 @@ public static class GUIScaleUtility
 			GUILayout.BeginArea (new Rect (0, 0, Screen.width, Screen.height));
 	}
 
+	/// <summary>
+	/// Ends the last GUILayout cache
+	/// </summary>
 	public static void EndNewLayout () 
 	{
 		GUILayout.EndArea ();
 	}
 
+	/// <summary>
+	/// Begins an area without GUIMatrix transformations
+	/// </summary>
 	public static void BeginIgnoreMatrix () 
 	{
-		cachedMatrix = GUI.matrix;
+		GUIMatrices.Add (GUI.matrix);
 		GUI.matrix = Matrix4x4.identity;
 	}
-	
+
+	/// <summary>
+	/// Restores last matrix ignored with BeginIgnoreMatrix
+	/// </summary>
 	public static void EndIgnoreMatrix () 
 	{
-		GUI.matrix = cachedMatrix;
+		if (GUIMatrices.Count == 0)
+			throw new UnityException ("GUIScaleutility: You are ending more ignoreMatrices than you are beginning!");
+		GUI.matrix = GUIMatrices[GUIMatrices.Count-1];
+		GUIMatrices.RemoveAt (GUIMatrices.Count-1);
 	}
 
-//	public static Vector2 GetSizeOfCurrentGroupContent () 
-//	{
-//		object currentLayoutCache = currentGUILayoutCache.GetValue (null);
-//		object currentTopGroup = currentTopLevelGroup.GetValue (currentLayoutCache);
-//
-//		IList entries = GUILayoutGroupType.GetField ("entries").GetValue (currentTopGroup) as IList;
-//		float height = 0, width = 0;
-//		foreach (object entry in entries) 
-//		{
-//			Vector2 size = new Vector2 ((float)LayoutEntryWidth.GetValue (entry), (float)LayoutEntryHeight.GetValue (entry));
-//			GUIStyle style = (GUIStyle)LayoutEntryStyle.GetValue (entry, null);
-//			size = style.CalcScreenSize (size);
-//
-//			width = Math.Max (size.x, width);
-//			height = Math.Max (size.y, height);
-//		}
-//
-//		Vector2 groupContentSize = new Vector2 (width, height);
-//
-//
-//
-//		Debug.Log (groupContentSize.ToString ());
-//		return groupContentSize;
-//	}
+	#endregion
 
+	#region Helpers
 
-	// HELPERS
+	/// <summary>
+	/// Scales the rect around the pivot with scale
+	/// </summary>
+	public static Rect ScaleRect (Rect rect, Vector2 pivot, Vector2 scale) 
+	{
+		rect.position = Vector2.Scale (rect.position - pivot, scale) + pivot;
+		rect.size = Vector2.Scale (rect.size, scale);
+		return rect;
+	}
 
+	/// <summary>
+	/// Transforms the rect to the new space aquired with BeginNoClip or MoveClipsUp
+	/// </summary>
 	public static Rect InnerToScreenRect (Rect innerRect) 
 	{
 		if (rectStackGroups.Count == 0)
@@ -268,6 +366,9 @@ public static class GUIScaleUtility
 		return innerRect;
 	}
 
+	/// <summary>
+	/// Transforms the rect to screen space
+	/// </summary>
 	public static Rect GUIToScreenRect (Rect guiRect) 
 	{
 		guiRect.position += getTopRectScreenSpace.position;
@@ -312,4 +413,6 @@ public static class GUIScaleUtility
 			Debug.Log (member.MemberType.ToString () + ": " + member.ToString ());
 		}
 	}
+
+	#endregion
 }

@@ -4,16 +4,12 @@ using NodeEditorFramework;
 
 namespace NodeEditorFramework
 {
-	[HideInInspector]
 	public class NodeInput : ScriptableObject
 	{
-		[HideInInspector]
 		public Node body;
 		[HideInInspector]
 		public Rect inputRect = new Rect();
-		[HideInInspector]
 		public NodeOutput connection;
-		[HideInInspector]
 		public string type;
 
 		public T GetValue<T> ()

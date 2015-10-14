@@ -7,13 +7,10 @@ namespace NodeEditorFramework
 {
 	public abstract class Node : ScriptableObject
 	{
-		[HideInInspector]
 		public Rect rect = new Rect ();
 
 		// Calculation graph
-		[HideInInspector]
 		public List<NodeInput> Inputs = new List<NodeInput>();
-		[HideInInspector]
 		public List<NodeOutput> Outputs = new List<NodeOutput>();
 		[HideInInspector]
 		public bool calculated = true;
@@ -154,16 +151,6 @@ namespace NodeEditorFramework
 			{
 				name = UnityEditor.ObjectNames.NicifyVariableName (GetID);
 			}
-			if (!String.IsNullOrEmpty(UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas)))
-			{
-				UnityEditor.AssetDatabase.AddObjectToAsset (this, NodeEditor.curNodeCanvas);
-				for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-					UnityEditor.AssetDatabase.AddObjectToAsset (Inputs [inCnt], this);
-				for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-					UnityEditor.AssetDatabase.AddObjectToAsset (Outputs [outCnt], this);
-				
-				UnityEditor.AssetDatabase.ImportAsset (UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas));
-			}
 	#endif
 		}
 
@@ -268,12 +255,6 @@ namespace NodeEditorFramework
 			
 			DestroyImmediate (this, true);
 
-	#if UNITY_EDITOR
-			if (!String.IsNullOrEmpty (UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas))) 
-			{
-				UnityEditor.AssetDatabase.ImportAsset (UnityEditor.AssetDatabase.GetAssetPath (NodeEditor.curNodeCanvas));
-			}
-	#endif
 			NodeEditorCallbacks.IssueOnDeleteNode (this);
 		}
 		

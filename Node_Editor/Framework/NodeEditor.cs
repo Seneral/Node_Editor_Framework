@@ -831,71 +831,45 @@ namespace NodeEditorFramework
 		#region Save/Load
 
 		/// <summary>
-		/// Loads the editorStates found in the nodeCanvas asset file at path
-		/// </summary>
-		public static List<NodeEditorState> LoadEditorStates (string path) 
-		{
-			if (String.IsNullOrEmpty (path))
-				return new List<NodeEditorState> ();
-	#if UNITY_EDITOR
-			Object[] objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
-	#else
-			Object[] objects = Resources.LoadAll (path);
-	#endif
-			if (objects.Length == 0) 
-				return new List<NodeEditorState> ();
-			
-			// Obtain the editorStates in that asset file
-			List<NodeEditorState> editorStates = new List<NodeEditorState> ();
-			for (int cnt = 0; cnt < objects.Length; cnt++) 
-			{
-				if (objects [cnt].GetType () == typeof (NodeEditorState)) 
-				{
-					editorStates.Add (objects [cnt] as NodeEditorState);
-					NodeEditorCallbacks.IssueOnLoadEditorState (editorStates[editorStates.Count-1]);
-				}
-			}
-
-	#if UNITY_EDITOR
-			UnityEditor.AssetDatabase.Refresh ();
-	#endif
-
-			return editorStates;
-		}
-
-		/// <summary>
 		/// Saves the current node canvas as a new asset and links optional editorStates with it
 		/// </summary>
 		public static void SaveNodeCanvas (NodeCanvas nodeCanvas, string path, params NodeEditorState[] editorStates) 
 		{
 			if (String.IsNullOrEmpty (path))
 				return;
+
+			nodeCanvas = GetWorkingCopy (nodeCanvas);
+			for (int stateCnt = 0; stateCnt < editorStates.Length; stateCnt++)
+				editorStates[stateCnt] = GetWorkingCopy (editorStates[stateCnt], nodeCanvas);
+
 	#if UNITY_EDITOR
-			string existingPath = UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas);
-			if (!String.IsNullOrEmpty (existingPath))
-			{
-				if (existingPath != path) 
-				{
-					UnityEditor.AssetDatabase.CopyAsset (existingPath, path);
-					UnityEditor.AssetDatabase.SaveAssets ();
-					UnityEditor.AssetDatabase.Refresh ();
-				}
-				return;
-			}
 			UnityEditor.AssetDatabase.CreateAsset (nodeCanvas, path);
-			foreach (NodeEditorState editorState in editorStates)
+			foreach (NodeEditorState editorState in editorStates) 
+			{
 				UnityEditor.AssetDatabase.AddObjectToAsset (editorState, nodeCanvas);
+				editorState.hideFlags = HideFlags.HideInHierarchy;
+			}
 			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
 			{ // Add every node and every of it's inputs/outputs into the file. 
 				// Results in a big mess but there's no other way (like a hierarchy)
 				Node node = nodeCanvas.nodes [nodeCnt];
 				UnityEditor.AssetDatabase.AddObjectToAsset (node, nodeCanvas);
+				node.hideFlags = HideFlags.HideInHierarchy;
 				for (int inCnt = 0; inCnt < node.Inputs.Count; inCnt++) 
+				{
 					UnityEditor.AssetDatabase.AddObjectToAsset (node.Inputs [inCnt], node);
-				for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++) 
+					node.Inputs [inCnt].hideFlags = HideFlags.HideInHierarchy;
+				}
+				for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
+				{
 					UnityEditor.AssetDatabase.AddObjectToAsset (node.Outputs [outCnt], node);
-				for (int transCnt = 0; transCnt < node.transitions.Count; transCnt++) 
+					node.Outputs [outCnt].hideFlags = HideFlags.HideInHierarchy;
+				}
+				for (int transCnt = 0; transCnt < node.transitions.Count; transCnt++)
+				{
 					UnityEditor.AssetDatabase.AddObjectToAsset (node.transitions [transCnt], node);
+					node.transitions [transCnt].hideFlags = HideFlags.HideInHierarchy;
+				}
 			}
 			UnityEditor.AssetDatabase.SaveAssets ();
 			UnityEditor.AssetDatabase.Refresh ();
@@ -903,6 +877,50 @@ namespace NodeEditorFramework
 			// TODO: Node Editor: Need to implement ingame-saving (Resources, AsssetBundles, ... won't work)
 	#endif
 			NodeEditorCallbacks.IssueOnSaveCanvas (nodeCanvas);
+		}
+
+		/// <summary>
+		/// Loads the editorStates found in the nodeCanvas asset file at path
+		/// </summary>
+		public static List<NodeEditorState> LoadEditorStates (string path) 
+		{
+			if (String.IsNullOrEmpty (path))
+				return new List<NodeEditorState> ();
+			#if UNITY_EDITOR
+			Object[] objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
+			#else
+			Object[] objects = Resources.LoadAll (path);
+			#endif
+			if (objects.Length == 0) 
+				return new List<NodeEditorState> ();
+			
+			// Obtain the editorStates in that asset file
+			List<NodeEditorState> editorStates = new List<NodeEditorState> ();
+			NodeCanvas nodeCanvas = null;
+			for (int cnt = 0; cnt < objects.Length; cnt++) 
+			{
+				Object obj = objects [cnt];
+				if (obj.GetType () == typeof (NodeEditorState)) 
+				{
+					NodeEditorState editorState = obj as NodeEditorState;
+					editorStates.Add (editorState);
+					NodeEditorCallbacks.IssueOnLoadEditorState (editorState);
+				}
+				else if (obj.GetType () == typeof (NodeCanvas))
+					nodeCanvas = obj as NodeCanvas;
+			}
+
+			if (nodeCanvas == null)
+				return new List<NodeEditorState> ();
+
+			for (int stateCnt = 0; stateCnt < editorStates.Count; stateCnt++)
+				editorStates[stateCnt] = GetWorkingCopy (editorStates[stateCnt], nodeCanvas);
+
+			#if UNITY_EDITOR
+			UnityEditor.AssetDatabase.Refresh ();
+			#endif
+			
+			return editorStates;
 		}
 		
 		/// <summary>
@@ -919,20 +937,116 @@ namespace NodeEditorFramework
 	#endif
 			if (objects.Length == 0) 
 				return null;
+			// We're going to filter out the NodeCanvas out of the objects that build up the save file.
 			NodeCanvas nodeCanvas = null;
-			
 			for (int cnt = 0; cnt < objects.Length; cnt++) 
-			{ // We only have to search for the NodeCanvas itself in the mess, because it still holds references to all of it's nodes and their connections
+			{
 				if (objects [cnt] && objects [cnt].GetType () == typeof (NodeCanvas)) 
 					nodeCanvas = objects [cnt] as NodeCanvas;
 			}
 			if (nodeCanvas == null)
 				return null;
+
+			nodeCanvas = GetWorkingCopy (nodeCanvas);
+
 	#if UNITY_EDITOR
 			UnityEditor.AssetDatabase.Refresh ();
 	#endif	
 			NodeEditorCallbacks.IssueOnLoadCanvas (nodeCanvas);
 			return nodeCanvas;
+		}
+
+		// <summary>
+		/// Gets a working copy of the editor state. This will break the link to the asset and thus all changes made to the working copy have to be explicitly saved.
+		/// </summary>
+		public static NodeEditorState GetWorkingCopy (NodeEditorState editorState, NodeCanvas nodeCanvas) 
+		{
+			editorState = Clone (editorState);
+			editorState.connectOutput = null;
+			editorState.focusedNode = null;
+			editorState.makeTransition = null;
+			editorState.canvas = nodeCanvas;
+			return editorState;
+		}
+
+		/// <summary>
+		/// Gets a working copy of the canvas. This will break the link to the canvas asset and thus all changes made to the working copy have to be explicitly saved.
+		/// </summary>
+		public static NodeCanvas GetWorkingCopy (NodeCanvas nodeCanvas) 
+		{
+			// In order to break the asset link, we have to clone each scriptable object asset individually.
+			// That means, as they are reference types, we need to take care of the references to the object.
+
+			nodeCanvas = Clone (nodeCanvas);
+
+			// First, we write each scriptable object into a list
+			List<ScriptableObject> scriptableObjects = new List<ScriptableObject> ();
+			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
+			{
+				Node node = nodeCanvas.nodes [nodeCnt];
+				scriptableObjects.Add (node);
+				for (int inCnt = 0; inCnt < node.Inputs.Count; inCnt++)
+					scriptableObjects.Add (node.Inputs [inCnt]);
+				for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
+					scriptableObjects.Add (node.Outputs [outCnt]);
+				for (int transCnt = 0; transCnt < node.transitions.Count; transCnt++)
+					scriptableObjects.Add (node.transitions [transCnt]);
+			}
+
+			// We create a second list holding the cloned SOs
+			List<ScriptableObject> clonedScriptableObjects = new List<ScriptableObject> ();
+			for (int soCnt = 0; soCnt < scriptableObjects.Count; soCnt++)
+			{
+				clonedScriptableObjects.Add (Clone (scriptableObjects[soCnt]));
+			}
+
+			// Then we replace every reference to any of these SOs with the cloned ones using the first list
+			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
+			{
+				Node node = nodeCanvas.nodes [nodeCnt] = ReplaceSO (scriptableObjects, clonedScriptableObjects, nodeCanvas.nodes [nodeCnt]);
+				
+				for (int inCnt = 0; inCnt < node.Inputs.Count; inCnt++) 
+				{
+					NodeInput nodeInput = node.Inputs [inCnt] = ReplaceSO (scriptableObjects, clonedScriptableObjects, node.Inputs [inCnt]);
+					nodeInput.body = node;
+					nodeInput.connection = ReplaceSO (scriptableObjects, clonedScriptableObjects, nodeInput.connection);
+				}
+
+				for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
+				{
+					NodeOutput nodeOutput = node.Outputs [outCnt] = ReplaceSO (scriptableObjects, clonedScriptableObjects, node.Outputs [outCnt]);
+					nodeOutput.body = node;
+					for (int conCnt = 0; conCnt < nodeOutput.connections.Count; conCnt++) 
+						nodeOutput.connections [conCnt] = ReplaceSO (scriptableObjects, clonedScriptableObjects, nodeOutput.connections [conCnt]);
+				}
+
+				for (int transCnt = 0; transCnt < node.transitions.Count; transCnt++)
+				{
+					Transition trans = node.transitions [transCnt] = ReplaceSO (scriptableObjects, clonedScriptableObjects, node.transitions [transCnt]);
+					trans.startNode = ReplaceSO (scriptableObjects, clonedScriptableObjects, trans.startNode);
+					trans.endNode = ReplaceSO (scriptableObjects, clonedScriptableObjects, trans.endNode);
+				}
+			}
+
+			return nodeCanvas;
+		}
+
+		private static T Clone<T> (T SO) where T : ScriptableObject 
+		{
+			string soName = SO.name;
+			SO = Object.Instantiate(SO);
+			SO.name = soName;
+			return SO;
+		}
+
+		private static T ReplaceSO<T> (List<ScriptableObject> scriptableObjects, List<ScriptableObject> clonedScriptableObjects, T initialSO) where T : ScriptableObject 
+		{
+			if (initialSO == null)
+				return null;
+			int soInd = scriptableObjects.IndexOf (initialSO);
+			if (soInd == -1)
+				throw new UnityException ("GetWorkingCopy: Scriptable Object not cloned in first run!");
+			return (T)clonedScriptableObjects[soInd];
 		}
 
 		#endregion

@@ -5,16 +5,12 @@ using NodeEditorFramework;
 
 namespace NodeEditorFramework 
 {
-	[HideInInspector]
 	public class NodeOutput : ScriptableObject
 	{
-		[HideInInspector]
 		public Node body;
 		[HideInInspector]
 		public Rect outputRect = new Rect();
-		[HideInInspector]
 		public List<NodeInput> connections = new List<NodeInput>();
-		[HideInInspector]
 		public string type;
 
 		[System.NonSerialized]

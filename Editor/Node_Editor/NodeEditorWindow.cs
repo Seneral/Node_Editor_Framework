@@ -94,7 +94,7 @@ namespace NodeEditorFramework
 
 		public void DrawSideWindow () 
 		{
-			GUILayout.Label (new GUIContent ("Node Editor (" + openedCanvas + ")", "The currently opened canvas in the Node Editor"), NodeEditorGUI.nodeLabelBold);
+			GUILayout.Label (new GUIContent ("Node Editor (" + mainNodeCanvas.name + ")", "The currently opened canvas in the Node Editor"), NodeEditorGUI.nodeLabelBold);
 			GUILayout.Label (new GUIContent ("Do note that changes will be saved automatically!", "All changes are automatically saved to the currently opened canvas (see above) if it's present in the Project view."));
 			if (GUILayout.Button (new GUIContent ("Save Canvas", "Saves the canvas as a new Canvas Asset File in the Assets Folder"))) 
 			{
@@ -180,13 +180,12 @@ namespace NodeEditorFramework
 		{
 			// New NodeCanvas
 			mainNodeCanvas = CreateInstance<NodeCanvas> ();
-			mainNodeCanvas.nodes = new List<Node> ();
+			mainNodeCanvas.name = "New Canvas";
 			// New NodeEditorState
 			mainEditorState = CreateInstance<NodeEditorState> ();
 			mainEditorState.canvas = mainNodeCanvas;
 			mainEditorState.name = "MainEditorState";
 			// Set some properties
-			openedCanvas = "New Canvas";
 			openedCanvasPath = "";
 		}
 		
