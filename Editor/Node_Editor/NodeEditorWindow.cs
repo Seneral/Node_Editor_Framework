@@ -50,6 +50,19 @@ namespace NodeEditorFramework
 			NodeEditor.initiated = false;
 		}
 
+		[UnityEditor.Callbacks.OnOpenAsset(1)]
+		public static bool OnOpenAsset (int instanceID, int line) 
+		{
+			if (Selection.activeObject as NodeCanvas != null) 
+			{
+				string NodeCanvasPath = AssetDatabase.GetAssetPath (instanceID);
+				NodeEditorWindow.CreateEditor ();
+				EditorWindow.GetWindow<NodeEditorWindow> ().LoadNodeCanvas (NodeCanvasPath);
+				return true;
+			}
+			return false;
+		}
+
 		public void OnDestroy () 
 		{
 			NodeEditor.Repaint -= _editor.Repaint;

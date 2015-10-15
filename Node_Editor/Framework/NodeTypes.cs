@@ -18,9 +18,7 @@ namespace NodeEditorFramework
 		{
 			nodes = new Dictionary<Node, NodeData> ();
 
-			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ()
-				.Where ((Assembly a) => a.FullName.StartsWith ("Assembly-"))
-					.ToList (); // This filters out all script assemblies
+			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().ToList ();
 			if (!scriptAssemblies.Contains (Assembly.GetExecutingAssembly ()))
 				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
 			foreach (Assembly assembly in scriptAssemblies) 

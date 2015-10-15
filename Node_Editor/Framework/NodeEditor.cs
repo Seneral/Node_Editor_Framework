@@ -153,9 +153,12 @@ namespace NodeEditorFramework
 			}
 			if (curEditorState.connectOutput != null)
 			{ // Draw the currently drawn connection
-				DrawConnection (curEditorState.connectOutput.GetGUIKnob ().center, 
-				                ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
-				                ConnectionTypes.GetTypeData (curEditorState.connectOutput.type).col);
+				NodeOutput output = curEditorState.connectOutput;
+				DrawConnection (output.GetGUIKnob ().center,
+				                output.GetDirection (),
+				                ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom,
+				                Vector2.right,
+				                ConnectionTypes.GetTypeData (output.type).col);
 				if (Repaint != null)
 					Repaint ();
 			}
@@ -167,20 +170,27 @@ namespace NodeEditorFramework
 				if (Repaint != null)
 					Repaint ();
 			}
-			
+
+			// Push the active cell at the bottom of the draw order.
+			if (Event.current.type == EventType.Layout && curEditorState.activeNode != null)
+			{
+				curNodeCanvas.nodes.Remove (curEditorState.activeNode);
+				curNodeCanvas.nodes.Add (curEditorState.activeNode);
+			}
+
 			// Draw the transitions. Has to be called before nodes as transitions originate from node centers
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
 				curNodeCanvas.nodes [nodeCnt].DrawTransitions ();
-			
-			// Draw the nodes
-			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++)
-				DrawNode (curNodeCanvas.nodes [nodeCnt]);
-			
-			// Draw the Node connectors; Seperated because of render order
+
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
 				curNodeCanvas.nodes [nodeCnt].DrawConnections ();
-			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
+
+			// Draw the nodes
+			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++)
+			{
+				curNodeCanvas.nodes [nodeCnt].DrawNode ();
 				curNodeCanvas.nodes [nodeCnt].DrawKnobs ();
+			}
 			
 			// ---- END SCALE ----
 
@@ -213,64 +223,50 @@ namespace NodeEditorFramework
 			if (!editorState.canvasRect.Contains (pos))
 				return null;
 			
-			// Check if we clicked inside a window (or knobSize pixels left or right of it at outputs, for faster knob recognition)
+			// Check if we clicked inside a window or on it's knobs
 			float KnobSize = (float)NodeEditor.knobSize/editorState.zoom;
-			if (editorState.activeNode != null) 
-			{ // active Node is drawn ontop, so we check it first
-				Rect NodeRect = new Rect (GUIToScreenRect (editorState.activeNode.rect));
-				NodeRect = new Rect (NodeRect.x - KnobSize, NodeRect.y, NodeRect.width + KnobSize*2, NodeRect.height);
-				if (NodeRect.Contains (pos))
-					return editorState.activeNode;
-			}
+
 			for (int nodeCnt = nodecanvas.nodes.Count-1; nodeCnt >= 0; nodeCnt--) 
 			{ // checked from top to bottom because of the render order
-				Rect NodeRect = new Rect (GUIToScreenRect (nodecanvas.nodes [nodeCnt].rect));
-				NodeRect = new Rect (NodeRect.x - KnobSize, NodeRect.y, NodeRect.width + KnobSize*2, NodeRect.height);
-				if (NodeRect.Contains (pos))
-					return nodecanvas.nodes [nodeCnt];
+				Node node = nodecanvas.nodes [nodeCnt];
+
+				Rect nodeRect = new Rect (GUIToScreenRect (node.rect));
+				if (nodeRect.Contains (pos))
+					return node;
+
+				for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++) 
+				{
+					if (node.Outputs[outCnt].GetScreenKnob ().Contains (pos))
+						return node;
+				}
+
+				for (int inCnt = 0; inCnt < node.Inputs.Count; inCnt++) 
+				{
+					if (node.Inputs[inCnt].GetScreenKnob ().Contains (pos))
+						return node;
+				}
 			}
 			return null;
 		}
 
 		/// <summary>
-		/// Draws the node. Depends on curEditorState
-		/// </summary>
-		public static void DrawNode (Node node)
-		{
-			// TODO: Node Editor Feature: Custom Windowing System
-			Rect nodeRect = node.rect;
-			nodeRect.position += curEditorState.zoomPanAdjust;
-			float headerHeight = 20;
-			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, headerHeight);
-			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + headerHeight, nodeRect.width, nodeRect.height - headerHeight);
-			
-			GUIStyle headerStyle = new GUIStyle (GUI.skin.box);
-			if (curEditorState.activeNode == node)
-				headerStyle.fontStyle = FontStyle.Bold;
-			GUI.Label (headerRect, new GUIContent (node.name), headerStyle);
-			GUI.changed = false;
-			GUILayout.BeginArea (bodyRect, GUI.skin.box);
-			node.NodeGUI ();
-
-//			if (GUI.changed) 
-//			{
-//				Vector2 size = GUIClipHierarchy.GetSizeOfCurrentGroupContent ();
-//				if (size != Vector2.zero)
-//					node.rect = new Rect (node.rect.x, node.rect.y, size.x, size.y+headerHeight);
-//			}
-			GUILayout.EndArea ();
-		}
-
-		/// <summary>
-		/// Draws a node connection from start to end
+		/// Draws a node connection from start to end, vectors being Vector2.right
 		/// </summary>
 		public static void DrawConnection (Vector2 startPos, Vector2 endPos, Color col) 
 		{
-#if NODE_EDITOR_LINE_CONNECTION
+			DrawConnection (startPos, Vector2.right, endPos, Vector2.right, col);
+		}
+
+		/// <summary>
+		/// Draws a node connection from start to end with specified vectors
+		/// </summary>
+		public static void DrawConnection (Vector2 startPos, Vector2 startDir, Vector2 endPos, Vector2 endDir, Color col) 
+		{
+			#if NODE_EDITOR_LINE_CONNECTION
 			DrawLine (startPos, endPos, col * Color.gray, null, 3);
-#else
-			NodeEditorGUI.DrawBezier (startPos, endPos, startPos + Vector2.right * 50, endPos + Vector2.right * -50, col * Color.gray, null, 3);
-#endif
+			#else
+			NodeEditorGUI.DrawBezier (startPos, endPos, startPos + startDir * 50, endPos + endDir * -50, col * Color.gray, null, 3);
+			#endif
 		}
 
 		/// <summary>
@@ -499,7 +495,7 @@ namespace NodeEditorFramework
 				
 			case EventType.ScrollWheel:
 
-				curEditorState.zoom = Mathf.Min (2.0f, Mathf.Max (0.6f, curEditorState.zoom + e.delta.y / 15));
+				curEditorState.zoom = (float)Math.Round (Math.Min (2.0f, Math.Max (0.6f, curEditorState.zoom + e.delta.y / 15)), 2);
 				if (Repaint != null)
 					Repaint ();
 
@@ -730,7 +726,7 @@ namespace NodeEditorFramework
 			workList = new List<Node> ();
 			foreach (Node node in nodeCanvas.nodes) 
 			{
-				if (node.Inputs.Count == 0) 
+				if (node.Inputs.Count == 0 && node.shouldCalculate) 
 				{ // Add all Inputs
 					if (calculateInputs)
 					{
@@ -778,8 +774,7 @@ namespace NodeEditorFramework
 				limitReached = true;
 				for (int workCnt = 0; workCnt < workList.Count; workCnt++) 
 				{
-					Node node = workList [workCnt];
-					if (ContinueCalculation (node))
+					if (ContinueCalculation (workList [workCnt]))
 						limitReached = false;
 				}
 			}
@@ -792,6 +787,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static bool ContinueCalculation (Node node) 
 		{
+			if (!node.shouldCalculate)
+				return false;
 			if (node.descendantsCalculated () && node.Calculate ())
 			{ // finished Calculating, continue with the children
 				for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
@@ -930,10 +927,14 @@ namespace NodeEditorFramework
 		{
 			if (String.IsNullOrEmpty (path))
 				return null;
+			Object[] objects;
 	#if UNITY_EDITOR
-			Object[] objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
+		if (!Application.isPlaying)
+				objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
+			else
+				objects = Resources.LoadAll (path);
 	#else
-			Object[] objects = Resources.LoadAll (path);
+			objects = Resources.LoadAll (path);
 	#endif
 			if (objects.Length == 0) 
 				return null;

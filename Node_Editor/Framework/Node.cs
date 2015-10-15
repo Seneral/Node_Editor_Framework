@@ -15,23 +15,28 @@ namespace NodeEditorFramework
 		[HideInInspector]
 		public bool calculated = true;
 
+		public bool allowRecursion = false;
+		public bool shouldCalculate = true;
+
 		// State graph
 		public List<Transition> transitions = new List<Transition> ();
 
+		#region Abstract Member
+
 		// Abstract member to get the ID of the node
 		public abstract string GetID { get; }
-
+		
 		/// <summary>
 		/// Function implemented by the children to create the node
 		/// </summary>
 		/// <param name="pos">Position.</param>
 		public abstract Node Create (Vector2 pos);
-
+		
 		/// <summary>
 		/// Function implemented by the children to draw the node
 		/// </summary>
 		public abstract void NodeGUI ();
-
+		
 		/// <summary>
 		/// Function implemented by the children to calculate their outputs
 		/// Should return Success/Fail
@@ -43,8 +48,155 @@ namespace NodeEditorFramework
 		/// </summary>
 		public virtual void OnDelete () {}
 
-		#region Member Functions
+		#endregion
 
+		#region Drawing
+
+		/// <summary>
+		/// Draws the node. Depends on curEditorState. Can be overridden by an node type.
+		/// </summary>
+		public virtual void DrawNode () 
+		{
+			// TODO: Node Editor Feature: Custom Windowing System
+			Rect nodeRect = rect;
+			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust;
+			float headerHeight = 20;
+			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, headerHeight);
+			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + headerHeight, nodeRect.width, nodeRect.height - headerHeight);
+			
+			GUIStyle headerStyle = new GUIStyle (GUI.skin.box);
+			if (NodeEditor.curEditorState.activeNode == this)
+				headerStyle.fontStyle = FontStyle.Bold;
+			GUI.Label (headerRect, new GUIContent (name), headerStyle);
+			
+			GUI.changed = false;
+			GUILayout.BeginArea (bodyRect, GUI.skin.box);
+			NodeGUI ();
+			GUILayout.EndArea ();
+		}
+
+		/// <summary>
+		/// Draws the node knobs; splitted from curves because of the render order
+		/// </summary>
+		public void DrawKnobs () 
+		{
+			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
+			{
+				NodeOutput output = Outputs[outCnt];
+				Rect knobRect = output.GetGUIKnob ();
+				Matrix4x4 GUIMatrix = GUI.matrix;
+				if (output.side != NodeSide.Right)
+					GUIUtility.RotateAroundPivot (output.GetRotation (), knobRect.center);
+				GUI.DrawTexture (knobRect, output.knobTexture);
+				GUI.matrix = GUIMatrix;
+			}
+			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
+			{
+				NodeInput input = Inputs[inCnt];
+				Rect knobRect = input.GetGUIKnob ();
+				Matrix4x4 GUIMatrix = GUI.matrix;
+				if (input.side != NodeSide.Left)
+					GUIUtility.RotateAroundPivot (input.GetRotation (), knobRect.center);
+				GUI.DrawTexture (knobRect, input.knobTexture);
+				GUI.matrix = GUIMatrix;
+			}
+		}
+		/// <summary>
+		/// Draws the node curves; splitted from knobs because of the render order
+		/// </summary>
+		public void DrawConnections () 
+		{
+			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
+			{
+				NodeOutput output = Outputs [outCnt];
+				Vector2 startPos = output.GetGUIKnob ().center;
+				Vector2 startDir = output.GetDirection ();
+
+				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
+				{
+					NodeInput input = output.connections [conCnt];
+					NodeEditor.DrawConnection (startPos,
+					                           startDir,
+					                           input.GetGUIKnob ().center,
+					                           input.GetDirection (),
+					                           ConnectionTypes.GetTypeData (output.type).col);
+				}
+			}
+		}
+		
+		/// <summary>
+		/// Draws the node transitions.
+		/// </summary>
+		public void DrawTransitions () 
+		{
+			for (int cnt = 0; cnt < transitions.Count; cnt++)
+			{
+				Vector2 StartPoint = transitions[cnt].startNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
+				Vector2 EndPoint = transitions[cnt].endNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
+				NodeEditorGUI.DrawLine (StartPoint, EndPoint, Color.grey, null, 3);
+				
+				Rect selectRect = new Rect (0, 0, 20, 20);
+				selectRect.center = Vector2.Lerp (StartPoint, EndPoint, 0.5f);
+				
+				if (GUI.Button (selectRect, "#"))
+				{
+					// TODO: Select
+				}
+				
+			}
+		}
+	
+		#endregion
+
+		#region Node Functions
+
+		/// <summary>
+		/// Init this node
+		/// </summary>
+		public void InitBase () 
+		{
+			if (shouldCalculate) 
+				Calculate ();
+
+			NodeEditor.curNodeCanvas.nodes.Add (this);
+			#if UNITY_EDITOR
+			if (name == "")
+			{
+				name = UnityEditor.ObjectNames.NicifyVariableName (GetID);
+			}
+			#endif
+		}
+
+		/// <summary>
+		/// Deletes this Node from curNodeCanvas
+		/// </summary>
+		public void Delete () 
+		{
+			NodeEditor.curNodeCanvas.nodes.Remove (this);
+			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
+			{
+				NodeOutput output = Outputs [outCnt];
+				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
+					output.connections [conCnt].connection = null;
+				DestroyImmediate (output, true);
+			}
+			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
+			{
+				NodeInput input = Inputs [inCnt];
+				if (input.connection != null)
+					input.connection.connections.Remove (input);
+				DestroyImmediate (input, true);
+			}
+
+			NodeEditorCallbacks.IssueOnDeleteNode (this);
+
+			DestroyImmediate (this, true);
+		}
+
+		#endregion
+		
+		#region Instance Utility
+		
 		/// <summary>
 		/// Checks if there are no unassigned and no null-value inputs.
 		/// </summary>
@@ -69,7 +221,7 @@ namespace NodeEditorFramework
 			}
 			return false;
 		}
-
+		
 		/// <summary>
 		/// Returns whether every node this node depends on has been calculated
 		/// </summary>
@@ -82,7 +234,7 @@ namespace NodeEditorFramework
 			}
 			return true;
 		}
-
+		
 		/// <summary>
 		/// Recursively checks whether this node is a child of the other node
 		/// </summary>
@@ -102,7 +254,7 @@ namespace NodeEditorFramework
 			}
 			return false;
 		}
-
+		
 		/// <summary>
 		/// Call this method in your NodeGUI to setup an output knob aligning with the y position of the last GUILayout control drawn.
 		/// </summary>
@@ -110,7 +262,7 @@ namespace NodeEditorFramework
 		protected void OutputKnob (int outputIdx)
 		{
 			if (Event.current.type == EventType.Repaint)
-				Outputs[outputIdx].SetRect (GUILayoutUtility.GetLastRect ());
+				Outputs[outputIdx].SetPosition ();
 		}
 		
 		/// <summary>
@@ -120,9 +272,9 @@ namespace NodeEditorFramework
 		protected void InputKnob (int inputIdx)
 		{
 			if (Event.current.type == EventType.Repaint)
-				Inputs[inputIdx].SetRect (GUILayoutUtility.GetLastRect ());
+				Inputs[inputIdx].SetPosition ();
 		}
-
+		
 		/// <summary>
 		/// Call this method to create an output on your node
 		/// </summary>
@@ -130,7 +282,7 @@ namespace NodeEditorFramework
 		{
 			NodeOutput.Create(this, outputName, outputType);
 		}
-
+		
 		/// <summary>
 		/// Call this method to create an input on your node
 		/// </summary>
@@ -138,22 +290,7 @@ namespace NodeEditorFramework
 		{
 			NodeInput.Create(this, inputName, inputType);
 		}
-
-		/// <summary>
-		/// Init this node. Has to be called when creating a child node
-		/// </summary>
-		public void InitBase () 
-		{
-			Calculate ();
-			NodeEditor.curNodeCanvas.nodes.Add (this);
-	#if UNITY_EDITOR
-			if (name == "")
-			{
-				name = UnityEditor.ObjectNames.NicifyVariableName (GetID);
-			}
-	#endif
-		}
-
+		
 		/// <summary>
 		/// Returns the input knob that is at the position on this node or null
 		/// </summary>
@@ -179,88 +316,9 @@ namespace NodeEditorFramework
 			return null;
 		}
 
-		/// <summary>
-		/// Draws the node knobs; splitted from curves because of the render order
-		/// </summary>
-		public void DrawKnobs () 
-		{
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-			{
-				GUI.DrawTexture(Outputs[outCnt].GetGUIKnob(), ConnectionTypes.GetTypeData(Outputs[outCnt].type).OutputKnob);
-			}
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-			{
-				GUI.DrawTexture(Inputs[inCnt].GetGUIKnob(), ConnectionTypes.GetTypeData(Inputs[inCnt].type).InputKnob);
-			}
-		}
-		/// <summary>
-		/// Draws the node curves; splitted from knobs because of the render order
-		/// </summary>
-		public void DrawConnections () 
-		{
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-			{
-				NodeOutput output = Outputs [outCnt];
-				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
-				{
-					NodeEditor.DrawConnection (output.GetGUIKnob ().center, 
-					                          output.connections [conCnt].GetGUIKnob ().center,
-											  ConnectionTypes.GetTypeData(output.type).col);
-				}
-			}
-		}
-
-		/// <summary>
-		/// Draws the node transitions.
-		/// </summary>
-		public void DrawTransitions () 
-		{
-			for (int cnt = 0; cnt < transitions.Count; cnt++)
-			{
-				Vector2 StartPoint = transitions[cnt].startNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
-				Vector2 EndPoint = transitions[cnt].endNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
-				NodeEditorGUI.DrawLine (StartPoint, EndPoint, Color.grey, null, 3);
-
-				Rect selectRect = new Rect (0, 0, 20, 20);
-				selectRect.center = Vector2.Lerp (StartPoint, EndPoint, 0.5f);
-
-				if (GUI.Button (selectRect, "#"))
-				{
-					// TODO: Select
-				}
-
-			}
-		}
-
-		/// <summary>
-		/// Deletes this Node from curNodeCanvas. Depends on that.
-		/// </summary>
-		public void Delete () 
-		{
-			NodeEditor.curNodeCanvas.nodes.Remove (this);
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-			{
-				NodeOutput output = Outputs [outCnt];
-				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-					output.connections [outCnt].connection = null;
-				DestroyImmediate (output, true);
-			}
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-			{
-				NodeInput input = Inputs [inCnt];
-				if (input.connection != null)
-					input.connection.connections.Remove (input);
-				DestroyImmediate (input, true);
-			}
-			
-			DestroyImmediate (this, true);
-
-			NodeEditorCallbacks.IssueOnDeleteNode (this);
-		}
-		
 		#endregion
-		
-		#region Static Functions
+
+		#region Static Utility
 
 		/// <summary>
 		/// Check if an output and an input can be connected (same type, ...)
@@ -276,7 +334,7 @@ namespace NodeEditorFramework
 			if (input.type != output.type)
 				return false;
 
-			if (output.body.isChildOf (input.body)) 
+			if ((!output.body.allowRecursion || !input.body.allowRecursion) && output.body.isChildOf (input.body)) 
 			{
 				// TODO: Generic Notification
 				//ShowNotification (new GUIContent ("Recursion detected!"));
@@ -299,7 +357,8 @@ namespace NodeEditorFramework
 				input.connection = output;
 				output.connections.Add (input);
 
-				NodeEditor.RecalculateFrom (input.body);
+				if (input.body.shouldCalculate)
+					NodeEditor.RecalculateFrom (input.body);
 
 				NodeEditorCallbacks.IssueOnAddConnection (input);
 			}

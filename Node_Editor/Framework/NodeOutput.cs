@@ -7,15 +7,38 @@ namespace NodeEditorFramework
 {
 	public class NodeOutput : ScriptableObject
 	{
+		// Main
 		public Node body;
-		[HideInInspector]
-		public Rect outputRect = new Rect();
-		public List<NodeInput> connections = new List<NodeInput>();
+		public List<NodeInput> connections = new List<NodeInput> ();
 		public string type;
+		public Texture2D knobTexture;
 
+		// Position
+		[HideInInspector]
+		public NodeSide side = NodeSide.Right;
+		public float sidePosition = 0; // Position on the side, top->bottom, left->right
+		public float sideOffset = 0; // Offset from the side
+
+		// Value
 		[System.NonSerialized]
 		private object value = null;
 		private System.Type valueType;
+
+		/// <summary>
+		/// Creates a new NodeOutput in NodeBody of specified type
+		/// </summary>
+		public static NodeOutput Create (Node NodeBody, string OutputName, string OutputType) 
+		{
+			NodeOutput output = CreateInstance <NodeOutput> ();
+			output.body = NodeBody;
+			output.type = OutputType;
+			output.knobTexture = ConnectionTypes.GetTypeData (OutputType).OutputKnob;
+			output.name = OutputName;
+			NodeBody.Outputs.Add (output);
+			return output;
+		}
+
+		#region Value
 
 		public bool IsValueNull { get { return value == null; } }
 
@@ -36,7 +59,7 @@ namespace NodeEditorFramework
 			UnityEngine.Debug.LogError ("Trying to GetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
 			return getDefault<T> ();
 		}
-
+		
 		/// <summary>
 		/// Sets the value.
 		/// </summary>
@@ -49,7 +72,7 @@ namespace NodeEditorFramework
 			else
 				UnityEngine.Debug.LogError("Trying to SetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
 		}
-
+		
 		/// <summary>
 		/// Resets the value to null.
 		/// </summary>
@@ -57,7 +80,7 @@ namespace NodeEditorFramework
 		{
 			value = null;
 		}
-
+		
 		/// <summary>
 		/// Returns for value types the default value; for reference types:, the default constructor if existant, else null
 		/// </summary>
@@ -75,28 +98,20 @@ namespace NodeEditorFramework
 			return var;
 		}
 
-		/// <summary>
-		/// Creates a new NodeOutput in NodeBody of specified type
-		/// </summary>
-		public static NodeOutput Create (Node NodeBody, string OutputName, string OutputType) 
-		{
-			NodeOutput output = CreateInstance <NodeOutput> ();
-			output.body = NodeBody;
-			output.type = OutputType;
-			output.name = OutputName;
-			NodeBody.Outputs.Add (output);
-			return output;
-		}
+		#endregion
+
+		#region Position
 
 		/// <summary>
-		/// Function to automatically draw and update the output with a label for it's name
+		/// Automatically draw the output with it's name and set the knob next to it at the current side.
 		/// </summary>
 		public void DisplayLayout () 
 		{
 			DisplayLayout (new GUIContent (name));
 		}
+
 		/// <summary>
-		/// Function to automatically draw and update the output
+		/// Automatically draw the output with the specified label and set the knob next to it at the current side.
 		/// </summary>
 		public void DisplayLayout (GUIContent content) 
 		{
@@ -104,47 +119,76 @@ namespace NodeEditorFramework
 			style.alignment = TextAnchor.MiddleRight;
 			GUILayout.Label (content, style);
 			if (Event.current.type == EventType.Repaint) 
-				SetRect (GUILayoutUtility.GetLastRect ());
+				SetPosition ();
 		}
-		
+
 		/// <summary>
-		/// Set the output rect as labelrect in global canvas space and extend it to the right node edge
+		/// Set the knob position at the specified side, from Top->Bottom and Left->Right
 		/// </summary>
-		public void SetRect (Rect labelRect) 
+		public void SetPosition (float position, NodeSide nodeSide) 
 		{
-			outputRect = new Rect (body.rect.x + labelRect.x, 
-			                       body.rect.y + labelRect.y + 20, 
-			                       body.rect.width - labelRect.x,
-			                       labelRect.height);
+			side = nodeSide;
+			SetPosition (position);
 		}
 		
 		/// <summary>
-		/// Get the rect of the knob right to the output NOT ZOOMED; Used for GUI drawing in scaled areas
+		/// Set the knob position at the current side, from Top->Bottom and Left->Right
+		/// </summary>
+		public void SetPosition (float position) 
+		{
+			sidePosition = position;
+		}
+
+		/// <summary>
+		/// Set the knob position at the current side next to the last Layout control
+		/// </summary>
+		public void SetPosition () 
+		{
+			Vector2 pos = GUILayoutUtility.GetLastRect ().center;
+			sidePosition = side == NodeSide.Bottom || side == NodeSide.Top? pos.x : pos.y+20;
+		}
+		
+		/// <summary>
+		/// Get the Knob rect in GUI space, NOT ZOOMED
 		/// </summary>
 		public Rect GetGUIKnob () 
 		{
-			Rect knobRect = new Rect (outputRect);
-			knobRect.position += NodeEditor.curEditorState.zoomPanAdjust;
-			return TransformOutputRect (knobRect);
-		}
+			if (knobTexture == null) 
+			{
+				knobTexture = ConnectionTypes.GetTypeData (type).OutputKnob;
+				if (knobTexture == null)
+					throw new UnityException ("Connection type " + type + " has no knob texture assigned!");
+			}
 
+			Vector2 center = new Vector2 (body.rect.x + (side == NodeSide.Bottom || side == NodeSide.Top? sidePosition : (side == NodeSide.Left? -sideOffset : body.rect.width+sideOffset)), 
+			                              body.rect.y + (side == NodeSide.Left || side == NodeSide.Right? sidePosition : (side == NodeSide.Top? -sideOffset : body.rect.height+sideOffset)));
+			Vector2 size = new Vector2 ((knobTexture.width/knobTexture.height) * NodeEditor.knobSize,
+			                            (knobTexture.height/knobTexture.width) * NodeEditor.knobSize);
+			Rect knobRect = new Rect (center.x + (side == NodeSide.Left? -size.x : 0), center.y + (side == NodeSide.Top? -size.y : (side == NodeSide.Bottom? 0 : -size.y/2)), size.x, size.y);
+			knobRect.position += NodeEditor.curEditorState.zoomPanAdjust;
+			return knobRect;
+		}
+		
 		/// <summary>
-		/// Get the rect of the knob right to the output ZOOMED; Used for input checks; Representative of the actual screen rect
+		/// Get the Knob rect in screen space, ZOOMED
 		/// </summary>
 		public Rect GetScreenKnob () 
 		{
-			return NodeEditor.GUIToScreenRect (TransformOutputRect (outputRect));
+			Rect rect = GetGUIKnob ();
+			rect.position -= NodeEditor.curEditorState.zoomPanAdjust;
+			return NodeEditor.GUIToScreenRect (rect);
 		}
 
-		/// <summary>
-		/// Transforms the output rect to the knob format
-		/// </summary>
-		private Rect TransformOutputRect (Rect knobRect) 
+		public Vector2 GetDirection () 
 		{
-			float knobSize = (float)NodeEditor.knobSize;
-			return new Rect (knobRect.x + knobRect.width,
-			                 knobRect.y + (knobRect.height - knobSize) / 2,
-			                 knobSize, knobSize);
+			return side == NodeSide.Right? Vector2.right : (side == NodeSide.Bottom? Vector2.up : (side == NodeSide.Left? Vector2.left : Vector2.down));
 		}
+
+		public float GetRotation () 
+		{
+			return side == NodeSide.Right? 0 : (side == NodeSide.Bottom? 90 : (side == NodeSide.Top? -90 : 180));
+		}
+
+		#endregion
 	}
 }

@@ -42,9 +42,7 @@ namespace NodeEditorFramework
 		{ // Search the current and (if the NodeEditor is packed into a .dll) the calling one
 			types = new Dictionary<string, TypeData> ();
 
-			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ()
-				.Where ((Assembly a) => a.FullName.StartsWith ("Assembly-"))
-					.ToList (); // This filters out all script assemblies
+			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().ToList ();
 			if (!scriptAssemblies.Contains (Assembly.GetExecutingAssembly ()))
 				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
 			foreach (Assembly assembly in scriptAssemblies) 
@@ -99,4 +97,7 @@ namespace NodeEditorFramework
 		public string OutputKnob_TexPath { get { return "Textures/Out_Knob.png"; } }
 		public Type Type { get { return typeof(float); } }
 	}
+
+	public enum NodeSide { Left, Right, Top, Bottom }
+
 }
