@@ -37,6 +37,8 @@ public static class GUIScaleUtility
 	private static FieldInfo currentGUILayoutCache;
 	private static FieldInfo currentTopLevelGroup;
 
+	private static bool compabilityMode;
+
 //	private static Type GUILayoutGroupType;
 //	private static Type GUILayoutEntryType;
 //
@@ -61,6 +63,16 @@ public static class GUIScaleUtility
 
 		GUIMatrices = new List<Matrix4x4> ();
 		adjustedGUILayout = new List<bool> ();
+
+		try
+		{
+			Rect rect = getTopRect;
+		}
+		catch (Exception e) 
+		{
+			Debug.LogWarning ("GUIScaleUtility cannot run on this system! Compability mode enabled. For you that means you're not able to use the Node Editor inside more than one group:( Please PM me (Seneral @UnityForums) so I can figure out what causes this! Thanks!");
+			compabilityMode = true;
+		}
 
 //		Type GUILayoutUtilityType = UnityEngine.GetType ("UnityEngine.GUILayoutUtility");
 //		currentGUILayoutCache = GUILayoutUtilityType.GetField ("current", BindingFlags.Static | BindingFlags.NonPublic);
@@ -89,10 +101,22 @@ public static class GUIScaleUtility
 	/// </summary>
 	public static Vector2 BeginScale (ref Rect rect, Vector2 zoomPivot, float zoom, bool adjustGUILayout) 
 	{
-		GUIScaleUtility.BeginNoClip ();
-		
-		Rect screenRect = GUIScaleUtility.InnerToScreenRect (rect);
-		
+		Rect screenRect;
+		if (compabilityMode) 
+		{
+			GUI.EndGroup ();
+			screenRect = rect;
+		#if UNITY_EDITOR
+			if (!Application.isPlaying)
+				screenRect.y += 23;
+		#endif
+		}
+		else
+		{
+			GUIScaleUtility.BeginNoClip ();
+			screenRect = GUIScaleUtility.InnerToScreenRect (rect);
+		}
+
 		// The Rect of the new clipping group to draw our nodes in
 		rect = ScaleRect (screenRect, screenRect.position + zoomPivot, new Vector2 (zoom, zoom));
 		
@@ -144,93 +168,24 @@ public static class GUIScaleUtility
 		adjustedGUILayout.RemoveAt (adjustedGUILayout.Count-1);
 		
 		GUI.EndGroup ();
-		
-		GUIScaleUtility.RestoreClips ();
+
+		if (compabilityMode)
+		{
+		#if UNITY_EDITOR
+			if (!Application.isPlaying)
+				GUI.BeginClip (new Rect (0, 23, Screen.width, Screen.height-23));
+			else
+				GUI.BeginClip (new Rect (0, 0, Screen.width, Screen.height));
+		#else
+			GUI.BeginClip (new Rect (0, 0, Screen.width, Screen.height));
+		#endif
+		}
+		else
+		{
+			GUIScaleUtility.RestoreClips ();
+		}
 	}
-
-	// FIXED VERSION FOR REFLECTION ERROR:
-
-//	/// <summary>
-//	/// Begins a scaled local area. 
-//	/// Returns vector to offset GUI controls with to account for zooming to the pivot. 
-//	/// Using adjustGUILayout does that automatically for GUILayout rects.
-//	/// </summary>
-//	public static Vector2 BeginScale (ref Rect rect, Vector2 zoomPivot, float zoom, bool adjustGUILayout) 
-//	{
-//		//GUIScaleUtility.BeginNoClip ();
-//		
-//		//Rect screenRect = GUIScaleUtility.InnerToScreenRect (rect);
-//		
-//		GUI.EndGroup ();
-//		Rect screenRect = rect;
-//		#if UNITY_EDITOR
-//		if (!Application.isPlaying)
-//			screenRect.y += 23;
-//		#endif
-//		// The Rect of the new clipping group to draw our nodes in
-//		rect = ScaleRect (screenRect, screenRect.position + zoomPivot, new Vector2 (zoom, zoom));
-//		
-//		// Now continue drawing using the new clipping group
-//		GUI.BeginGroup (rect);
-//		rect.position = Vector2.zero; // Adjust because we entered the new group
-//		
-//		// Because I currently found no way to actually scale to the center of the window rather than (0, 0),
-//		// I'm going to cheat and just pan it accordingly to let it appear as if it would scroll to the center
-//		// Note, due to that, other controls are still scaled to (0, 0)
-//		Vector2 zoomPosAdjust = rect.center - screenRect.size/2 + zoomPivot;
-//		
-//		// For GUILayout, we can make this adjustment here
-//		adjustedGUILayout.Add (adjustGUILayout);
-//		if (adjustGUILayout)
-//		{
-//			GUILayout.BeginHorizontal ();
-//			GUILayout.Space (rect.center.x - screenRect.size.x + zoomPivot.x);
-//			GUILayout.BeginVertical ();
-//			GUILayout.Space (rect.center.y - screenRect.size.y + zoomPivot.y);
-//		}
-//		
-//		// Take a matrix backup to restore back later on
-//		GUIMatrices.Add (GUI.matrix);
-//		
-//		// Scale GUI.matrix. After that we have the correct clipping group again.
-//		GUIUtility.ScaleAroundPivot (new Vector2 (1/zoom, 1/zoom), zoomPosAdjust);
-//		
-//		return zoomPosAdjust;
-//	}
-//	
-//	/// <summary>
-//	/// Ends a scale region
-//	/// </summary>
-//	public static void EndScale () 
-//	{
-//		// Set last matrix and clipping group
-//		if (GUIMatrices.Count == 0 || adjustedGUILayout.Count == 0)
-//			throw new UnityException ("GUIScaleutility: You are ending more scales than you are beginning!");
-//		GUI.matrix = GUIMatrices[GUIMatrices.Count-1];
-//		GUIMatrices.RemoveAt (GUIMatrices.Count-1);
-//		
-//		// End GUILayout zoomPosAdjustment
-//		if (adjustedGUILayout[adjustedGUILayout.Count-1])
-//		{
-//			GUILayout.EndVertical ();
-//			GUILayout.EndHorizontal ();
-//		}
-//		adjustedGUILayout.RemoveAt (adjustedGUILayout.Count-1);
-//		
-//		GUI.EndGroup ();
-//		
-//		#if UNITY_EDITOR
-//		if (!Application.isPlaying)
-//			GUI.BeginClip (new Rect (0, 23, Screen.width, Screen.height-23));
-//		else
-//			GUI.BeginClip (new Rect (0, 0, Screen.width, Screen.height));
-//		#else
-//		GUI.BeginClip (new Rect (0, 0, Screen.width, Screen.height));
-//		#endif
-//		
-//		//		GUIScaleUtility.RestoreClips ();
-//	}
-
+	
 	#endregion
 
 	#region Clips Hierarchy

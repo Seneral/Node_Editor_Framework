@@ -98,6 +98,6 @@ namespace NodeEditorFramework
 		public Type Type { get { return typeof(float); } }
 	}
 
-	public enum NodeSide { Left, Right, Top, Bottom }
+	public enum NodeSide { Left = 1, Bottom = 2, Right = 3, Top = 4 }
 
 }

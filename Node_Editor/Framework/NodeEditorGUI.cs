@@ -197,6 +197,26 @@ namespace NodeEditorFramework
 			tintedTex.Apply ();
 			return tintedTex;
 		}
+
+		public static Texture2D RotateTexture90Degrees (Texture2D tex) 
+		{
+			if (tex == null)
+				return null;
+			int width = tex.width, height = tex.height;
+			Color[] col = tex.GetPixels ();
+			Color[] rotatedCol = new Color[width*height];
+			for (int x = 0; x < width; x++) 
+			{
+				for (int y = 0; y < height; y++) 
+				{
+					rotatedCol[x*width + y] = col[(width-y-1) * width + x];
+				}
+			}
+			tex = new Texture2D (width, height, tex.format, tex.mipmapCount != 0);
+			tex.SetPixels (rotatedCol);
+			tex.Apply ();
+			return tex;
+		}
 		
 	}
 

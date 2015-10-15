@@ -11,12 +11,15 @@ namespace NodeEditorFramework
 		public Node body;
 		public List<NodeInput> connections = new List<NodeInput> ();
 		public string type;
+		[NonSerialized]
 		public Texture2D knobTexture;
 
 		// Position
-		[HideInInspector]
+		[NonSerialized]
 		public NodeSide side = NodeSide.Right;
+		[NonSerialized]
 		public float sidePosition = 0; // Position on the side, top->bottom, left->right
+		[NonSerialized]
 		public float sideOffset = 0; // Offset from the side
 
 		// Value
@@ -127,6 +130,17 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void SetPosition (float position, NodeSide nodeSide) 
 		{
+			if (side != nodeSide) 
+			{
+				int cur = (int)side, next = (int)nodeSide;
+				if (next < cur)
+					next += 4;
+				while (cur < next) 
+				{
+					knobTexture = NodeEditorGUI.RotateTexture90Degrees (knobTexture);
+					cur++;
+				}
+			}
 			side = nodeSide;
 			SetPosition (position);
 		}
@@ -153,13 +167,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public Rect GetGUIKnob () 
 		{
-			if (knobTexture == null) 
-			{
-				knobTexture = ConnectionTypes.GetTypeData (type).OutputKnob;
-				if (knobTexture == null)
-					throw new UnityException ("Connection type " + type + " has no knob texture assigned!");
-			}
-
+			CheckTexture ();
 			Vector2 center = new Vector2 (body.rect.x + (side == NodeSide.Bottom || side == NodeSide.Top? sidePosition : (side == NodeSide.Left? -sideOffset : body.rect.width+sideOffset)), 
 			                              body.rect.y + (side == NodeSide.Left || side == NodeSide.Right? sidePosition : (side == NodeSide.Top? -sideOffset : body.rect.height+sideOffset)));
 			Vector2 size = new Vector2 ((knobTexture.width/knobTexture.height) * NodeEditor.knobSize,
@@ -187,6 +195,28 @@ namespace NodeEditorFramework
 		public float GetRotation () 
 		{
 			return side == NodeSide.Right? 0 : (side == NodeSide.Bottom? 90 : (side == NodeSide.Top? -90 : 180));
+		}
+
+		public void CheckTexture () 
+		{
+			if (knobTexture == null) 
+			{
+				knobTexture = ConnectionTypes.GetTypeData (type).OutputKnob;
+				Debug.Log ("Checking textures!");
+				if (knobTexture == null)
+					throw new UnityException ("Connection type " + type + " has no knob texture assigned!");
+				if (side != NodeSide.Right) 
+				{
+					int cur = (int)NodeSide.Right, next = (int)side;
+					if (next < cur)
+						next += 4;
+					while (cur < next) 
+					{
+						knobTexture = NodeEditorGUI.RotateTexture90Degrees (knobTexture);
+						cur++;
+					}
+				}
+			}
 		}
 
 		#endregion
