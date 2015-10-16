@@ -202,7 +202,6 @@ namespace NodeEditorFramework
 			if (knobTexture == null) 
 			{
 				knobTexture = ConnectionTypes.GetTypeData (type).OutputKnob;
-				Debug.Log ("Checking textures!");
 				if (knobTexture == null)
 					throw new UnityException ("Connection type " + type + " has no knob texture assigned!");
 				if (side != NodeSide.Right) 
