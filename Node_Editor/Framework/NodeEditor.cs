@@ -27,7 +27,6 @@ namespace NodeEditorFramework
 
 		// Constants
 		public const string editorPath = "Assets/Plugins/Node_Editor/";
-		public const string resourcePath = "Assets/Plugins/Node_Editor/Resources/";
 
 		#region Setup
 
@@ -50,15 +49,17 @@ namespace NodeEditorFramework
 				}
 	#endif
 
+				ResourceManager.Init (editorPath + "Resources/");
+				
+				if (!NodeEditorGUI.Init ())
+					InitiationError = true;
+
 				ConnectionTypes.FetchTypes ();
 
 				NodeTypes.FetchNodes ();
 
 				NodeEditorCallbacks.SetupReceivers ();
 				NodeEditorCallbacks.IssueOnEditorStartUp ();
-
-				if (!NodeEditorGUI.Init ())
-					InitiationError = true;
 
 				GUIScaleUtility.Init ();
 
@@ -80,14 +81,12 @@ namespace NodeEditorFramework
 			
 			NodeEditorGUI.StartNodeGUI ();
 			
-			if (Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint)
-				GenericMenu.DrawActive ();
+			OverlayGUI.StartOverlayGUI ();
 			
 			DrawSubCanvas (nodeCanvas, editorState);
 			
-			if (Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint)
-				GenericMenu.DrawActive ();
-			
+			OverlayGUI.EndOverlayGUI ();
+
 			NodeEditorGUI.EndNodeGUI ();
 		}
 
@@ -222,9 +221,6 @@ namespace NodeEditorFramework
 		{	
 			if (!editorState.canvasRect.Contains (pos))
 				return null;
-			
-			// Check if we clicked inside a window or on it's knobs
-			float KnobSize = (float)NodeEditor.knobSize/editorState.zoom;
 
 			for (int nodeCnt = nodecanvas.nodes.Count-1; nodeCnt >= 0; nodeCnt--) 
 			{ // checked from top to bottom because of the render order
@@ -265,7 +261,7 @@ namespace NodeEditorFramework
 			#if NODE_EDITOR_LINE_CONNECTION
 			DrawLine (startPos, endPos, col * Color.gray, null, 3);
 			#else
-			NodeEditorGUI.DrawBezier (startPos, endPos, startPos + startDir * 50, endPos + endDir * -50, col * Color.gray, null, 3);
+			NodeEditorGUI.DrawBezier (startPos, endPos, startPos + startDir * 80, endPos + endDir * -80, col * Color.gray, null, 3);
 			#endif
 		}
 
@@ -318,7 +314,7 @@ namespace NodeEditorFramework
 			Event e = Event.current;
 			mousePos = e.mousePosition;
 
-			if (GenericMenu.current != null)
+			if (OverlayGUI.HasPopupControl ())
 				return;
 
 			bool insideCanvas = curEditorState.canvasRect.Contains (e.mousePosition);

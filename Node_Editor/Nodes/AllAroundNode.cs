@@ -38,7 +38,7 @@ public class AllAroundNode : Node
 		Rect bodyRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, nodeRect.height);
 		
 		GUI.changed = false;
-		GUILayout.BeginArea (bodyRect);
+		GUILayout.BeginArea (bodyRect, GUI.skin.box);
 		NodeGUI ();
 		GUILayout.EndArea ();
 	}

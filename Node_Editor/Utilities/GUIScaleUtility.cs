@@ -3,17 +3,18 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 using System.Reflection;
+using Vexe.Runtime.Extensions;
 
 public static class GUIScaleUtility
 {
-	private static MethodInfo GetTopRect;
-	private static PropertyInfo topmostRect;
+	private static MethodCaller<GUI, Rect> GetTopRectDelegate;
+	private static MemberGetter<GUI, Rect> topmostRectDelegate;
 
 	public static Rect getTopRect
 	{
 		get 
 		{
-			return (Rect)GetTopRect.Invoke (null, null);
+			return (Rect)GetTopRectDelegate.Invoke (null, null);
 		}
 	}
 
@@ -21,12 +22,9 @@ public static class GUIScaleUtility
 	{
 		get 
 		{
-			return (Rect)topmostRect.GetValue (null, null);
+			return (Rect)topmostRectDelegate.Invoke (null);
 		}
 	}
-
-	public static MethodInfo GetMatrix;
-
 
 	public static List<Rect> currentRectStack { get; private set; }
 	private static List<List<Rect>> rectStackGroups;
@@ -53,9 +51,12 @@ public static class GUIScaleUtility
 
 		Type GUIClipType = UnityEngine.GetType ("UnityEngine.GUIClip");
 
-		topmostRect = GUIClipType.GetProperty ("topmostRect", BindingFlags.Static | BindingFlags.Public);
-		GetTopRect = GUIClipType.GetMethod ("GetTopRect", BindingFlags.Static | BindingFlags.NonPublic);
-		GetMatrix = GUIClipType.GetMethod ("GetMatrix", BindingFlags.Static | BindingFlags.NonPublic);
+		PropertyInfo topmostRect = GUIClipType.GetProperty ("topmostRect", BindingFlags.Static | BindingFlags.Public);
+		MethodInfo GetTopRect = GUIClipType.GetMethod ("GetTopRect", BindingFlags.Static | BindingFlags.NonPublic);
+
+		// Not actually GUI we're calling on but we cannot adress GUIClip as it's private and it's static so we would pass null anyways:
+		GetTopRectDelegate = GetTopRect.DelegateForCall<GUI, Rect> ();
+		topmostRectDelegate = topmostRect.DelegateForGet<GUI, Rect> ();
 
 		// As we can call Begin/Ends inside another, we need to save their states hierarchial in Lists:
 		currentRectStack = new List<Rect> ();
@@ -66,9 +67,9 @@ public static class GUIScaleUtility
 
 		try
 		{
-			Rect rect = getTopRect;
+			topmostRectDelegate.Invoke (null);
 		}
-		catch (Exception e) 
+		catch
 		{
 			Debug.LogWarning ("GUIScaleUtility cannot run on this system! Compability mode enabled. For you that means you're not able to use the Node Editor inside more than one group:( Please PM me (Seneral @UnityForums) so I can figure out what causes this! Thanks!");
 			compabilityMode = true;
@@ -88,8 +89,6 @@ public static class GUIScaleUtility
 //		LayoutEntryHeight = GUILayoutEntryType.GetField ("maxHeight");
 //		LayoutEntryWidth = GUILayoutEntryType.GetField ("maxWidth");
 //		LayoutEntryStyle = GUILayoutEntryType.GetProperty ("style");
-
-
 	}
 
 	#region Scale Area

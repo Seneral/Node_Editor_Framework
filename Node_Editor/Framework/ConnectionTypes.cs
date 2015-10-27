@@ -55,8 +55,8 @@ namespace NodeEditorFramework
 						UnityEngine.Debug.LogError ("Error with Type Declaration " + type.FullName);
 						return;
 					}
-					Texture2D InputKnob = NodeEditorGUI.LoadTexture(typeDecl.InputKnob_TexPath);
-					Texture2D OutputKnob = NodeEditorGUI.LoadTexture(typeDecl.OutputKnob_TexPath);
+					Texture2D InputKnob = ResourceManager.LoadTexture(typeDecl.InputKnob_TexPath);
+					Texture2D OutputKnob = ResourceManager.LoadTexture(typeDecl.OutputKnob_TexPath);
 					types.Add(typeDecl.name, new TypeData(typeDecl.col, InputKnob, OutputKnob, typeDecl.Type));
 				}
 			}

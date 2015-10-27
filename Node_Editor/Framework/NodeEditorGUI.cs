@@ -21,10 +21,10 @@ namespace NodeEditorFramework
 		
 		public static bool Init () 
 		{
-			Background = LoadTexture ("Textures/background.png");
-			AALineTex = LoadTexture ("Textures/AALine.png");
-			GUIBox = LoadTexture ("Textures/NE_Box.png");
-			GUIButton = LoadTexture ("Textures/NE_Button.png");
+			Background = ResourceManager.LoadTexture ("Textures/background.png");
+			AALineTex = ResourceManager.LoadTexture ("Textures/AALine.png");
+			GUIBox = ResourceManager.LoadTexture ("Textures/NE_Box.png");
+			GUIButton = ResourceManager.LoadTexture ("Textures/NE_Button.png");
 			
 			if (!Background || !AALineTex || !GUIBox || !GUIButton)
 				return false;
@@ -65,7 +65,9 @@ namespace NodeEditorFramework
 		{
 			GUI.skin = defaultSkin;
 		}
-		
+
+		#region Drawing
+
 		/// <summary>
 		/// Draws a Bezier curve just as UnityEditor.Handles.DrawBezier
 		/// </summary>
@@ -134,46 +136,11 @@ namespace NodeEditorFramework
 				GL.End ();
 			}
 		}
-		
-		/// <summary>
-		/// Loads a texture in both the editor and at runtime (coming soon)
-		/// </summary>
-		public static Texture2D LoadTexture (string texPath)
-		{
-			#if UNITY_EDITOR
-			string fullPath = System.IO.Path.Combine (NodeEditor.resourcePath, texPath);
-			Texture2D tex = UnityEditor.AssetDatabase.LoadAssetAtPath (fullPath, typeof (Texture2D)) as Texture2D;
-			if (tex == null)
-				Debug.LogError (string.Format ("NodeEditor: Texture not found at '{0}', did you install Node_Editor correctly in the 'Plugins' folder?", fullPath));
-			return tex;
-			#else
-			texPath = texPath.Split ('.') [0];
-			Texture2D tex = Resources.Load<Texture2D> (texPath);
-			if (tex == null)
-				Debug.LogError (string.Format ("NodeEditor: Texture not found at '{0}' in any Resource Folder!", texPath));
-			return tex;
-			#endif
-		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		public static T LoadResource<T> (string path) where T : Object
-		{
-//			#if UNITY_EDITOR
-//			string fullPath = System.IO.Path.Combine (NodeEditor.resourcePath, path);
-//			T obj = UnityEditor.AssetDatabase.LoadAssetAtPath (fullPath, typeof (T)) as T;
-//			if (obj == null)
-//				Debug.LogError (string.Format ("NodeEditor: Resource not found at '{0}', did you install Node_Editor correctly in the 'Plugins' folder?", fullPath));
-//			#else
-			path = path.Split ('.') [0];
-			T obj = Resources.Load<T> (path);
-			if (obj == null)
-				Debug.LogError (string.Format ("NodeEditor: Resource not found at '{0}' in any Resource Folder!", path));
-//			#endif
-			return obj;
-		}
-		
+		#endregion
+
+		#region Texture Utilities
+
 		/// <summary>
 		/// Create a 1x1 tex with color col
 		/// </summary>
@@ -197,7 +164,7 @@ namespace NodeEditorFramework
 			tintedTex.Apply ();
 			return tintedTex;
 		}
-
+		
 		public static Texture2D RotateTexture90Degrees (Texture2D tex) 
 		{
 			if (tex == null)
@@ -217,7 +184,7 @@ namespace NodeEditorFramework
 			tex.Apply ();
 			return tex;
 		}
-		
-	}
 
+		#endregion
+	}
 }
