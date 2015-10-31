@@ -5,34 +5,19 @@ using NodeEditorFramework;
 namespace NodeEditorFramework 
 {
 	public class NodeEditorState : ScriptableObject 
-	{ // The class that holds the state of an NodeCanvas inside a NodeEditor
+	{ // holds the state of an NodeCanvas inside a NodeEditor
 		public NodeCanvas canvas;
-
-		public List<Rect> ignoreInput = new List<Rect> ();
 
 		// Canvas options
 		public bool drawing = true; // whether to draw the canvas
 
-		// Selection
-		public Node focusedNode; // under mouse
-		// Only one of these is ever active:
-		private Node _activeNode;
-		public Node activeNode
-		{
-			get { return _activeNode; }
-			set { _selectedTransition = null; _activeNode = value; } 
-		}
-		private Transition _selectedTransition;
-		public Transition selectedTransition 
-		{
-			get { return _selectedTransition; }
-			set { _activeNode = null; _selectedTransition = value; } 
-		}
+		// Selection State
+		public Node focusedNode; // Node under mouse
+		public Node selectedNode; // selected Node
+		public Node currentNode; // current node in state system
 
-		// Active Node State
+		// Current Action
 		public bool dragNode = false;
-
-		// Connections / Transitions
 		public Node makeTransition; // make transition from node
 		public NodeOutput connectOutput; // connection this output
 
@@ -42,9 +27,10 @@ namespace NodeEditorFramework
 		public Vector2 panOffset = new Vector2 (); // pan offset
 		public float zoom = 1; // zoom; Ranges in 0.2er-steps from 0.6-2.0; applied 1/zoom;
 
-		// Global variables
+		// Temporary State variables
 		public Rect canvasRect; // canvas Rect
 		public Vector2 zoomPos { get { return canvasRect.size/2; } } // zoom center in canvas space
 		public Vector2 zoomPanAdjust; // calculated value to offset elements with when zooming
+		public List<Rect> ignoreInput = new List<Rect> (); // Rects inside the canvas to ignore input in (nested canvases, fE)
 	}
 }

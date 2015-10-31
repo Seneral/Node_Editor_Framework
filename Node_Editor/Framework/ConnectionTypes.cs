@@ -55,9 +55,7 @@ namespace NodeEditorFramework
 						UnityEngine.Debug.LogError ("Error with Type Declaration " + type.FullName);
 						return;
 					}
-					Texture2D InputKnob = ResourceManager.LoadTexture(typeDecl.InputKnob_TexPath);
-					Texture2D OutputKnob = ResourceManager.LoadTexture(typeDecl.OutputKnob_TexPath);
-					types.Add(typeDecl.name, new TypeData(typeDecl.col, InputKnob, OutputKnob, typeDecl.Type));
+					types.Add (typeDecl.name, new TypeData(typeDecl));
 				}
 			}
 		}
@@ -65,17 +63,20 @@ namespace NodeEditorFramework
 
 	public struct TypeData 
 	{
+		public ITypeDeclaration declaration;
+		public Type Type;
 		public Color col;
 		public Texture2D InputKnob;
 		public Texture2D OutputKnob;
-		public Type Type;
 		
-		public TypeData (Color color, Texture2D inKnob, Texture2D outKnob, Type type) 
+		public TypeData (ITypeDeclaration typeDecl) 
 		{
-			col = color;
-			InputKnob = NodeEditorGUI.Tint (inKnob, color);
-			OutputKnob = NodeEditorGUI.Tint (outKnob, color);
-			Type = type;
+			declaration = typeDecl;
+			Type = declaration.Type;
+			col = declaration.col;
+
+			InputKnob = ResourceManager.GetTintedTexture (declaration.InputKnob_TexPath, col);
+			OutputKnob = ResourceManager.GetTintedTexture (declaration.OutputKnob_TexPath, col);
 		}
 	}
 
@@ -97,7 +98,4 @@ namespace NodeEditorFramework
 		public string OutputKnob_TexPath { get { return "Textures/Out_Knob.png"; } }
 		public Type Type { get { return typeof(float); } }
 	}
-
-	public enum NodeSide { Left = 1, Bottom = 2, Right = 3, Top = 4 }
-
 }

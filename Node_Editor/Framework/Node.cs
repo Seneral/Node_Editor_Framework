@@ -65,7 +65,7 @@ namespace NodeEditorFramework
 			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + headerHeight, nodeRect.width, nodeRect.height - headerHeight);
 			
 			GUIStyle headerStyle = new GUIStyle (GUI.skin.box);
-			if (NodeEditor.curEditorState.activeNode == this)
+			if (NodeEditor.curEditorState.selectedNode == this)
 				headerStyle.fontStyle = FontStyle.Bold;
 			GUI.Label (headerRect, new GUIContent (name), headerStyle);
 			
@@ -118,7 +118,7 @@ namespace NodeEditorFramework
 					NodeEditor.DrawConnection (startPos,
 					                           startDir,
 					                           input.GetGUIKnob ().center,
-					                           input.GetDirection (),
+					                           input.GetDirection () * -1,
 					                           ConnectionTypes.GetTypeData (output.type).col);
 				}
 			}
@@ -234,24 +234,35 @@ namespace NodeEditorFramework
 			}
 			return true;
 		}
-		
+
+		public static Node startChildsearchNode;
 		/// <summary>
 		/// Recursively checks whether this node is a child of the other node
 		/// </summary>
 		public bool isChildOf (Node otherNode)
 		{
+			if (startChildsearchNode == null)
+				startChildsearchNode = this;
 			if (otherNode == null)
 				return false;
 			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
 			{
-				if (Inputs [cnt].connection != null) 
+				NodeOutput connection = Inputs [cnt].connection;
+				if (connection != null) 
 				{
-					if (Inputs [cnt].connection.body == otherNode)
-						return true;
-					else if (Inputs [cnt].connection.body.isChildOf (otherNode)) // Recursively searching
-						return true;
+					if (connection.body != startChildsearchNode)
+					{
+						if (connection.body == otherNode || connection.body.isChildOf (otherNode))
+						{
+							if (startChildsearchNode == this)
+								startChildsearchNode = null;
+							return true;
+						}
+					}
 				}
 			}
+			if (startChildsearchNode == this)
+				startChildsearchNode = null;
 			return false;
 		}
 		
@@ -327,17 +338,15 @@ namespace NodeEditorFramework
 		{
 			if (input == null || output == null)
 				return false;
-
 			if (input.body == output.body || input.connection == output)
 				return false;
-
 			if (input.type != output.type)
 				return false;
 
 			if ((!output.body.allowRecursion || !input.body.allowRecursion) && output.body.isChildOf (input.body)) 
 			{
 				// TODO: Generic Notification
-				//ShowNotification (new GUIContent ("Recursion detected!"));
+				Debug.LogWarning ("Cannot apply connection: Recursion detected!");
 				return false;
 			}
 			return true;
@@ -350,15 +359,12 @@ namespace NodeEditorFramework
 		{
 			if (input != null && output != null) 
 			{
-				if (input.connection != null) 
-				{
+				if (input.connection != null)
 					input.connection.connections.Remove (input);
-				}
 				input.connection = output;
 				output.connections.Add (input);
 
-				if (input.body.shouldCalculate)
-					NodeEditor.RecalculateFrom (input.body);
+				NodeEditor.RecalculateFrom (input.body);
 
 				NodeEditorCallbacks.IssueOnAddConnection (input);
 			}
@@ -376,9 +382,9 @@ namespace NodeEditorFramework
 				NodeEditor.RecalculateFrom (input.body);
 		}
 
-		public static void CreateTransition (Node from, Node to) 
+		public static void CreateTransition (Node fromNode, Node toNode) 
 		{
-			from.transitions.Add (Transition.Create (from, to));
+			Transition.Create (fromNode, toNode);
 		}
 
 		#endregion

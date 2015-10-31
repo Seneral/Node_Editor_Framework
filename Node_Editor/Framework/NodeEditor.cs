@@ -3,6 +3,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
+using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using NodeEditorFramework;
@@ -21,9 +22,6 @@ namespace NodeEditorFramework
 
 		// Quick access
 		public static Vector2 mousePos;
-
-		// Settings
-		public static int knobSize = 18;
 
 		// Constants
 		public const string editorPath = "Assets/Plugins/Node_Editor/";
@@ -144,7 +142,7 @@ namespace NodeEditorFramework
 			// Some features which require drawing (zoomed)
 			if (curEditorState.navigate) 
 			{ // Draw a curve to the origin/active node for orientation purposes
-				NodeEditorGUI.DrawLine (curEditorState.activeNode != null? curEditorState.activeNode.rect.center + curEditorState.zoomPanAdjust : curEditorState.panOffset, 
+				NodeEditorGUI.DrawLine (curEditorState.selectedNode != null? curEditorState.selectedNode.rect.center + curEditorState.zoomPanAdjust : curEditorState.panOffset, 
 				                        ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
 				                        Color.black, null, 3); 
 				if (Repaint != null)
@@ -171,10 +169,10 @@ namespace NodeEditorFramework
 			}
 
 			// Push the active cell at the bottom of the draw order.
-			if (Event.current.type == EventType.Layout && curEditorState.activeNode != null)
+			if (Event.current.type == EventType.Layout && curEditorState.selectedNode != null)
 			{
-				curNodeCanvas.nodes.Remove (curEditorState.activeNode);
-				curNodeCanvas.nodes.Add (curEditorState.activeNode);
+				curNodeCanvas.nodes.Remove (curEditorState.selectedNode);
+				curNodeCanvas.nodes.Add (curEditorState.selectedNode);
 			}
 
 			// Draw the transitions. Has to be called before nodes as transitions originate from node centers
@@ -336,7 +334,7 @@ namespace NodeEditorFramework
 				curEditorState.focusedNode = NodeEditor.NodeAtPosition (e.mousePosition);
 				if (e.button == 0) 
 				{
-					curEditorState.activeNode = curEditorState.focusedNode;
+					curEditorState.selectedNode = curEditorState.focusedNode;
 					if (Repaint != null)
 						Repaint ();
 				}
@@ -503,9 +501,9 @@ namespace NodeEditorFramework
 				if (e.keyCode == KeyCode.N) // Start Navigating (curve to origin / active Node)
 					curEditorState.navigate = true;
 				
-				if (e.keyCode == KeyCode.LeftControl && curEditorState.activeNode != null) // Snap
-					curEditorState.activeNode.rect.position = new Vector2 (Mathf.RoundToInt ((curEditorState.activeNode.rect.position.x - curEditorState.panOffset.x) / 10) * 10 + curEditorState.panOffset.x, 
-					                                                       Mathf.RoundToInt ((curEditorState.activeNode.rect.position.y - curEditorState.panOffset.y) / 10) * 10 + curEditorState.panOffset.y);
+				if (e.keyCode == KeyCode.LeftControl && curEditorState.selectedNode != null) // Snap
+					curEditorState.selectedNode.rect.position = new Vector2 (Mathf.RoundToInt ((curEditorState.selectedNode.rect.position.x - curEditorState.panOffset.x) / 10) * 10 + curEditorState.panOffset.x, 
+					                                                         Mathf.RoundToInt ((curEditorState.selectedNode.rect.position.y - curEditorState.panOffset.y) / 10) * 10 + curEditorState.panOffset.y);
 				if (Repaint != null)
 					Repaint ();
 				
@@ -535,10 +533,10 @@ namespace NodeEditorFramework
 				else 
 					curEditorState.panWindow = false;
 				
-				if (curEditorState.dragNode && curEditorState.activeNode != null && GUIUtility.hotControl == 0) 
+				if (curEditorState.dragNode && curEditorState.selectedNode != null && GUIUtility.hotControl == 0) 
 				{ // Drag the active node with the current mouse delta
-					curEditorState.activeNode.rect.position += e.delta * curEditorState.zoom;
-					NodeEditorCallbacks.IssueOnMoveNode (curEditorState.activeNode);
+					curEditorState.selectedNode.rect.position += e.delta * curEditorState.zoom;
+					NodeEditorCallbacks.IssueOnMoveNode (curEditorState.selectedNode);
 					e.delta = Vector2.zero;
 					if (Repaint != null)
 						Repaint ();
@@ -568,7 +566,7 @@ namespace NodeEditorFramework
 			}
 
 			if (e.type == EventType.MouseDown && e.button == 0 && 
-			    curEditorState.activeNode != null && insideCanvas && GUIToScreenRect (curEditorState.activeNode.rect).Contains (e.mousePosition))
+			    curEditorState.selectedNode != null && insideCanvas && GUIToScreenRect (curEditorState.selectedNode.rect).Contains (e.mousePosition))
 			{ // Left click inside activeNode -> Drag Node
 				// Because of hotControl we have to put it after the GUI Functions
 				if (GUIUtility.hotControl == 0)
@@ -682,23 +680,49 @@ namespace NodeEditorFramework
 		
 		#region Calculation
 
-		public static Node MoveNext (Node node) 
-		{
-			if (NodeTypes.getNodeData (node).transitions == false)
-			{
-				Debug.LogError ("Node " + node.ToString () + " does not accept Transitions!");
-				return null;
-			}
+		// STATE SYSTEM:
 
+		/// <summary>
+		/// Checks if any transitions of the passed node have their conditions met. 
+		/// In that case returns the node the transition points to, else returns the passed node.
+		/// </summary>
+		public static void BeginTransitioning (NodeEditorState editorState, Node beginNode) 
+		{
+			if (!editorState.canvas.nodes.Contains (beginNode)) 
+				throw new UnityException ("Node to begin transitioning from has to be associated with the passed NodeEditorState!");
+
+
+		}
+
+		/// <summary>
+		/// Checks if any transitions of the passed node have their conditions met. 
+		/// In that case returns the node the transition points to, else returns the passed node.
+		/// </summary>
+		public static void StopTransitioning (NodeEditorState editorState) 
+		{
+
+		}
+
+		private static void WaitForTransitions (NodeEditorState transitioningEditorState) 
+		{
+
+		}
+
+		/// <summary>
+		/// Checks if any transitions of the passed node have their conditions met. 
+		/// In that case returns the node the transition points to, else returns the passed node.
+		/// </summary>
+		public static Node GetNext (Node node) 
+		{
 			for (int transCnt = 0; transCnt < node.transitions.Count; transCnt++) 
 			{
 				if (node.transitions[transCnt].conditionsMet ())
 					return node.transitions[transCnt].endNode;
 			}
-
 			return node;
 		}
 
+		// CALCULATION SYSTEM:
 		
 		// A list of Nodes from which calculation originates -> Call StartCalculation
 		public static List<Node> workList;
@@ -751,9 +775,12 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void RecalculateFrom (Node node) 
 		{
-			ClearCalculation (node);
-			workList = new List<Node> { node };
-			StartCalculation ();
+			if (node.shouldCalculate) 
+			{
+				ClearCalculation (node);
+				workList = new List<Node> { node };
+				StartCalculation ();
+			}
 		}
 		
 		/// <summary>
@@ -783,18 +810,18 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static bool ContinueCalculation (Node node) 
 		{
-			if (!node.shouldCalculate)
+			if (!node.shouldCalculate || node.calculated)
 				return false;
 			if (node.descendantsCalculated () && node.Calculate ())
 			{ // finished Calculating, continue with the children
+				node.calculated = true;
+				workList.Remove (node);
 				for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
 				{
 					NodeOutput output = node.Outputs [outCnt];
 					for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
 						ContinueCalculation (output.connections [conCnt].body);
 				}
-				workList.Remove (node);
-				node.calculated = true;
 				return true;
 			}
 			else if (!workList.Contains (node)) 
@@ -815,7 +842,8 @@ namespace NodeEditorFramework
 			{
 				NodeOutput output = node.Outputs [outCnt];
 				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-					ClearCalculation (output.connections [conCnt].body);
+					if (output.connections [conCnt].body != node)
+						ClearCalculation (output.connections [conCnt].body);
 			}
 		}
 		
@@ -924,14 +952,19 @@ namespace NodeEditorFramework
 			if (String.IsNullOrEmpty (path))
 				return null;
 			Object[] objects;
-	#if UNITY_EDITOR
-		if (!Application.isPlaying)
+	
+			if (!Application.isPlaying) 
+			{
+				#if UNITY_EDITOR
 				objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
-			else
+				#endif
+			}
+			else 
+			{
+				path = path.Split ('.') [0];
 				objects = Resources.LoadAll (path);
-	#else
-			objects = Resources.LoadAll (path);
-	#endif
+			}
+
 			if (objects.Length == 0) 
 				return null;
 			// We're going to filter out the NodeCanvas out of the objects that build up the save file.

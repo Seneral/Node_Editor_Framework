@@ -18,6 +18,8 @@ namespace NodeEditorFramework
 		public static GUIStyle nodeLabel;
 		public static GUIStyle nodeLabelBold;
 		public static GUIStyle nodeLabelSelected;
+
+		public static int knobSize = 16;
 		
 		public static bool Init () 
 		{
@@ -77,8 +79,7 @@ namespace NodeEditorFramework
 				return;
 			
 			if (tex == null)
-				tex = AALineTex;
-			tex = col == Color.white? tex : Tint (tex, col);
+				tex = ResourceManager.GetTintedTexture ("Textures/AALine.png", col);
 			
 			int segmentCount = (int)(((startPos-startTan).magnitude + (startTan-endTan).magnitude + (endTan-endPos).magnitude) / 10);
 			Vector2 curPoint = startPos;
@@ -115,9 +116,8 @@ namespace NodeEditorFramework
 			else 
 			{
 				if (tex == null)
-					tex = AALineTex;
-				tex = col == Color.white? tex : Tint (tex, col);
-				
+					tex = ResourceManager.GetTintedTexture ("Textures/AALine.png", col);
+
 				Vector2 perpWidthOffset = new Vector2 ((endPos-startPos).y, -(endPos-startPos).x).normalized * width / 2;
 				
 				Material mat = new Material (Shader.Find ("Unlit/Transparent"));
@@ -165,21 +165,29 @@ namespace NodeEditorFramework
 			return tintedTex;
 		}
 		
-		public static Texture2D RotateTexture90Degrees (Texture2D tex) 
+		public static Texture2D RotateTextureAntiCW (Texture2D tex, int NintyDegrSteps) 
 		{
 			if (tex == null)
 				return null;
+			tex = UnityEngine.Object.Instantiate (tex);
 			int width = tex.width, height = tex.height;
 			Color[] col = tex.GetPixels ();
 			Color[] rotatedCol = new Color[width*height];
-			for (int x = 0; x < width; x++) 
+			for (int itCnt = 0; itCnt < NintyDegrSteps; itCnt++) 
 			{
-				for (int y = 0; y < height; y++) 
+				for (int x = 0; x < width; x++) 
 				{
-					rotatedCol[x*width + y] = col[(width-y-1) * width + x];
+					for (int y = 0; y < height; y++) 
+					{
+						rotatedCol[x*width + y] = col[(width-y-1) * width + x];
+					}
+				}
+				if (itCnt < NintyDegrSteps-1)
+				{
+					col = rotatedCol;
+					rotatedCol = new Color[width*height];
 				}
 			}
-			tex = new Texture2D (width, height, tex.format, tex.mipmapCount != 0);
 			tex.SetPixels (rotatedCol);
 			tex.Apply ();
 			return tex;

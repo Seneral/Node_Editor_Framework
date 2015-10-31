@@ -18,8 +18,14 @@ public class RuntimeNodeEditor : MonoBehaviour
 		//rootRect = new Rect (0, 0, Screen.width, Screen.height);
 		//canvasRect = new Rect (0, 0, Screen.width, Screen.height);
 
-		if (!string.IsNullOrEmpty (CanvasString) && (canvas == null || state == null))
-			LoadNodeCanvas (CanvasString);
+		if ((canvas == null || state == null))
+		{
+			Debug.Log ("Loading Canvas");
+			if (!string.IsNullOrEmpty (CanvasString))
+				LoadNodeCanvas (CanvasString);
+			else
+				Debug.LogWarning ("Please use one option to select a canvas!");
+		}
 		else
 			NodeEditor.RecalculateAll (canvas);
 

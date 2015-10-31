@@ -22,16 +22,28 @@ namespace NodeEditorFramework
 			return true;
 		}
 
-		public static Transition Create (Node from, Node to) 
+		public static Transition Create (Node fromNode, Node toNode) 
 		{
-			if (NodeTypes.getNodeData (from).transitions == false || NodeTypes.getNodeData (to).transitions == false)
+			if (NodeTypes.getNodeData (fromNode).transitions == false || NodeTypes.getNodeData (toNode).transitions == false)
 				return null;
+
 			Transition transition = CreateInstance<Transition> ();
-			transition.name = "Transition " + from.name + "-" + to.name;
-			transition.startNode = from;
-			transition.endNode = to;
+			transition.name = "Transition " + fromNode.name + "-" + toNode.name;
+			transition.startNode = fromNode;
+			transition.endNode = toNode;
 			transition.conditions = new List<Func<Transition, bool>> ();
+
+			fromNode.transitions.Add (transition);
+			toNode.transitions.Add (transition);
+
 			return transition;
+		}
+
+		public void Delete () 
+		{
+			startNode.transitions.Remove (this);
+			endNode.transitions.Remove (this);
+			UnityEngine.Object.DestroyImmediate (this);
 		}
 	}
 }
