@@ -134,7 +134,7 @@ namespace NodeEditorFramework
 				NodeEditor.RecalculateAll (mainNodeCanvas);
 			}
 
-			NodeEditor.knobSize = EditorGUILayout.IntSlider (new GUIContent ("Handle Size", "The size of the handles of the Node Inputs/Outputs"), NodeEditor.knobSize, 12, 20);
+			NodeEditorGUI.knobSize = EditorGUILayout.IntSlider (new GUIContent ("Handle Size", "The size of the handles of the Node Inputs/Outputs"), NodeEditorGUI.knobSize, 12, 20);
 			mainEditorState.zoom = EditorGUILayout.Slider (new GUIContent ("Zoom"), mainEditorState.zoom, 0.6f, 2);
 		}
 		
