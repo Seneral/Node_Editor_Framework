@@ -7,6 +7,8 @@ using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using NodeEditorFramework;
+using NodeEditorFramework.Utilities;
+using NodeEditorFramework.Resources;
 
 using Object = UnityEngine.Object;
 
@@ -962,7 +964,7 @@ namespace NodeEditorFramework
 			else 
 			{
 				path = path.Split ('.') [0];
-				objects = Resources.LoadAll (path);
+				objects = UnityEngine.Resources.LoadAll (path);
 			}
 
 			if (objects.Length == 0) 

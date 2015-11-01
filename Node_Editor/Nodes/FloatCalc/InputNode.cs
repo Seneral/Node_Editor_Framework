@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using NodeEditorFramework;
+using NodeEditorFramework.Utilities;
 
 [System.Serializable]
 [Node (false, "Float/Input", false)]
@@ -25,7 +26,7 @@ public class InputNode : Node
 
 	public override void NodeGUI () 
 	{
-		value = GUIExt.FloatField (new GUIContent ("Value", "The input value of type float"), value);
+		value = RTEditorGUI.FloatField (new GUIContent ("Value", "The input value of type float"), value);
 		OutputKnob (0);
 
 		if (GUI.changed)

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using NodeEditorFramework;
+using NodeEditorFramework.Utilities;
 
 [System.Serializable]
 [Node (false, "Float/Calculation", false)]
@@ -38,13 +39,13 @@ public class CalcNode : Node
 		if (Inputs [0].connection != null)
 			GUILayout.Label (Inputs [0].name);
 		else
-			Input1Val = GUIExt.FloatField (GUIContent.none, Input1Val);
+			Input1Val = RTEditorGUI.FloatField (GUIContent.none, Input1Val);
 		InputKnob (0);
 		// --
 		if (Inputs [1].connection != null)
 			GUILayout.Label (Inputs [1].name);
 		else
-			Input2Val = GUIExt.FloatField (GUIContent.none, Input2Val);
+			Input2Val = RTEditorGUI.FloatField (GUIContent.none, Input2Val);
 		InputKnob (1);
 
 		GUILayout.EndVertical ();

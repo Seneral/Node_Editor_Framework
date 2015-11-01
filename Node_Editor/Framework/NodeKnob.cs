@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using NodeEditorFramework;
+using NodeEditorFramework.Resources;
 
 namespace NodeEditorFramework 
 {

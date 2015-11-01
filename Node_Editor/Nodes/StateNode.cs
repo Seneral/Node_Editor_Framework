@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 using NodeEditorFramework;
+using NodeEditorFramework.Utilities;
 
 [System.Serializable]
 [Node(false, "State Machine/State", true)]
@@ -27,7 +28,7 @@ public class StateNode : Node
 
 	public override void NodeGUI ()
 	{
-		stateName = GUIExt.TextField (new GUIContent ("State Name"), stateName);
+		stateName = RTEditorGUI.TextField (new GUIContent ("State Name"), stateName);
 	}
 
 	public override bool Calculate ()

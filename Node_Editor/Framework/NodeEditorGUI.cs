@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
 using NodeEditorFramework;
+using NodeEditorFramework.Utilities;
+using NodeEditorFramework.Resources;
 
 namespace NodeEditorFramework 
 {
@@ -52,7 +54,7 @@ namespace NodeEditorFramework
 			nodeLabelBold.fontStyle = FontStyle.Bold;
 
 			nodeLabelSelected = new GUIStyle (nodeLabel);
-			nodeLabelSelected.normal.background = GUIExt.ColorToTex (new Color (0.4f, 0.4f, 0.4f));
+			nodeLabelSelected.normal.background = RTEditorGUI.ColorToTex (new Color (0.4f, 0.4f, 0.4f));
 
 			return true;
 		}

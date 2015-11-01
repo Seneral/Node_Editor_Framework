@@ -3,6 +3,7 @@ using UnityEditor;
 using System;
 using System.Collections.Generic;
 using NodeEditorFramework;
+using NodeEditorFramework.Resources;
 
 namespace NodeEditorFramework
 {
