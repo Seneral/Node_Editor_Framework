@@ -20,7 +20,6 @@ public class RuntimeNodeEditor : MonoBehaviour
 
 		if ((canvas == null || state == null))
 		{
-			Debug.Log ("Loading Canvas");
 			if (!string.IsNullOrEmpty (CanvasString))
 				LoadNodeCanvas (CanvasString);
 			else

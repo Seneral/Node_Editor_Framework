@@ -86,6 +86,9 @@ namespace NodeEditorFramework
 			//		CalcNode calcNode2 = CalcNode.Create (new Rect (600, 200, 200, 100));
 			//		Node.ApplyConnection (calcNode1.Outputs [0], calcNode2.Inputs [0]);
 
+			if (mainNodeCanvas == null)
+				NewNodeCanvas ();
+
 			mainEditorState.canvasRect = canvasWindowRect;
 			try
 			{

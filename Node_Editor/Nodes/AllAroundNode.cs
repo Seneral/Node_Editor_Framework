@@ -15,7 +15,7 @@ public class AllAroundNode : Node
 		node.name = "AllAround Node";
 
 		node.allowRecursion = true;
-		node.shouldCalculate = false;
+		node.continueCalculation = true;
 		
 		node.CreateInput ("Input Top", "Float");
 		node.CreateInput ("Input Bottom", "Float");
@@ -58,6 +58,11 @@ public class AllAroundNode : Node
 	
 	public override bool Calculate () 
 	{
+		Outputs [0].SetValue<float> (Inputs [0].GetValue<float> ());
+		Outputs [1].SetValue<float> (Inputs [1].GetValue<float> ());
+		Outputs [2].SetValue<float> (Inputs [2].GetValue<float> ());
+		Outputs [3].SetValue<float> (Inputs [3].GetValue<float> ());
+
 		return true;
 	}
 }

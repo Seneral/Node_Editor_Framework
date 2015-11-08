@@ -15,8 +15,8 @@ namespace NodeEditorFramework
 		[HideInInspector]
 		public bool calculated = true;
 
-		public bool allowRecursion = false;
-		public bool shouldCalculate = true;
+		public bool allowRecursion = false; // Should we allow recursion? Recursion is allowed if atleast a single Node in the loop allows for recursion
+		public bool continueCalculation = true; // After the Calculate function is called on this node, should the Nodes afterwards be calculated?
 
 		// State graph
 		public List<Transition> transitions = new List<Transition> ();
@@ -155,8 +155,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void InitBase () 
 		{
-			if (shouldCalculate) 
-				Calculate ();
+			Calculate ();
 
 			NodeEditor.curNodeCanvas.nodes.Add (this);
 			#if UNITY_EDITOR
@@ -176,8 +175,8 @@ namespace NodeEditorFramework
 			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 			{
 				NodeOutput output = Outputs [outCnt];
-				while (output.connections.Count != 0)
-					RemoveConnection(output.connections[0]);
+				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
+					output.connections [conCnt].connection = null;
 				DestroyImmediate (output, true);
 			}
 			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
@@ -235,35 +234,163 @@ namespace NodeEditorFramework
 			return true;
 		}
 
-		public static Node startChildsearchNode;
+		/// <summary>
+		/// Returns whether the node acts as an input (no inputs or no inputs assigned)
+		/// </summary>
+		public bool isInput () 
+		{
+			for (int cnt = 0; cnt < Inputs.Count; cnt++)
+				if (Inputs [cnt].connection != null)
+					return false;
+			return true;
+		}
+
+		#region Recursive Search Helpers
+
+		private List<Node> recursiveSearchSurpassed;
+		private Node startRecursiveSearchNode; // Temporary start node for recursive searches
+
+		private bool BeginRecursiveSearchLoop () // Returns whether to cancel
+		{
+			if (startRecursiveSearchNode == null || recursiveSearchSurpassed == null) 
+			{ // Start search
+				recursiveSearchSurpassed = new List<Node> ();
+				startRecursiveSearchNode = this;
+			}
+			
+			if (recursiveSearchSurpassed.Contains (this))
+				return true;
+			recursiveSearchSurpassed.Add (this);
+			return false;
+		}
+
+		private void EndRecursiveSearchLoop () 
+		{
+			if (startRecursiveSearchNode == this) 
+			{ // End search
+				recursiveSearchSurpassed = null;
+				startRecursiveSearchNode = null;
+			}
+		}
+
+		private void FinishRecursiveSearchLoop () 
+		{
+			recursiveSearchSurpassed = null;
+			startRecursiveSearchNode = null;
+		}
+
+		#endregion
+
 		/// <summary>
 		/// Recursively checks whether this node is a child of the other node
 		/// </summary>
 		public bool isChildOf (Node otherNode)
 		{
-			if (startChildsearchNode == null)
-				startChildsearchNode = this;
-			if (otherNode == null)
+			if (otherNode == null || otherNode == this)
 				return false;
+			if (BeginRecursiveSearchLoop ()) return false;
 			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
 			{
 				NodeOutput connection = Inputs [cnt].connection;
 				if (connection != null) 
 				{
-					if (connection.body != startChildsearchNode)
+					if (connection.body != startRecursiveSearchNode)
 					{
 						if (connection.body == otherNode || connection.body.isChildOf (otherNode))
 						{
-							if (startChildsearchNode == this)
-								startChildsearchNode = null;
+							FinishRecursiveSearchLoop ();
 							return true;
 						}
 					}
 				}
 			}
-			if (startChildsearchNode == this)
-				startChildsearchNode = null;
+			EndRecursiveSearchLoop ();
 			return false;
+		}
+
+		/// <summary>
+		/// Recursively checks whether this node is in a loop
+		/// </summary>
+		public bool isInLoop ()
+		{
+			if (BeginRecursiveSearchLoop ()) return this == startRecursiveSearchNode;
+			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
+			{
+				NodeOutput connection = Inputs [cnt].connection;
+				if (connection != null) 
+				{
+					if (connection.body.isInLoop ())
+					{
+						FinishRecursiveSearchLoop ();
+						return true;
+					}
+				}
+			}
+			EndRecursiveSearchLoop ();
+			return false;
+		}
+
+		/// <summary>
+		/// Recursively checks whether any node in the loop to be made allows recursion.
+		/// Other node is the node this node needs connect to in order to fill the loop (other node being the node coming AFTER this node).
+		/// That means isChildOf has to be confirmed before calling this!
+		/// Usually does not need to be called manually.
+		/// </summary>
+		public bool allowsLoopRecursion (Node otherNode)
+		{
+			if (allowRecursion)
+				return true;
+			if (otherNode == null)
+				return false;
+			if (BeginRecursiveSearchLoop ()) return false;
+			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
+			{
+				NodeOutput connection = Inputs [cnt].connection;
+				if (connection != null) 
+				{
+					if (connection.body != startRecursiveSearchNode)
+					{
+						if (connection.body.allowsLoopRecursion (otherNode))
+						{
+							FinishRecursiveSearchLoop ();
+							return true;
+						}
+					}
+				}
+			}
+			EndRecursiveSearchLoop ();
+			return false;
+		}
+
+		/// <summary>
+		/// A recursive function to clear all calculations depending on this node.
+		/// Usually does not need to be called manually
+		/// </summary>
+		public void ClearCalculation () 
+		{
+			if (startRecursiveSearchNode == null || recursiveSearchSurpassed == null) 
+			{ // Start search
+				recursiveSearchSurpassed = new List<Node> ();
+				startRecursiveSearchNode = this;
+			}
+
+			if (recursiveSearchSurpassed.Contains (this))
+				return;
+			recursiveSearchSurpassed.Add (this);
+
+			calculated = false;
+			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++)
+			{
+				NodeOutput output = Outputs [outCnt];
+				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
+					output.connections [conCnt].body.ClearCalculation ();
+			}
+
+			if (startRecursiveSearchNode == this) 
+			{ // End search
+				recursiveSearchSurpassed = null;
+				startRecursiveSearchNode = null;
+			}
 		}
 		
 		/// <summary>
@@ -343,11 +470,15 @@ namespace NodeEditorFramework
 			if (input.type != output.type)
 				return false;
 
-			if ((!output.body.allowRecursion || !input.body.allowRecursion) && output.body.isChildOf (input.body)) 
+			bool isRecursive = output.body.isChildOf (input.body);
+			if (isRecursive) 
 			{
-				// TODO: Generic Notification
-				Debug.LogWarning ("Cannot apply connection: Recursion detected!");
-				return false;
+				if (!output.body.allowsLoopRecursion (input.body))
+				{
+					// TODO: Generic Notification
+					Debug.LogWarning ("Cannot apply connection: Recursion detected!");
+					return false;
+				}
 			}
 			return true;
 		}
@@ -378,8 +509,7 @@ namespace NodeEditorFramework
 			NodeEditorCallbacks.IssueOnRemoveConnection (input);
 			input.connection.connections.Remove (input);
 			input.connection = null;
-			if (input.body.shouldCalculate)
-				NodeEditor.RecalculateFrom (input.body);
+			NodeEditor.RecalculateFrom (input.body);
 		}
 
 		public static void CreateTransition (Node fromNode, Node toNode) 

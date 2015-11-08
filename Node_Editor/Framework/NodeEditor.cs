@@ -22,6 +22,8 @@ namespace NodeEditorFramework
 
 		public static Action Repaint;
 
+		private static bool unfocus;
+
 		// Quick access
 		public static Vector2 mousePos;
 
@@ -103,15 +105,15 @@ namespace NodeEditorFramework
 			
 			curNodeCanvas = nodeCanvas;
 			curEditorState = editorState;
-			
+
 			if (Event.current.type == EventType.Repaint) 
 			{ // Draw Background when Repainting
 				GUI.BeginClip (curEditorState.canvasRect);
 				
 				float width = NodeEditorGUI.Background.width / curEditorState.zoom;
 				float height = NodeEditorGUI.Background.height / curEditorState.zoom;
-				Vector2 offset = new Vector2 ((curEditorState.panOffset.x / curEditorState.zoom)%width - width, 
-				                              (curEditorState.panOffset.y / curEditorState.zoom)%height - height);
+				Vector2 offset = curEditorState.zoomPos + curEditorState.panOffset/curEditorState.zoom;
+				offset = new Vector2 (offset.x%width - width, offset.y%height - height);
 				int tileX = Mathf.CeilToInt ((curEditorState.canvasRect.width + (width - offset.x)) / width);
 				int tileY = Mathf.CeilToInt ((curEditorState.canvasRect.height + (height - offset.y)) / height);
 				
@@ -144,7 +146,7 @@ namespace NodeEditorFramework
 			// Some features which require drawing (zoomed)
 			if (curEditorState.navigate) 
 			{ // Draw a curve to the origin/active node for orientation purposes
-				NodeEditorGUI.DrawLine (curEditorState.selectedNode != null? curEditorState.selectedNode.rect.center + curEditorState.zoomPanAdjust : curEditorState.panOffset, 
+				NodeEditorGUI.DrawLine ((curEditorState.selectedNode != null? curEditorState.selectedNode.rect.center : curEditorState.panOffset) + curEditorState.zoomPanAdjust, 
 				                        ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
 				                        Color.black, null, 3); 
 				if (Repaint != null)
@@ -334,12 +336,21 @@ namespace NodeEditorFramework
 			if (insideCanvas && (e.type == EventType.MouseDown || e.type == EventType.MouseUp))
 			{
 				curEditorState.focusedNode = NodeEditor.NodeAtPosition (e.mousePosition);
+				if (curEditorState.focusedNode != curEditorState.selectedNode)
+					unfocus = true;
 				if (e.button == 0) 
 				{
 					curEditorState.selectedNode = curEditorState.focusedNode;
 					if (Repaint != null)
 						Repaint ();
 				}
+			}
+
+			if (unfocus && Event.current.type == EventType.Repaint) 
+			{
+				GUIUtility.hotControl = 0;
+				GUIUtility.keyboardControl = 0;
+				unfocus = false;
 			}
 
 	#if UNITY_EDITOR
@@ -358,12 +369,8 @@ namespace NodeEditorFramework
 				{ // A click on a node
 					if (e.button == 1)
 					{ // Right click -> Node Context Click
-						// TODO: Node Editor: Editor-Independancy - GenericMenu conversion
-//	#if UNITY_EDITOR
-//						UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
-//	#else
 						GenericMenu menu = new GenericMenu ();
-//	#endif		
+
 						menu.AddItem (new GUIContent ("Delete Node"), false, ContextCallback, new callbackObject ("deleteNode", curNodeCanvas, curEditorState));
 						menu.AddItem (new GUIContent ("Duplicate Node"), false, ContextCallback, new callbackObject ("duplicateNode", curNodeCanvas, curEditorState));
 						if (NodeTypes.getNodeData (curEditorState.focusedNode).transitions)
@@ -728,46 +735,25 @@ namespace NodeEditorFramework
 		
 		// A list of Nodes from which calculation originates -> Call StartCalculation
 		public static List<Node> workList;
-		
+		private static int calculationCount;
+
 		/// <summary>
 		/// Recalculate from every Input Node.
 		/// Usually does not need to be called at all, the smart calculation system is doing the job just fine
 		/// </summary>
 		public static void RecalculateAll (NodeCanvas nodeCanvas) 
 		{
-			RecalculateAll (nodeCanvas, true);
-		}
-
-		/// <summary>
-		/// Recalculate from every Input Node.
-		/// Usually does not need to be called at all, the smart calculation system is doing the job just fine.
-		/// Option to not recalculate the inputs, when they are already set manually
-		/// </summary>
-		public static void RecalculateAll (NodeCanvas nodeCanvas, bool calculateInputs) 
-		{
 			workList = new List<Node> ();
 			foreach (Node node in nodeCanvas.nodes) 
 			{
-				if (node.Inputs.Count == 0 && node.shouldCalculate) 
+				if (node.isInput ())
 				{ // Add all Inputs
-					if (calculateInputs)
-					{
-						ClearCalculation (node);
-						workList.Add (node);
-					}
-					else 
-					{
-						foreach (NodeOutput output in node.Outputs) 
-						{
-							for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
-							{
-								ClearCalculation (output.connections [conCnt].body);
-								workList.Add (output.connections [conCnt].body);
-							}
-						}
-					}
+					node.ClearCalculation ();
+					workList.Add (node);
 				}
 			}
+			if (workList.Count == 0)
+				Debug.LogWarning ("Could not start Calculating: No nodes that act as an input on the canvas!");
 			StartCalculation ();
 		}
 		
@@ -777,12 +763,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void RecalculateFrom (Node node) 
 		{
-			if (node.shouldCalculate) 
-			{
-				ClearCalculation (node);
-				workList = new List<Node> { node };
-				StartCalculation ();
-			}
+			node.ClearCalculation ();
+			workList = new List<Node> { node };
+			StartCalculation ();
 		}
 		
 		/// <summary>
@@ -790,6 +773,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void StartCalculation () 
 		{
+			if (workList == null || workList.Count == 0)
+				return;
+			calculationCount = 0;
 			// this blocks iterates through the worklist and starts calculating
 			// if a node returns false state it stops and adds the node to the worklist
 			// later on, this worklist is reworked
@@ -812,18 +798,24 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static bool ContinueCalculation (Node node) 
 		{
-			if (!node.shouldCalculate || node.calculated)
+			if (node.calculated)
 				return false;
-			if (node.descendantsCalculated () && node.Calculate ())
+			if ((node.descendantsCalculated () || node.isInLoop ()) && node.Calculate ())
 			{ // finished Calculating, continue with the children
 				node.calculated = true;
+				calculationCount++;
 				workList.Remove (node);
-				for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
+				if (node.continueCalculation && calculationCount < 1000) 
 				{
-					NodeOutput output = node.Outputs [outCnt];
-					for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-						ContinueCalculation (output.connections [conCnt].body);
+					for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
+					{
+						NodeOutput output = node.Outputs [outCnt];
+						for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
+							ContinueCalculation (output.connections [conCnt].body);
+					}
 				}
+				else if (calculationCount >= 1000)
+					Debug.LogError ("Stopped calculation because of suspected Recursion. Maximum calculation iteration is currently at 1000!");
 				return true;
 			}
 			else if (!workList.Contains (node)) 
@@ -831,22 +823,6 @@ namespace NodeEditorFramework
 				workList.Add (node);
 			}
 			return false;
-		}
-		
-		/// <summary>
-		/// A recursive function to clear all calculations depending on this node.
-		/// Usually does not need to be called manually
-		/// </summary>
-		public static void ClearCalculation (Node node) 
-		{
-			node.calculated = false;
-			for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
-			{
-				NodeOutput output = node.Outputs [outCnt];
-				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-					if (output.connections [conCnt].body != node)
-						ClearCalculation (output.connections [conCnt].body);
-			}
 		}
 		
 		#endregion
@@ -994,9 +970,13 @@ namespace NodeEditorFramework
 		public static NodeEditorState GetWorkingCopy (NodeEditorState editorState, NodeCanvas nodeCanvas) 
 		{
 			editorState = Clone (editorState);
-			editorState.connectOutput = null;
 			editorState.focusedNode = null;
+			editorState.selectedNode = null;
+			editorState.currentNode = null;
+
 			editorState.makeTransition = null;
+			editorState.connectOutput = null;
+
 			editorState.canvas = nodeCanvas;
 			return editorState;
 		}

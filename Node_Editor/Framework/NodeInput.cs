@@ -33,7 +33,7 @@ namespace NodeEditorFramework
 
 		public T GetValue<T> ()
 		{
-			return connection.GetValue<T> ();
+			return connection != null? connection.GetValue<T> () : NodeOutput.getDefault<T> ();
 		}
 		
 		public void SetValue<T> (T value)

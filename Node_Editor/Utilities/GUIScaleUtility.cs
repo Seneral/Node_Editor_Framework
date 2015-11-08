@@ -39,6 +39,7 @@ namespace NodeEditorFramework.Utilities
 		private static FieldInfo currentTopLevelGroup;
 
 		private static bool compabilityMode;
+		private static bool initiated;
 
 	//	private static Type GUILayoutGroupType;
 	//	private static Type GUILayoutEntryType;
@@ -78,6 +79,8 @@ namespace NodeEditorFramework.Utilities
 				compabilityMode = true;
 			}
 
+			initiated = true;
+
 	//		Type GUILayoutUtilityType = UnityEngine.GetType ("UnityEngine.GUILayoutUtility");
 	//		currentGUILayoutCache = GUILayoutUtilityType.GetField ("current", BindingFlags.Static | BindingFlags.NonPublic);
 	//
@@ -92,6 +95,12 @@ namespace NodeEditorFramework.Utilities
 	//		LayoutEntryHeight = GUILayoutEntryType.GetField ("maxHeight");
 	//		LayoutEntryWidth = GUILayoutEntryType.GetField ("maxWidth");
 	//		LayoutEntryStyle = GUILayoutEntryType.GetProperty ("style");
+		}
+
+		public static void CheckInit () 
+		{
+			if (!initiated)
+				Init ();
 		}
 
 		#region Scale Area
@@ -119,7 +128,7 @@ namespace NodeEditorFramework.Utilities
 				screenRect = GUIScaleUtility.InnerToScreenRect (rect);
 			}
 
-			// The Rect of the new clipping group to draw our nodes in
+			// The Rect of the new clipping group to draw our scaled GUI in
 			rect = ScaleRect (screenRect, screenRect.position + zoomPivot, new Vector2 (zoom, zoom));
 			
 			// Now continue drawing using the new clipping group
