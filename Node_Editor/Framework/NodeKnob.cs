@@ -71,6 +71,11 @@ namespace NodeEditorFramework
 			DisplayLayout (new GUIContent (name));
 		}
 		
+		public void DisplayLayout(GUIStyle style)
+		{
+			DisplayLayout(new GUIContent(name), style);
+		}
+
 		/// <summary>
 		/// Automatically draw the output with the specified label and set the knob next to it at the current side.
 		/// </summary>
@@ -78,9 +83,19 @@ namespace NodeEditorFramework
 		{
 			GUIStyle style = new GUIStyle (GUI.skin.label);
 			style.alignment = TextAnchor.MiddleRight;
-			GUILayout.Label (content, style);
-			if (Event.current.type == EventType.Repaint) 
-				SetPosition ();
+			DisplayLayout(content, style);
+		}
+
+		/// <summary>
+		/// Automatically draw the output with the specified label and it's style and set the knob next to it at the current side.
+		/// </summary>
+		/// <param name="content"></param>
+		/// <param name="style"></param>
+		public void DisplayLayout(GUIContent content, GUIStyle style)
+		{
+			GUILayout.Label(content, style);
+			if (Event.current.type == EventType.Repaint)
+				SetPosition();
 		}
 		
 		/// <summary>
