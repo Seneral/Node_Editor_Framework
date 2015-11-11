@@ -172,7 +172,7 @@ namespace NodeEditorFramework
 					Repaint ();
 			}
 
-			// Push the active cell at the bottom of the draw order.
+			// Push the active node at the bottom of the draw order.
 			if (Event.current.type == EventType.Layout && curEditorState.selectedNode != null)
 			{
 				curNodeCanvas.nodes.Remove (curEditorState.selectedNode);
@@ -888,7 +888,7 @@ namespace NodeEditorFramework
 			#if UNITY_EDITOR
 			Object[] objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
 			#else
-			Object[] objects = Resources.LoadAll (path);
+			Object[] objects = UnityEngine.Resources.LoadAll (path);
 			#endif
 			if (objects.Length == 0) 
 				return new List<NodeEditorState> ();
@@ -929,7 +929,7 @@ namespace NodeEditorFramework
 		{
 			if (String.IsNullOrEmpty (path))
 				return null;
-			Object[] objects;
+			Object[] objects = null;
 	
 			if (!Application.isPlaying) 
 			{
@@ -943,7 +943,7 @@ namespace NodeEditorFramework
 				objects = UnityEngine.Resources.LoadAll (path);
 			}
 
-			if (objects.Length == 0) 
+			if (objects == null || objects.Length == 0) 
 				return null;
 			// We're going to filter out the NodeCanvas out of the objects that build up the save file.
 			NodeCanvas nodeCanvas = null;

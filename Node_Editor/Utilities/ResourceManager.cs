@@ -21,7 +21,7 @@ namespace NodeEditorFramework.Resources
 		/// </summary>
 		public static T LoadResource<T> (string path) where T : UnityEngine.Object
 		{
-			T obj;
+			T obj = null;
 			if (!Application.isPlaying) 
 			{
 				#if UNITY_EDITOR
@@ -58,7 +58,7 @@ namespace NodeEditorFramework.Resources
 			}
 			//Debug.Log ("Loading " + texPath + " first time");
 			
-			Texture2D tex;
+			Texture2D tex = null;
 			if (!Application.isPlaying) 
 			{
 				#if UNITY_EDITOR
