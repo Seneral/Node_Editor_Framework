@@ -175,8 +175,8 @@ namespace NodeEditorFramework
 			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 			{
 				NodeOutput output = Outputs [outCnt];
-				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
-					output.connections [conCnt].connection = null;
+				while (output.connections.Count != 0)
+					RemoveConnection(output.connections[0]);
 				DestroyImmediate (output, true);
 			}
 			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
