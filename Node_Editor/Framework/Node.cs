@@ -40,7 +40,7 @@ namespace NodeEditorFramework
 		{
 			get
 			{
-				return false;
+				return true;
 			}
 		}
 		
