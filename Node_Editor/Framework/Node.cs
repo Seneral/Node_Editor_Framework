@@ -13,11 +13,9 @@ namespace NodeEditorFramework
 		public List<NodeInput> Inputs = new List<NodeInput>();
 		public List<NodeOutput> Outputs = new List<NodeOutput>();
 		[HideInInspector]
+		[NonSerialized]
 		public bool calculated = true;
-
-		public bool allowRecursion = false; // Should we allow recursion? Recursion is allowed if atleast a single Node in the loop allows for recursion
-		public bool continueCalculation = true; // After the Calculate function is called on this node, should the Nodes afterwards be calculated?
-
+		
 		// State graph
 		public List<Transition> transitions = new List<Transition> ();
 
@@ -25,6 +23,26 @@ namespace NodeEditorFramework
 
 		// Abstract member to get the ID of the node
 		public abstract string GetID { get; }
+		/// <summary>
+		/// Should we allow recursion? Recursion is allowed if atleast a single Node in the loop allows for recursion
+		/// </summary>
+		public virtual bool AllowRecursion
+		{
+			get
+			{
+				return false;
+			}
+		}
+		/// <summary>
+		/// After the Calculate function is called on this node, should the Nodes afterwards be calculated?
+		/// </summary>
+		public virtual bool ContinueCalculation
+		{
+			get
+			{
+				return false;
+			}
+		}
 		
 		/// <summary>
 		/// Function implemented by the children to create the node
@@ -338,7 +356,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public bool allowsLoopRecursion (Node otherNode)
 		{
-			if (allowRecursion)
+			if (AllowRecursion)
 				return true;
 			if (otherNode == null)
 				return false;
