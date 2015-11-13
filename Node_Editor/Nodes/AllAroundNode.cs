@@ -6,16 +6,15 @@ public class AllAroundNode : Node
 {
 	public const string ID = "allaroundNode";
 	public override string GetID { get { return ID; } }
-	
+	public override bool AllowRecursion { get { return true; } }
+	public override bool ContinueCalculation { get { return true; } }
+
 	public override Node Create (Vector2 pos) 
 	{
 		AllAroundNode node = CreateInstance<AllAroundNode> ();
 		
 		node.rect = new Rect (pos.x, pos.y, 60, 60);
 		node.name = "AllAround Node";
-
-		node.allowRecursion = true;
-		node.continueCalculation = true;
 		
 		node.CreateInput ("Input Top", "Float");
 		node.CreateInput ("Input Bottom", "Float");

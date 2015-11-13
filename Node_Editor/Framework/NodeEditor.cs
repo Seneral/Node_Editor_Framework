@@ -805,7 +805,7 @@ namespace NodeEditorFramework
 				node.calculated = true;
 				calculationCount++;
 				workList.Remove (node);
-				if (node.continueCalculation && calculationCount < 1000) 
+				if (node.ContinueCalculation && calculationCount < 1000) 
 				{
 					for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
 					{
