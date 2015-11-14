@@ -41,15 +41,25 @@ namespace NodeEditorFramework
 		// Settings
 		public static int sideWindowWidth = 400;
 
+		private static Texture iconTexture;
+
 		[MenuItem("Window/Node Editor")]
 		public static void CreateEditor () 
 		{
-			_editor = GetWindow<NodeEditorWindow> ("Node Editor");
+			_editor = GetWindow<NodeEditorWindow> ();
 			_editor.minSize = new Vector2 (800, 600);
 			_editor.NewNodeCanvas ();
 			NodeEditor.Repaint += _editor.Repaint;
 			NodeEditor.initiated = false;
+
+			if (EditorGUIUtility.isProSkin)
+				iconTexture = ResourceManager.LoadTexture("Textures/Icon_Dark.png");
+			else
+				iconTexture = ResourceManager.LoadTexture("Textures/Icon_Light.png");
+
+			_editor.titleContent = new GUIContent("Node Editor", iconTexture);
 		}
+
 
 		[UnityEditor.Callbacks.OnOpenAsset(1)]
 		public static bool OnOpenAsset (int instanceID, int line) 
