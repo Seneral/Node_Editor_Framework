@@ -59,22 +59,23 @@ namespace NodeEditorFramework.Resources
 			//Debug.Log ("Loading " + texPath + " first time");
 			
 			Texture2D tex = null;
-			if (!Application.isPlaying) 
+			
+			#if UNITY_EDITOR
 			{
-				#if UNITY_EDITOR
-				string fullPath = System.IO.Path.Combine (resourcePath, texPath);
-				tex = UnityEditor.AssetDatabase.LoadAssetAtPath (fullPath, typeof (Texture2D)) as Texture2D;
+				string fullPath = System.IO.Path.Combine(resourcePath, texPath);
+				tex = UnityEditor.AssetDatabase.LoadAssetAtPath(fullPath, typeof(Texture2D)) as Texture2D;
 				if (tex == null)
-					Debug.LogError (string.Format ("ResourceManager: Texture not found at '{0}', did you install the plugin correctly?", fullPath));
-				#endif
+					Debug.LogError(string.Format("ResourceManager: Texture not found at '{0}', did you install the plugin correctly?", fullPath));
 			}
-			else
+			#else
 			{
 				texPath = texPath.Split ('.') [0];
 				tex = Resources.Load<Texture2D> (texPath);
 				if (tex == null)
 					Debug.LogError (string.Format ("ResourceManager: Texture not found at '{0}' in any Resource Folder!", texPath));
 			}
+			#endif
+
 			loadedTextures.Add (new MemoryTexture (texPath, tex));
 			return tex;
 		}
