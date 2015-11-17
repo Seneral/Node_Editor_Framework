@@ -41,23 +41,14 @@ namespace NodeEditorFramework
 		// Settings
 		public static int sideWindowWidth = 400;
 
-		private static Texture iconTexture;
-
 		[MenuItem("Window/Node Editor")]
 		public static void CreateEditor () 
 		{
-			_editor = GetWindow<NodeEditorWindow> ();
+			_editor = GetWindow<NodeEditorWindow> ("Node Editor");
 			_editor.minSize = new Vector2 (800, 600);
 			_editor.NewNodeCanvas ();
 			NodeEditor.Repaint += _editor.Repaint;
 			NodeEditor.initiated = false;
-
-			if (EditorGUIUtility.isProSkin)
-				iconTexture = ResourceManager.LoadTexture("Textures/Icon_Dark.png");
-			else
-				iconTexture = ResourceManager.LoadTexture("Textures/Icon_Light.png");
-
-			_editor.titleContent = new GUIContent("Node Editor", iconTexture);
 		}
 
 
@@ -90,6 +81,19 @@ namespace NodeEditorFramework
 				return;
 			}
 			AssureHasEditor ();
+
+			// Set window icon
+			if (_editor.titleContent.image == null)
+			{ 
+				Texture2D iconTexture = null;
+				
+				if (EditorGUIUtility.isProSkin)
+					iconTexture = ResourceManager.LoadTexture("Textures/Icon_Dark.png");
+				else
+					iconTexture = ResourceManager.LoadTexture("Textures/Icon_Light.png");
+
+				_editor.titleContent.image = iconTexture;
+			}
 
 			// Example of creating Nodes and Connections through code
 			//		CalcNode calcNode1 = CalcNode.Create (new Rect (200, 200, 200, 100));
