@@ -52,6 +52,8 @@ namespace NodeEditorFramework
 			NodeEditor.Repaint += _editor.Repaint;
 			NodeEditor.initiated = false;
 
+			ResourceManager.Init(NodeEditor.editorPath + "Resources/");
+
 			if (EditorGUIUtility.isProSkin)
 				iconTexture = ResourceManager.LoadTexture("Textures/Icon_Dark.png");
 			else
