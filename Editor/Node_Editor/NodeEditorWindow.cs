@@ -9,7 +9,7 @@ namespace NodeEditorFramework
 {
 	public class NodeEditorWindow : EditorWindow 
 	{
-		// Information about current instances
+		// Information about current instance
 		private static NodeEditorWindow _editor;
 		public static NodeEditorWindow editor
 		{
@@ -27,20 +27,16 @@ namespace NodeEditorFramework
 				_editor.Repaint ();
 			}
 		}
-		
-		public static NodeCanvas MainNodeCanvas { get { return editor.mainNodeCanvas; } }
-		public static NodeEditorState MainEditorState { get { return editor.mainEditorState; } }
 
-		// The main Node Canvas
+		// Opened Canvas:
 		public NodeCanvas mainNodeCanvas;
 		public NodeEditorState mainEditorState;
-
-		public static string openedCanvas = "New Canvas";
+		public static NodeCanvas MainNodeCanvas { get { return editor.mainNodeCanvas; } }
+		public static NodeEditorState MainEditorState { get { return editor.mainEditorState; } }
 		public static string openedCanvasPath;
 
-		// Settings
+		// GUI Settings
 		public static int sideWindowWidth = 400;
-
 		private static Texture iconTexture;
 
 		[MenuItem("Window/Node Editor")]
@@ -53,20 +49,17 @@ namespace NodeEditorFramework
 			NodeEditor.initiated = false;
 
 			ResourceManager.Init(NodeEditor.editorPath + "Resources/");
-
-			if (EditorGUIUtility.isProSkin)
-				iconTexture = ResourceManager.LoadTexture("Textures/Icon_Dark.png");
-			else
-				iconTexture = ResourceManager.LoadTexture("Textures/Icon_Light.png");
-
+			iconTexture = ResourceManager.LoadTexture(EditorGUIUtility.isProSkin? "Textures/Icon_Dark.png" : "Textures/Icon_Light.png");
 			_editor.titleContent = new GUIContent("Node Editor", iconTexture);
 		}
 
-
+		/// <summary>
+		/// Handle opening canvas when double-clicking asset
+		/// </summary>
 		[UnityEditor.Callbacks.OnOpenAsset(1)]
-		public static bool OnOpenAsset (int instanceID, int line) 
+		public static bool AutoOpenCanvas (int instanceID, int line) 
 		{
-			if (Selection.activeObject as NodeCanvas != null) 
+			if (Selection.activeObject != null && Selection.activeObject.GetType () == typeof(NodeCanvas))
 			{
 				string NodeCanvasPath = AssetDatabase.GetAssetPath (instanceID);
 				NodeEditorWindow.CreateEditor ();
@@ -85,6 +78,7 @@ namespace NodeEditorFramework
 
 		public void OnGUI () 
 		{
+			// Initiation
 			NodeEditor.checkInit ();
 			if (NodeEditor.InitiationError) 
 			{
@@ -92,16 +86,22 @@ namespace NodeEditorFramework
 				return;
 			}
 			AssureHasEditor ();
-
-			// Example of creating Nodes and Connections through code
-			//		CalcNode calcNode1 = CalcNode.Create (new Rect (200, 200, 200, 100));
-			//		CalcNode calcNode2 = CalcNode.Create (new Rect (600, 200, 200, 100));
-			//		Node.ApplyConnection (calcNode1.Outputs [0], calcNode2.Inputs [0]);
-
 			if (mainNodeCanvas == null)
 				NewNodeCanvas ();
 
+			// Example of creating Nodes and Connections through code
+//			CalcNode calcNode1 = NodeTypes.getDefaultNode ("calcNode").Create (new Rect (200, 200, 200, 100));
+//			CalcNode calcNode2 = NodeTypes.getDefaultNode ("calcNode").Create (new Rect (600, 200, 200, 100));
+//			Node.ApplyConnection (calcNode1.Outputs [0], calcNode2.Inputs [0]);
+
+			// Specify the Canvas rect in the EditorState:
 			mainEditorState.canvasRect = canvasWindowRect;
+			// If you want to use GetRect:
+//			Rect canvasRect = GUILayoutUtility.GetRect (600, 600);
+//			if (Event.current.type != EventType.Layout)
+//				mainEditorState.canvasRect = canvasRect;
+
+			// Perform drawing with error-handling
 			try
 			{
 				NodeEditor.DrawCanvas (mainNodeCanvas, mainEditorState);
@@ -111,7 +111,8 @@ namespace NodeEditorFramework
 				NewNodeCanvas ();
 				Debug.LogError ("Unloaded Canvas due to exception in Draw!");
 				Debug.LogException (e);
-			}		
+			}
+
 			// Draw Side Window
 			sideWindowWidth = Math.Min (600, Math.Max (200, (int)(position.width / 5)));
 			NodeEditorGUI.StartNodeGUI ();
@@ -123,8 +124,8 @@ namespace NodeEditorFramework
 
 		public void DrawSideWindow () 
 		{
-			GUILayout.Label (new GUIContent ("Node Editor (" + mainNodeCanvas.name + ")", "The currently opened canvas in the Node Editor"), NodeEditorGUI.nodeLabelBold);
-			GUILayout.Label (new GUIContent ("Do note that changes will be saved automatically!", "All changes are automatically saved to the currently opened canvas (see above) if it's present in the Project view."));
+			GUILayout.Label (new GUIContent ("Node Editor (" + mainNodeCanvas.name + ")", "Currently opened canvas: " + openedCanvasPath), NodeEditorGUI.nodeLabelBold);
+
 			if (GUILayout.Button (new GUIContent ("Save Canvas", "Saves the canvas as a new Canvas Asset File in the Assets Folder"))) 
 			{
 				SaveNodeCanvas (EditorUtility.SaveFilePanelInProject ("Save Node Canvas", "Node Canvas", "asset", "Saving to a file is only needed once.", ResourceManager.resourcePath + "Saves/"));
@@ -145,7 +146,8 @@ namespace NodeEditorFramework
 			{
 				NewNodeCanvas ();
 			}
-			if (GUILayout.Button (new GUIContent ("Recalculate All", "Starts to calculate from the beginning off."))) 
+
+			if (GUILayout.Button (new GUIContent ("Recalculate All", "Starts to calculate from the beginning off. Usually does not need to be triggered manually."))) 
 			{
 				NodeEditor.RecalculateAll (mainNodeCanvas);
 			}
@@ -194,8 +196,6 @@ namespace NodeEditorFramework
 				mainEditorState = CreateInstance<NodeEditorState> ();
 			
 			// Set some editor properties
-			string[] folders = path.Split (new char[] {'/'}, StringSplitOptions.None);
-			openedCanvas = folders [folders.Length-1];
 			openedCanvasPath = path;
 			
 			NodeEditor.RecalculateAll (mainNodeCanvas);

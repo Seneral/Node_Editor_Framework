@@ -65,6 +65,10 @@ namespace NodeEditorFramework
 
 				GUIScaleUtility.Init ();
 
+	#if UNITY_EDITOR
+				UnityEditor.EditorApplication.playmodeStateChanged += () => { initiated = false; InitiationError = false; };
+	#endif
+
 				initiated = true;
 			}
 		}
@@ -752,8 +756,6 @@ namespace NodeEditorFramework
 					workList.Add (node);
 				}
 			}
-			if (workList.Count == 0)
-				Debug.LogWarning ("Could not start Calculating: No nodes that act as an input on the canvas!");
 			StartCalculation ();
 		}
 		
@@ -931,17 +933,12 @@ namespace NodeEditorFramework
 				return null;
 			Object[] objects = null;
 	
-			if (!Application.isPlaying) 
-			{
-				#if UNITY_EDITOR
-				objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
-				#endif
-			}
-			else 
-			{
-				path = path.Split ('.') [0];
-				objects = UnityEngine.Resources.LoadAll (path);
-			}
+	#if UNITY_EDITOR
+			objects = UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path);
+	#else
+			path = path.Split ('.') [0];
+			objects = UnityEngine.Resources.LoadAll (path);
+	#endif
 
 			if (objects == null || objects.Length == 0) 
 				return null;
