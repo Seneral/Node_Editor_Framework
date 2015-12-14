@@ -1,31 +1,42 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-using NodeEditorFramework.Resources;
 
 namespace NodeEditorFramework.Utilities 
 {
 	public static class OverlayGUI 
 	{
 		public static PopupMenu currentPopup;
-		
+
+		/// <summary>
+		/// Returns if any popup currently has control.
+		/// </summary>
 		public static bool HasPopupControl () 
 		{
 			return currentPopup != null;
 		}
-		
+
+		/// <summary>
+		/// Starts the OverlayGUI (Call before any other GUI code!)
+		/// </summary>
 		public static void StartOverlayGUI () 
 		{
 			if (currentPopup != null && Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint)
 				currentPopup.Draw ();
 		}
-		
+
+		/// <summary>
+		/// Ends the OverlayGUI (Call after any other GUI code!)
+		/// </summary>
 		public static void EndOverlayGUI () 
 		{
 			if (currentPopup != null && (Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint))
 				currentPopup.Draw ();
 		}
 	}
-	
+
+	/// <summary>
+	/// A Generic Popupmenu. Used by GenericMenu, Popup (future), etc.
+	/// </summary>
 	public class PopupMenu 
 	{
 		public delegate void MenuFunction ();
@@ -55,11 +66,11 @@ namespace NodeEditorFramework.Utilities
 		{
 			backgroundStyle = new GUIStyle (GUI.skin.box);
 			backgroundStyle.contentOffset = new Vector2 (2, 2);
-			expandRight = ResourceManager.LoadTexture ("Textures/expandRight.png");
+			expandRight = NodeEditorFramework.Utilities.ResourceManager.LoadTexture ("Textures/expandRight.png");
 			itemHeight = GUI.skin.label.CalcHeight (new GUIContent ("text"), 100);
 			
 			selectedLabel = new GUIStyle (GUI.skin.label);
-			selectedLabel.normal.background = RTEditorGUI.ColorToTex (new Color (0.4f, 0.4f, 0.4f));
+			selectedLabel.normal.background = NodeEditorFramework.Utilities.RTEditorGUI.ColorToTex (1, new Color (0.4f, 0.4f, 0.4f));
 		}
 		
 		public void Show (Rect pos)
@@ -155,8 +166,7 @@ namespace NodeEditorFramework.Utilities
 			if (!inRect || close)
 				OverlayGUI.currentPopup = null;
 			
-			if (NodeEditorFramework.NodeEditor.Repaint != null)
-				NodeEditorFramework.NodeEditor.Repaint ();
+			NodeEditorFramework.NodeEditor.RepaintClients ();
 		}
 		
 		private bool DrawGroup (Rect pos, List<MenuItem> menuItems) 
@@ -315,7 +325,10 @@ namespace NodeEditorFramework.Utilities
 		
 		#endregion
 	}
-	
+
+	/// <summary>
+	/// Generic Menu which mimics UnityEditor.GenericMenu class pretty much exactly. Wrapper for the generic PopupMenu.
+	/// </summary>
 	public class GenericMenu
 	{
 		private static PopupMenu popup;

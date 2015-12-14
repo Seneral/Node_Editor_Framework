@@ -3,12 +3,11 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using NodeEditorFramework;
-using NodeEditorFramework.Resources;
+using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework 
 {
 	public enum NodeSide { Left = 4, Top = 3, Right = 2, Bottom = 1 }
-
 
 	public abstract class NodeKnob : ScriptableObject
 	{
@@ -16,7 +15,8 @@ namespace NodeEditorFramework
 		public Node body;
 		public string type;
 
-		// Texture
+		// Style
+		public abstract GUIStyle defaultStyle { get; }
 		public string texturePath;
 		[NonSerialized]
 		public Texture2D knobTexture;
@@ -45,7 +45,7 @@ namespace NodeEditorFramework
 			{
 				int rotationSteps = getRotationStepsAntiCW (defaultSide, side);
 
-				ResourceManager.MemoryTexture memoryTex =  ResourceManager.FindInMemory (knobTexture);
+				ResourceManager.MemoryTexture memoryTex = ResourceManager.FindInMemory (knobTexture);
 				List<string> mods = memoryTex.modifications.ToList ();
 				mods.Add ("Rotation:" + rotationSteps);
 
@@ -55,7 +55,7 @@ namespace NodeEditorFramework
 					knobTexture = knobTextureInMemory;
 				else 
 				{
-					knobTexture = NodeEditorGUI.RotateTextureAntiCW (knobTexture, rotationSteps);
+					knobTexture = RTEditorGUI.RotateTextureAntiCW (knobTexture, rotationSteps);
 					ResourceManager.AddTexture (texturePath, knobTexture, mods.ToArray ());
 				}
 			}
@@ -71,9 +71,9 @@ namespace NodeEditorFramework
 			DisplayLayout (new GUIContent (name));
 		}
 		
-		public void DisplayLayout(GUIStyle style)
+		public void DisplayLayout (GUIStyle style)
 		{
-			DisplayLayout(new GUIContent(name), style);
+			DisplayLayout (new GUIContent (name), style);
 		}
 
 		/// <summary>
@@ -81,21 +81,17 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void DisplayLayout (GUIContent content) 
 		{
-			GUIStyle style = new GUIStyle (GUI.skin.label);
-			style.alignment = TextAnchor.MiddleRight;
-			DisplayLayout(content, style);
+			DisplayLayout(content, defaultStyle);
 		}
 
 		/// <summary>
 		/// Automatically draw the output with the specified label and it's style and set the knob next to it at the current side.
 		/// </summary>
-		/// <param name="content"></param>
-		/// <param name="style"></param>
-		public void DisplayLayout(GUIContent content, GUIStyle style)
+		public void DisplayLayout (GUIContent content, GUIStyle style)
 		{
-			GUILayout.Label(content, style);
+			GUILayout.Label (content, style);
 			if (Event.current.type == EventType.Repaint)
-				SetPosition();
+				SetPosition ();
 		}
 		
 		/// <summary>
@@ -103,10 +99,11 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void SetPosition (float position, NodeSide nodeSide) 
 		{
-			NodeSide oldSide = side;
-			side = nodeSide;
-			if (oldSide != nodeSide)
+			if (side != nodeSide) 
+			{
+				side = nodeSide;
 				ReloadKnobTexture ();
+			}
 			SetPosition (position);
 		}
 		

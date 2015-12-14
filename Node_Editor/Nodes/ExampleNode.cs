@@ -43,7 +43,7 @@ public class ExampleNode : Node
 	{
 		if (!allInputsReady ())
 			return false;
-		Outputs[0].SetValue<float> (Inputs[0].connection.GetValue<float> () * 5);
+		Outputs[0].SetValue<float> (Inputs[0].GetValue<float> () * 5);
 		return true;
 	}
 }

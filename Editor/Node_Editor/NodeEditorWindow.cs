@@ -1,9 +1,10 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using NodeEditorFramework;
-using NodeEditorFramework.Resources;
+using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
 {
@@ -11,48 +12,38 @@ namespace NodeEditorFramework
 	{
 		// Information about current instance
 		private static NodeEditorWindow _editor;
-		public static NodeEditorWindow editor
-		{
-			get
-			{
-				AssureHasEditor ();
-				return _editor;
-			}
-		}
-		public static void AssureHasEditor () 
-		{
-			if (_editor == null)
-			{
-				CreateEditor ();
-				_editor.Repaint ();
-			}
-		}
+		public static NodeEditorWindow editor { get { AssureHasEditor (); return _editor; } }
+		public static void AssureHasEditor () { if (_editor == null) CreateEditor (); }
 
-		// Opened Canvas:
+		// Opened Canvas
 		public NodeCanvas mainNodeCanvas;
 		public NodeEditorState mainEditorState;
 		public static NodeCanvas MainNodeCanvas { get { return editor.mainNodeCanvas; } }
 		public static NodeEditorState MainEditorState { get { return editor.mainEditorState; } }
 		public static string openedCanvasPath;
+		public string tempSessionPath;
 
-		// GUI Settings
+		// GUI
 		public static int sideWindowWidth = 400;
 		private static Texture iconTexture;
+		public Rect sideWindowRect { get { return new Rect (position.width - sideWindowWidth, 0, sideWindowWidth, position.height); } }
+		public Rect canvasWindowRect { get { return new Rect (0, 0, position.width - sideWindowWidth, position.height); } }
 
-		[MenuItem("Window/Node Editor")]
+		#region General 
+
+		[MenuItem ("Window/Node Editor")]
 		public static void CreateEditor () 
 		{
 			_editor = GetWindow<NodeEditorWindow> ();
 			_editor.minSize = new Vector2 (800, 600);
-			_editor.NewNodeCanvas ();
-			NodeEditor.Repaint += _editor.Repaint;
+			NodeEditor.ClientRepaints += _editor.Repaint;
 			NodeEditor.initiated = false;
-
-			ResourceManager.Init(NodeEditor.editorPath + "Resources/");
-			iconTexture = ResourceManager.LoadTexture(EditorGUIUtility.isProSkin? "Textures/Icon_Dark.png" : "Textures/Icon_Light.png");
-			_editor.titleContent = new GUIContent("Node Editor", iconTexture);
+			
+			ResourceManager.Init (NodeEditor.editorPath + "Resources/");
+			iconTexture = ResourceManager.LoadTexture (EditorGUIUtility.isProSkin? "Textures/Icon_Dark.png" : "Textures/Icon_Light.png");
+			_editor.titleContent = new GUIContent ("Node Editor", iconTexture);
 		}
-
+		
 		/// <summary>
 		/// Handle opening canvas when double-clicking asset
 		/// </summary>
@@ -71,8 +62,62 @@ namespace NodeEditorFramework
 
 		public void OnDestroy () 
 		{
-			NodeEditor.Repaint -= _editor.Repaint;
+			NodeEditor.ClientRepaints -= _editor.Repaint;
+			SaveCache ();
 		}
+
+		// Following section is all about caching the last editor session
+
+		public void OnEnable () 
+		{
+			tempSessionPath = Path.GetDirectoryName (AssetDatabase.GetAssetPath (MonoScript.FromScriptableObject (this)));
+			LoadCache ();
+
+	#if UNITY_EDITOR
+			// This makes sure the Node Editor is reinitiated after the Playmode changed
+			EditorLoadingControl.beforeEnteringPlayMode -= SaveCache;
+			EditorLoadingControl.beforeEnteringPlayMode += SaveCache;
+			EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
+			EditorLoadingControl.lateEnteredPlayMode += LoadCache;
+
+			EditorLoadingControl.beforeLeavingPlayMode -= SaveCache;
+			EditorLoadingControl.beforeLeavingPlayMode += SaveCache;
+			EditorLoadingControl.justLeftPlayMode -= LoadCache;
+			EditorLoadingControl.justLeftPlayMode += LoadCache;
+
+			EditorLoadingControl.justOpenedNewScene -= LoadCache;
+			EditorLoadingControl.justOpenedNewScene += LoadCache;
+
+			// TODO: BeforeOpenedScene to save Cache, aswell as assembly reloads... 
+	#endif
+		}
+
+		private void SaveCache () 
+		{
+			DeleteCache ();
+			EditorPrefs.SetString ("NodeEditorLastSession", mainNodeCanvas.name + ".asset");
+			SaveNodeCanvas (tempSessionPath + "/" + mainNodeCanvas.name + ".asset");
+			AssetDatabase.SaveAssets ();
+			AssetDatabase.Refresh ();
+		}
+		private void LoadCache () 
+		{
+			string lastSession = EditorPrefs.GetString ("NodeEditorLastSession");
+			if (String.IsNullOrEmpty (lastSession))
+				return;
+			LoadNodeCanvas (tempSessionPath + "/" + lastSession);
+			NodeEditor.initiated = NodeEditor.InitiationError = false;
+		}
+		private void DeleteCache () 
+		{
+			string lastSession = EditorPrefs.GetString ("NodeEditorLastSession");
+			if (!String.IsNullOrEmpty (lastSession))
+				AssetDatabase.DeleteAsset (tempSessionPath + "/" + lastSession);
+			AssetDatabase.Refresh ();
+			EditorPrefs.DeleteKey ("NodeEditorLastSession");
+		}
+
+		#endregion
 
 		#region GUI
 
@@ -88,13 +133,9 @@ namespace NodeEditorFramework
 			AssureHasEditor ();
 			if (mainNodeCanvas == null)
 				NewNodeCanvas ();
+			//Debug.Log ("mainNodeCanvas " + mainNodeCanvas.name);
 
-			// Example of creating Nodes and Connections through code
-//			CalcNode calcNode1 = NodeTypes.getDefaultNode ("calcNode").Create (new Rect (200, 200, 200, 100));
-//			CalcNode calcNode2 = NodeTypes.getDefaultNode ("calcNode").Create (new Rect (600, 200, 200, 100));
-//			Node.ApplyConnection (calcNode1.Outputs [0], calcNode2.Inputs [0]);
-
-			// Specify the Canvas rect in the EditorState:
+			// Specify the Canvas rect in the EditorState
 			mainEditorState.canvasRect = canvasWindowRect;
 			// If you want to use GetRect:
 //			Rect canvasRect = GUILayoutUtility.GetRect (600, 600);
@@ -155,15 +196,6 @@ namespace NodeEditorFramework
 			NodeEditorGUI.knobSize = EditorGUILayout.IntSlider (new GUIContent ("Handle Size", "The size of the handles of the Node Inputs/Outputs"), NodeEditorGUI.knobSize, 12, 20);
 			mainEditorState.zoom = EditorGUILayout.Slider (new GUIContent ("Zoom"), mainEditorState.zoom, 0.6f, 2);
 		}
-		
-		public Rect sideWindowRect 
-		{
-			get { return new Rect (position.width - sideWindowWidth, 0, sideWindowWidth, position.height); }
-		}
-		public Rect canvasWindowRect 
-		{
-			get { return new Rect (0, 0, position.width - sideWindowWidth, position.height); }
-		}
 
 		#endregion
 
@@ -185,8 +217,11 @@ namespace NodeEditorFramework
 		{
 			// Load the NodeCanvas
 			NodeCanvas nodeCanvas = NodeEditor.LoadNodeCanvas (path);
-			if (nodeCanvas == null)
+			if (nodeCanvas == null) 
+			{
+				NewNodeCanvas ();
 				return;
+			}
 			mainNodeCanvas = nodeCanvas;
 			
 			// Load the associated MainEditorState

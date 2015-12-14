@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
 using NodeEditorFramework;
-using NodeEditorFramework.Resources;
+using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
 {
@@ -17,23 +17,24 @@ namespace NodeEditorFramework
 		public static TypeData GetTypeData (string typeName)
 		{
 			if (types == null || types.Count == 0)
-				FetchTypes();
-			TypeData res;
-			if (types.TryGetValue(typeName, out res) )
-				return res;
-			UnityEngine.Debug.LogError("No TypeData defined for: " + typeName);
-			return types.First().Value;
+				NodeEditor.ReInit (false);
+			TypeData typeData;
+			if (!types.TryGetValue (typeName, out typeData))
+			{
+				Debug.LogError ("No TypeData defined for: " + typeName);
+				typeData = types.First ().Value;
+			}
+			if (typeData.declaration == null || typeData.InputKnob == null || typeData.OutputKnob == null)
+			{
+				NodeEditor.ReInit (false);
+				typeData = GetTypeData (typeName);
+			}
+			return typeData;
 		}
 		
 		public static Type GetType (string typeName)
 		{
-			if (types == null || types.Count == 0)
-				FetchTypes();
-			TypeData res;
-			if (types.TryGetValue(typeName, out res))
-				return res.Type ?? NullType;
-			UnityEngine.Debug.LogError ("No TypeData defined for: " + typeName);
-			return NullType;
+			return GetTypeData (typeName).Type ?? NullType;
 		}
 		
 		/// <summary>
@@ -48,12 +49,14 @@ namespace NodeEditorFramework
 				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
 			foreach (Assembly assembly in scriptAssemblies) 
 			{
+				if (!assembly.FullName.Contains ("Assembly"))
+					continue;
 				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.GetInterfaces ().Contains (typeof (ITypeDeclaration)))) 
 				{
 					ITypeDeclaration typeDecl = assembly.CreateInstance (type.FullName) as ITypeDeclaration;
 					if (typeDecl == null) 
 					{
-						UnityEngine.Debug.LogError ("Error with Type Declaration " + type.FullName);
+						Debug.LogError ("Error with Type Declaration " + type.FullName);
 						return;
 					}
 					types.Add (typeDecl.name, new TypeData(typeDecl));
@@ -99,4 +102,6 @@ namespace NodeEditorFramework
 		public string OutputKnob_TexPath { get { return "Textures/Out_Knob.png"; } }
 		public Type Type { get { return typeof(float); } }
 	}
+
+
 }

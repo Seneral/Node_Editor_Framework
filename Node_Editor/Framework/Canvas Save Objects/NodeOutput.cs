@@ -8,13 +8,15 @@ namespace NodeEditorFramework
 	public class NodeOutput : NodeKnob
 	{
 		public override NodeSide defaultSide { get { return NodeSide.Right; } }
+		private static GUIStyle _defaultStyle;
+		public override GUIStyle defaultStyle { get { if (_defaultStyle == null) { _defaultStyle = new GUIStyle (GUI.skin.label); _defaultStyle.alignment = TextAnchor.MiddleRight; } return _defaultStyle; } }
 
 		public List<NodeInput> connections = new List<NodeInput> ();
 		
 		// Value
-		[System.NonSerialized]
+		[NonSerialized]
 		private object value = null;
-		private System.Type valueType;
+		private Type valueType;
 		
 		/// <summary>
 		/// Creates a new NodeOutput in NodeBody of specified type
@@ -55,7 +57,7 @@ namespace NodeEditorFramework
 					value = getDefault<T> ();
 				return (T)value;
 			}
-			UnityEngine.Debug.LogError ("Trying to GetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
+			Debug.LogError ("Trying to GetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
 			return getDefault<T> ();
 		}
 		
@@ -69,7 +71,7 @@ namespace NodeEditorFramework
 			if (valueType == typeof(T))
 				value = Value;
 			else
-				UnityEngine.Debug.LogError("Trying to SetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
+				Debug.LogError("Trying to SetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
 		}
 		
 		/// <summary>

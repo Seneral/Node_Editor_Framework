@@ -3,10 +3,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace NodeEditorFramework.Resources 
+namespace NodeEditorFramework.Utilities 
 {
-	using Resources = UnityEngine.Resources;
-
 	public static class ResourceManager 
 	{
 		public static string resourcePath;
@@ -48,6 +46,8 @@ namespace NodeEditorFramework.Resources
 		/// </summary>
 		public static Texture2D LoadTexture (string texPath)
 		{
+			if (String.IsNullOrEmpty (texPath))
+				return null;
 			int existingInd = loadedTextures.FindIndex ((MemoryTexture memTex) => memTex.path == texPath);
 			if (existingInd != -1) 
 			{
@@ -90,7 +90,7 @@ namespace NodeEditorFramework.Resources
 			if (tintedTexture == null)
 			{
 				tintedTexture = ResourceManager.LoadTexture (texPath);
-				tintedTexture = NodeEditorFramework.NodeEditorGUI.Tint (tintedTexture, col);
+				tintedTexture = NodeEditorFramework.Utilities.RTEditorGUI.Tint (tintedTexture, col);
 				ResourceManager.AddTexture (texPath, tintedTexture, texMod); // Register texture for re-use
 			}
 			return tintedTexture;

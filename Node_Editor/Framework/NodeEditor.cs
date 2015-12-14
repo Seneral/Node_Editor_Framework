@@ -3,12 +3,12 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using System;
+using System.Reflection;
 using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
-using NodeEditorFramework.Resources;
 
 using Object = UnityEngine.Object;
 
@@ -16,61 +16,92 @@ namespace NodeEditorFramework
 {
 	public static class NodeEditor 
 	{
+		public static string editorPath = "Assets/Plugins/Node_Editor/";
+
 		// The NodeCanvas which represents the currently drawn Node Canvas; globally accessed
 		public static NodeCanvas curNodeCanvas;
 		public static NodeEditorState curEditorState;
 
-		public static Action Repaint;
-
-		private static bool unfocus;
-
-		// Quick access
+		private static bool unfocusControls;
 		public static Vector2 mousePos;
 
-		// Constants
-		public const string editorPath = "Assets/Plugins/Node_Editor/";
+		public static Action ClientRepaints;
+		public static void RepaintClients () 
+		{
+			if (ClientRepaints != null)
+				ClientRepaints ();
+		}
 
 		#region Setup
 
-		[NonSerialized]
 		public static bool initiated = false;
-		[NonSerialized]
 		public static bool InitiationError = false;
 		
 		public static void checkInit () 
 		{
-			if (!initiated && !InitiationError) 
-			{
-	#if UNITY_EDITOR
-				Object script = UnityEditor.AssetDatabase.LoadAssetAtPath (editorPath + "Framework/NodeEditor.cs", typeof(Object));
-				if (script == null) 
-				{
-					Debug.LogError ("Node Editor: Not installed in default directory '" + editorPath + "'! Please modify the editorPath variable in the source!");
-					InitiationError = true;
-					return;
-				}
-	#endif
+			if (!initiated && !InitiationError)
+				ReInit (true);
+		}
 
-				ResourceManager.Init (editorPath + "Resources/");
-				
-				if (!NodeEditorGUI.Init ())
-					InitiationError = true;
+		public static void ReInit (bool GUIFunction) 
+		{
+			CheckEditorPath ();
 
-				ConnectionTypes.FetchTypes ();
-
-				NodeTypes.FetchNodes ();
-
-				NodeEditorCallbacks.SetupReceivers ();
-				NodeEditorCallbacks.IssueOnEditorStartUp ();
-
-				GUIScaleUtility.Init ();
-
-	#if UNITY_EDITOR
-				UnityEditor.EditorApplication.playmodeStateChanged += () => { initiated = false; InitiationError = false; };
-	#endif
-
-				initiated = true;
+			// Init Resource system. Can be called anywhere else, too, if it's needed before.
+			ResourceManager.Init (editorPath + "Resources/");
+			
+			// Init NE GUI. I may throw an error if a texture was not found.	
+			if (!NodeEditorGUI.Init (GUIFunction)) 
+			{	
+				InitiationError = true;
+				return;
 			}
+
+			// Run fetching algorithms searching the script assemblies for Custom Nodes / Connection Types
+			ConnectionTypes.FetchTypes ();
+			NodeTypes.FetchNodes ();
+
+			// Setup Callback system
+			NodeEditorCallbacks.SetupReceivers ();
+			NodeEditorCallbacks.IssueOnEditorStartUp ();
+
+			// Init GUIScaleUtility. This fetches reflected calls and my throw a message notifying about incompability.
+			GUIScaleUtility.Init ();
+
+	#if UNITY_EDITOR
+			RepaintClients ();
+	#endif
+			initiated = true;
+		}
+
+		/// <summary>
+		/// Checks the editor path and corrects when possible.
+		/// </summary>
+		public static void CheckEditorPath () 
+		{
+	#if UNITY_EDITOR
+			Object script = UnityEditor.AssetDatabase.LoadAssetAtPath (editorPath + "Framework/NodeEditor.cs", typeof(Object));
+			if (script == null) 
+			{
+				string[] assets = UnityEditor.AssetDatabase.FindAssets ("NodeEditorCallbackReceiver"); // Something relatively unique
+				if (assets.Length != 1) 
+				{
+					assets = UnityEditor.AssetDatabase.FindAssets ("ConnectionTypes"); // Another try
+					if (assets.Length != 1) 
+						throw new UnityException ("Node Editor: Not installed in default directory '" + editorPath + "'! Correct path could not be detected! Please correct the editorPath variable in NodeEditor.cs!");
+				}
+				
+				string correctEditorPath = UnityEditor.AssetDatabase.GUIDToAssetPath (assets[0]);
+				int subFolderIndex = correctEditorPath.LastIndexOf ("Framework/");
+				if (subFolderIndex == -1)
+					throw new UnityException ("Node Editor: Not installed in default directory '" + editorPath + "'! Correct path could not be detected! Please correct the editorPath variable in NodeEditor.cs!");
+				correctEditorPath = correctEditorPath.Substring (0, subFolderIndex);
+				
+				Debug.LogWarning ("Node Editor: Not installed in default directory '" + editorPath + "'! " +
+				                  "Editor-only automatic detection adjusted the path to " + correctEditorPath + ", but if you plan to use at runtime, please correct the editorPath variable in NodeEditor.cs!");
+				editorPath = correctEditorPath;
+			}
+	#endif
 		}
 		
 		#endregion
@@ -84,6 +115,8 @@ namespace NodeEditorFramework
 		{
 			if (!editorState.drawing)
 				return;
+
+			checkInit ();
 			
 			NodeEditorGUI.StartNodeGUI ();
 			
@@ -97,13 +130,14 @@ namespace NodeEditorFramework
 		}
 
 		/// <summary>
-		/// Draws the Node Canvas on the screen in the rect specified by editorState
+		/// Draws the Node Canvas on the screen in the rect specified by editorState without one-time wrappers like GUISkin and OverlayGUI. Made for nested Canvases (WIP)
 		/// </summary>
 		public static void DrawSubCanvas (NodeCanvas nodeCanvas, NodeEditorState editorState)  
 		{
 			if (!editorState.drawing)
 				return;
-			
+
+			// Store and restore later on in case of this being a nested Canvas
 			NodeCanvas prevNodeCanvas = curNodeCanvas;
 			NodeEditorState prevEditorState = curEditorState;
 			
@@ -125,11 +159,10 @@ namespace NodeEditorFramework
 				{
 					for (int y = 0; y < tileY; y++) 
 					{
-						Rect texRect = new Rect (offset.x + x*width, 
-						                         offset.y + y*height, 
-						                         width, height);
-						
-						GUI.DrawTexture (texRect, NodeEditorGUI.Background);
+						GUI.DrawTexture (new Rect (offset.x + x*width, 
+												   offset.y + y*height, 
+												   width, height), 
+										 NodeEditorGUI.Background);
 					}
 				}
 				GUI.EndClip ();
@@ -140,40 +173,37 @@ namespace NodeEditorFramework
 			curEditorState.ignoreInput = new List<Rect> ();
 
 
-			// We're using a custom scale methode, as default one is messing up clipping rect
+			// We're using a custom scale method, as default one is messing up clipping rect
 			Rect canvasRect = curEditorState.canvasRect;
-			curEditorState.zoomPanAdjust = GUIScaleUtility.BeginScale (ref canvasRect, curEditorState.zoomPos, curEditorState.zoom, true);
-			//GUILayout.Label ("Scaling is Great!"); -> Test by changin the last bool parameter
+			curEditorState.zoomPanAdjust = GUIScaleUtility.BeginScale (ref canvasRect, curEditorState.zoomPos, curEditorState.zoom, false);
+			//GUILayout.Label ("Scaling is Great!"); -> TODO: Test by changing the last bool parameter
 
 			// ---- BEGIN SCALE ----
 
 			// Some features which require drawing (zoomed)
 			if (curEditorState.navigate) 
 			{ // Draw a curve to the origin/active node for orientation purposes
-				NodeEditorGUI.DrawLine ((curEditorState.selectedNode != null? curEditorState.selectedNode.rect.center : curEditorState.panOffset) + curEditorState.zoomPanAdjust, 
-				                        ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
-				                        Color.black, null, 3); 
-				if (Repaint != null)
-					Repaint ();
+				RTEditorGUI.DrawLine ((curEditorState.selectedNode != null? curEditorState.selectedNode.rect.center : curEditorState.panOffset) + curEditorState.zoomPanAdjust, 
+				                      ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
+				                      Color.black, null, 3); 
+				RepaintClients ();
 			}
 			if (curEditorState.connectOutput != null)
 			{ // Draw the currently drawn connection
 				NodeOutput output = curEditorState.connectOutput;
 				DrawConnection (output.GetGUIKnob ().center,
-				                output.GetDirection (),
-				                ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom,
-				                Vector2.right,
-				                ConnectionTypes.GetTypeData (output.type).col);
-				if (Repaint != null)
-					Repaint ();
+								output.GetDirection (),
+								ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom,
+								Vector2.right,
+								ConnectionTypes.GetTypeData (output.type).col);
+				RepaintClients ();
 			}
 			if (curEditorState.makeTransition != null)
 			{ // Draw the currently made transition
-				NodeEditorGUI.DrawLine (curEditorState.makeTransition.rect.center + curEditorState.zoomPanAdjust, 
-				                        ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
-				                        Color.grey, null, 3); 
-				if (Repaint != null)
-					Repaint ();
+				RTEditorGUI.DrawLine (curEditorState.makeTransition.rect.center + curEditorState.zoomPanAdjust, 
+				                      ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom,
+				                      Color.grey, null, 3); 
+				RepaintClients ();
 			}
 
 			// Push the active node at the bottom of the draw order.
@@ -264,11 +294,11 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void DrawConnection (Vector2 startPos, Vector2 startDir, Vector2 endPos, Vector2 endDir, Color col) 
 		{
-			#if NODE_EDITOR_LINE_CONNECTION
+	#if NODE_EDITOR_LINE_CONNECTION
 			DrawLine (startPos, endPos, col * Color.gray, null, 3);
-			#else
-			NodeEditorGUI.DrawBezier (startPos, endPos, startPos + startDir * 80, endPos + endDir * -80, col * Color.gray, null, 3);
-			#endif
+	#else
+			RTEditorGUI.DrawBezier (startPos, endPos, startPos + startDir * 80, endPos + endDir * -80, col * Color.gray, null, 3);
+	#endif
 		}
 
 		/// <summary>
@@ -305,8 +335,6 @@ namespace NodeEditorFramework
 		{
 			return Vector2.Scale (pos - editorState.zoomPos - editorState.canvasRect.position, new Vector2 (editorState.zoom, editorState.zoom));
 		}
-
-
 		
 		#endregion
 		
@@ -341,20 +369,19 @@ namespace NodeEditorFramework
 			{
 				curEditorState.focusedNode = NodeEditor.NodeAtPosition (e.mousePosition);
 				if (curEditorState.focusedNode != curEditorState.selectedNode)
-					unfocus = true;
+					unfocusControls = true;
 				if (e.button == 0) 
 				{
 					curEditorState.selectedNode = curEditorState.focusedNode;
-					if (Repaint != null)
-						Repaint ();
+					RepaintClients ();
 				}
 			}
 
-			if (unfocus && Event.current.type == EventType.Repaint) 
+			if (unfocusControls && Event.current.type == EventType.Repaint) 
 			{
 				GUIUtility.hotControl = 0;
 				GUIUtility.keyboardControl = 0;
-				unfocus = false;
+				unfocusControls = false;
 			}
 
 	#if UNITY_EDITOR
@@ -375,12 +402,12 @@ namespace NodeEditorFramework
 					{ // Right click -> Node Context Click
 						GenericMenu menu = new GenericMenu ();
 
-						menu.AddItem (new GUIContent ("Delete Node"), false, ContextCallback, new callbackObject ("deleteNode", curNodeCanvas, curEditorState));
-						menu.AddItem (new GUIContent ("Duplicate Node"), false, ContextCallback, new callbackObject ("duplicateNode", curNodeCanvas, curEditorState));
+						menu.AddItem (new GUIContent ("Delete Node"), false, ContextCallback, new NodeEditorMenuCallback ("deleteNode", curNodeCanvas, curEditorState));
+						menu.AddItem (new GUIContent ("Duplicate Node"), false, ContextCallback, new NodeEditorMenuCallback ("duplicateNode", curNodeCanvas, curEditorState));
 						if (NodeTypes.getNodeData (curEditorState.focusedNode).transitions)
 						{
 							menu.AddSeparator ("Seperator");
-							menu.AddItem (new GUIContent ("Make Transition"), false, ContextCallback, new callbackObject ("startTransition", curNodeCanvas, curEditorState));
+							menu.AddItem (new GUIContent ("Make Transition"), false, ContextCallback, new NodeEditorMenuCallback ("startTransition", curNodeCanvas, curEditorState));
 						}
 
 						menu.ShowAsContext ();
@@ -419,14 +446,13 @@ namespace NodeEditorFramework
 					}
 					else if (e.button == 1) 
 					{ // Right click -> Editor Context Click
-						// TODO: Node Editor: Editor-Independancy - GenericMenu conversion
 						if (curEditorState.connectOutput != null || curEditorState.makeTransition != null) 
 						{
-//							#if UNITY_EDITOR
+//				#if UNITY_EDITOR
 //							UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
-//							#else
+//				#else
 							GenericMenu menu = new GenericMenu ();
-//							#endif	
+//				#endif	
 
 							// Iterate through all compatible nodes
 							foreach (Node node in NodeTypes.nodes.Keys)
@@ -437,14 +463,14 @@ namespace NodeEditorFramework
 									{
 										if (input.type == curEditorState.connectOutput.type)
 										{
-											menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[node].adress), false, ContextCallback, new callbackObject (node.GetID, curNodeCanvas, curEditorState));
+											menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[node].adress), false, ContextCallback, new NodeEditorMenuCallback (node.GetID, curNodeCanvas, curEditorState));
 											break;
 										}
 									}
 								}
 								else if (curEditorState.makeTransition != null && NodeTypes.nodes [node].transitions) 
 								{
-									menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[node].adress), false, ContextCallback, new callbackObject (node.GetID, curNodeCanvas, curEditorState));
+									menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[node].adress), false, ContextCallback, new NodeEditorMenuCallback (node.GetID, curNodeCanvas, curEditorState));
 								}
 							}
 							
@@ -452,15 +478,15 @@ namespace NodeEditorFramework
 						}
 						else 
 						{
-//							#if UNITY_EDITOR
+//				#if UNITY_EDITOR
 //							UnityEditor.GenericMenu menu = new UnityEditor.GenericMenu ();
-//							#else
+//				#else
 							GenericMenu menu = new GenericMenu ();
-//							#endif		
+//				#endif		
 
 							foreach (Node node in NodeTypes.nodes.Keys) 
 							{
-								menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes [node].adress), false, ContextCallback, new callbackObject (node.GetID, curNodeCanvas, curEditorState));
+								menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes [node].adress), false, ContextCallback, new NodeEditorMenuCallback (node.GetID, curNodeCanvas, curEditorState));
 							}
 							
 							menu.ShowAsContext ();
@@ -503,8 +529,7 @@ namespace NodeEditorFramework
 			case EventType.ScrollWheel:
 
 				curEditorState.zoom = (float)Math.Round (Math.Min (2.0f, Math.Max (0.6f, curEditorState.zoom + e.delta.y / 15)), 2);
-				if (Repaint != null)
-					Repaint ();
+				RepaintClients ();
 
 				break;
 				
@@ -517,8 +542,7 @@ namespace NodeEditorFramework
 				if (e.keyCode == KeyCode.LeftControl && curEditorState.selectedNode != null) // Snap
 					curEditorState.selectedNode.rect.position = new Vector2 (Mathf.RoundToInt ((curEditorState.selectedNode.rect.position.x - curEditorState.panOffset.x) / 10) * 10 + curEditorState.panOffset.x, 
 					                                                         Mathf.RoundToInt ((curEditorState.selectedNode.rect.position.y - curEditorState.panOffset.y) / 10) * 10 + curEditorState.panOffset.y);
-				if (Repaint != null)
-					Repaint ();
+				RepaintClients ();
 				
 				break;
 				
@@ -526,9 +550,7 @@ namespace NodeEditorFramework
 				
 				if (e.keyCode == KeyCode.N) // Stop Navigating
 					curEditorState.navigate = false;
-				
-				if (Repaint != null)
-					Repaint ();
+				RepaintClients ();
 				
 				break;
 			
@@ -540,8 +562,7 @@ namespace NodeEditorFramework
 					for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
 						curNodeCanvas.nodes [nodeCnt].rect.position += e.delta * curEditorState.zoom;
 					e.delta = Vector2.zero;
-					if (Repaint != null)
-						Repaint ();
+					RepaintClients ();
 				}
 				else 
 					curEditorState.panWindow = false;
@@ -551,8 +572,7 @@ namespace NodeEditorFramework
 					curEditorState.selectedNode.rect.position += e.delta * curEditorState.zoom;
 					NodeEditorCallbacks.IssueOnMoveNode (curEditorState.selectedNode);
 					e.delta = Vector2.zero;
-					if (Repaint != null)
-						Repaint ();
+					RepaintClients ();
 				} 
 				else
 					curEditorState.dragNode = false;
@@ -587,8 +607,7 @@ namespace NodeEditorFramework
 					curEditorState.dragNode = true;
 					// Because this is the delta from when it was last checked, we have to reset it each time
 					e.delta = Vector2.zero;
-					if (Repaint != null)
-						Repaint ();
+					RepaintClients ();
 				}
 			}
 		}
@@ -598,11 +617,11 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void ContextCallback (object obj)
 		{
-			callbackObject cbObj = obj as callbackObject;
-			curNodeCanvas = cbObj.canvas;
-			curEditorState = cbObj.editor;
+			NodeEditorMenuCallback callback = obj as NodeEditorMenuCallback;
+			curNodeCanvas = callback.canvas;
+			curEditorState = callback.editor;
 
-			switch (cbObj.message)
+			switch (callback.message)
 			{
 			case "deleteNode":
 				if (curEditorState.focusedNode != null) 
@@ -612,7 +631,7 @@ namespace NodeEditorFramework
 			case "duplicateNode":
 				if (curEditorState.focusedNode != null) 
 				{
-					ContextCallback (new callbackObject (curEditorState.focusedNode.GetID, curNodeCanvas, curEditorState));
+					ContextCallback (new NodeEditorMenuCallback (curEditorState.focusedNode.GetID, curNodeCanvas, curEditorState));
 					Node duplicatedNode = curNodeCanvas.nodes [curNodeCanvas.nodes.Count-1];
 
 					curEditorState.focusedNode = duplicatedNode;
@@ -637,7 +656,7 @@ namespace NodeEditorFramework
 			default:
 				Vector2 createPos = ScreenToGUIPos (mousePos);
 
-				Node node = NodeTypes.getDefaultNode (cbObj.message);
+				Node node = NodeTypes.getDefaultNode (callback.message);
 				if (node == null)
 					break;
 
@@ -670,18 +689,16 @@ namespace NodeEditorFramework
 
 				break;
 			}
-
-			if (NodeEditor.Repaint != null)
-				NodeEditor.Repaint ();
+			RepaintClients ();
 		}
 
-		public class callbackObject 
+		public class NodeEditorMenuCallback
 		{
 			public string message;
 			public NodeCanvas canvas;
 			public NodeEditorState editor;
 
-			public callbackObject (string Message, NodeCanvas nodecanvas, NodeEditorState editorState) 
+			public NodeEditorMenuCallback (string Message, NodeCanvas nodecanvas, NodeEditorState editorState) 
 			{
 				message = Message;
 				canvas = nodecanvas;
@@ -986,6 +1003,10 @@ namespace NodeEditorFramework
 			// In order to break the asset link, we have to clone each scriptable object asset individually.
 			// That means, as they are reference types, we need to take care of the references to the object.
 
+
+			// TODO: Additional ScriptableObjects in Nodes
+			// Enable both comments below if any of your Nodes contain additional ScriptableObjects that need to cloned and saved along with the canvas
+
 			nodeCanvas = Clone (nodeCanvas);
 
 			// First, we write each scriptable object into a list
@@ -1000,6 +1021,15 @@ namespace NodeEditorFramework
 					scriptableObjects.Add (node.Outputs [outCnt]);
 				for (int transCnt = 0; transCnt < node.transitions.Count; transCnt++)
 					scriptableObjects.Add (node.transitions [transCnt]);
+
+				// Enable if any of your Nodes contain additional ScriptableObjects that need to cloned and saved along with the canvas
+//				List<FieldInfo> additionalSOs = GetAllDirectReferences<ScriptableObject> (node);
+//				foreach (FieldInfo SOField in additionalSOs) 
+//				{
+//					ScriptableObject so = SOField.GetValue (node) as ScriptableObject;
+//					if (so != null && !scriptableObjects.Contains (so))
+//						scriptableObjects.Add (so);
+//				}
 			}
 
 			// We create a second list holding the cloned SOs
@@ -1035,9 +1065,25 @@ namespace NodeEditorFramework
 					trans.startNode = ReplaceSO (scriptableObjects, clonedScriptableObjects, trans.startNode);
 					trans.endNode = ReplaceSO (scriptableObjects, clonedScriptableObjects, trans.endNode);
 				}
+
+				// Enable if any of your Nodes contain additional ScriptableObjects that need to cloned and saved along with the canvas
+//				List<FieldInfo> additionalSOs = GetAllDirectReferences<ScriptableObject> (node);
+//				foreach (FieldInfo SOField in additionalSOs) 
+//				{
+//					ScriptableObject so = SOField.GetValue (node) as ScriptableObject;
+//					if (so != null) SOField.SetValue (node, ReplaceSO (scriptableObjects, clonedScriptableObjects, so));
+//				}
 			}
 
 			return nodeCanvas;
+		}
+
+		private static List<FieldInfo> GetAllDirectReferences<T> (object obj) 
+		{
+			return obj.GetType ()
+					.GetFields (BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
+					.Where ((FieldInfo field) => field.FieldType == typeof(T) || field.FieldType.IsSubclassOf (typeof(T)))
+					.ToList ();
 		}
 
 		private static T Clone<T> (T SO) where T : ScriptableObject 

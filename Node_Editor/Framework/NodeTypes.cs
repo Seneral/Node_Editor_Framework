@@ -23,6 +23,8 @@ namespace NodeEditorFramework
 				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
 			foreach (Assembly assembly in scriptAssemblies) 
 			{
+				if (!assembly.FullName.Contains ("Assembly"))
+					continue;
 				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.IsSubclassOf (typeof (Node)))) 
 				{
 					object[] nodeAttributes = type.GetCustomAttributes (typeof (NodeAttribute), false);

@@ -7,6 +7,7 @@ namespace NodeEditorFramework
 	public class NodeInput : NodeKnob
 	{
 		public override NodeSide defaultSide { get { return NodeSide.Left; } }
+		public override GUIStyle defaultStyle { get { return new GUIStyle (GUI.skin.label); } }
 
 		public NodeOutput connection;
 

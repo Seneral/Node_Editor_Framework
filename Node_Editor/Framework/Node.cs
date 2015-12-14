@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using NodeEditorFramework;
+using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
 {
@@ -26,23 +27,11 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Should we allow recursion? Recursion is allowed if atleast a single Node in the loop allows for recursion
 		/// </summary>
-		public virtual bool AllowRecursion
-		{
-			get
-			{
-				return false;
-			}
-		}
+		public virtual bool AllowRecursion { get { return false; } }
 		/// <summary>
 		/// After the Calculate function is called on this node, should the Nodes afterwards be calculated?
 		/// </summary>
-		public virtual bool ContinueCalculation
-		{
-			get
-			{
-				return true;
-			}
-		}
+		public virtual bool ContinueCalculation { get { return true; } }
 		
 		/// <summary>
 		/// Function implemented by the children to create the node
@@ -102,21 +91,13 @@ namespace NodeEditorFramework
 			{
 				NodeOutput output = Outputs[outCnt];
 				Rect knobRect = output.GetGUIKnob ();
-//				Matrix4x4 GUIMatrix = GUI.matrix;
-//				if (output.side != NodeSide.Right)
-//					GUIUtility.RotateAroundPivot (output.GetRotation (), knobRect.center);
 				GUI.DrawTexture (knobRect, output.knobTexture);
-//				GUI.matrix = GUIMatrix;
 			}
 			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 			{
 				NodeInput input = Inputs[inCnt];
 				Rect knobRect = input.GetGUIKnob ();
-//				Matrix4x4 GUIMatrix = GUI.matrix;
-//				if (input.side != NodeSide.Left)
-//					GUIUtility.RotateAroundPivot (input.GetRotation (), knobRect.center);
 				GUI.DrawTexture (knobRect, input.knobTexture);
-//				GUI.matrix = GUIMatrix;
 			}
 		}
 		/// <summary>
@@ -151,7 +132,7 @@ namespace NodeEditorFramework
 			{
 				Vector2 StartPoint = transitions[cnt].startNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
 				Vector2 EndPoint = transitions[cnt].endNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
-				NodeEditorGUI.DrawLine (StartPoint, EndPoint, Color.grey, null, 3);
+				RTEditorGUI.DrawLine (StartPoint, EndPoint, Color.grey, null, 3);
 				
 				Rect selectRect = new Rect (0, 0, 20, 20);
 				selectRect.center = Vector2.Lerp (StartPoint, EndPoint, 0.5f);
