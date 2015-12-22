@@ -315,6 +315,10 @@ namespace NodeEditorFramework.Utilities
 			if (Event.current.type != EventType.Repaint)
 				return;
 			
+			Rect canvasRect = NodeEditor.curEditorState.canvasRect;
+			if(!canvasRect.Contains(startPos + canvasRect.min) || !canvasRect.Contains(endPos + canvasRect.min))
+				return;
+			
 			if (width <= 1)
 			{
 				GL.Begin (GL.LINES);
