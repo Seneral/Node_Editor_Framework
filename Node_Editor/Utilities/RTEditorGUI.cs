@@ -315,7 +315,8 @@ namespace NodeEditorFramework.Utilities
 			if (Event.current.type != EventType.Repaint)
 				return;
 			
-			if(!NodeEditor.curEditorState.canvasRect.Contains(startPos) || !NodeEditor.curEditorState.canvasRect.Contains(endPos))
+			Rect canvasRect = NodeEditor.curEditorState.canvasRect;
+			if(!canvasRect.Contains(startPos + canvasRect.min) || !canvasRect.Contains(endPos + canvasRect.min))
 				return;
 			
 			if (width <= 1)
