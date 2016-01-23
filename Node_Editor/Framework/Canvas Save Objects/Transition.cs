@@ -12,6 +12,8 @@ namespace NodeEditorFramework
 
 		public List<Func<Transition, bool>> conditions;
 
+		public float transitionTime;
+
 		public bool conditionsMet () 
 		{
 			for (int condCnt = 0; condCnt < conditions.Count; condCnt++) 
@@ -24,7 +26,7 @@ namespace NodeEditorFramework
 
 		public static Transition Create (Node fromNode, Node toNode) 
 		{
-			if (NodeTypes.getNodeData (fromNode).transitions == false || NodeTypes.getNodeData (toNode).transitions == false)
+			if (fromNode.AcceptsTranstitions == false || toNode.AcceptsTranstitions == false || fromNode == toNode)
 				return null;
 
 			Transition transition = CreateInstance<Transition> ();

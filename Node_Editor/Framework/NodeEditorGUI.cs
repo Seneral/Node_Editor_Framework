@@ -24,6 +24,9 @@ namespace NodeEditorFramework
 		public static GUIStyle nodeLabel;
 		public static GUIStyle nodeLabelBold;
 		public static GUIStyle nodeLabelSelected;
+
+		public static GUIStyle nodeBox;
+		public static GUIStyle nodeBoxBold;
 		
 		public static bool Init (bool GUIFunction) 
 		{
@@ -47,6 +50,7 @@ namespace NodeEditorFramework
 			// Box
 			nodeSkin.box.normal.textColor = NE_TextColor;
 			nodeSkin.box.normal.background = GUIBox;
+			nodeBox = nodeSkin.box;
 			// Button
 			nodeSkin.button.normal.textColor = NE_TextColor;
 			nodeSkin.button.normal.background = GUIButton;
@@ -59,6 +63,9 @@ namespace NodeEditorFramework
 			// Selected Label
 			nodeLabelSelected = new GUIStyle (nodeLabel);
 			nodeLabelSelected.normal.background = RTEditorGUI.ColorToTex (1, NE_LightColor);
+			// Bold Box
+			nodeBoxBold = new GUIStyle (nodeBox);
+			nodeBoxBold.fontStyle = FontStyle.Bold;
 
 			return true;
 		}
@@ -75,5 +82,56 @@ namespace NodeEditorFramework
 		{
 			GUI.skin = defaultSkin;
 		}
+
+		#region Connection Drawing
+
+		/// <summary>
+		/// Draws a node connection from start to end, horizontally
+		/// </summary>
+		public static void DrawConnection (Vector2 startPos, Vector2 endPos, Color col) 
+		{
+			Vector2 startVector = startPos.x <= endPos.x? Vector2.right : Vector2.left;
+			DrawConnection (startPos, startVector, endPos, -startVector, col);
+		}
+		/// <summary>
+		/// Draws a node connection from start to end with specified vectors
+		/// </summary>
+		public static void DrawConnection (Vector2 startPos, Vector2 startDir, Vector2 endPos, Vector2 endDir, Color col) 
+		{
+			#if NODE_EDITOR_LINE_CONNECTION
+			DrawConnection (startPos, startDir, endPos, endDir, ConnectionDrawMethod.StraightLine, col);
+			#else
+			DrawConnection (startPos, startDir, endPos, endDir, ConnectionDrawMethod.Bezier, col);
+			#endif
+		}
+		/// <summary>
+		/// Draws a node connection from start to end with specified vectors
+		/// </summary>
+		public static void DrawConnection (Vector2 startPos, Vector2 startDir, Vector2 endPos, Vector2 endDir, ConnectionDrawMethod drawMethod, Color col) 
+		{
+			if (drawMethod == ConnectionDrawMethod.Bezier) 
+			{
+				float dirFactor = 80;//Mathf.Pow ((startPos-endPos).magnitude, 0.3f) * 20;
+				//Debug.Log ("DirFactor is " + dirFactor + "with a bezier lenght of " + (startPos-endPos).magnitude);
+				RTEditorGUI.DrawBezier (startPos, endPos, startPos + startDir * dirFactor, endPos + endDir * dirFactor, col * Color.gray, null, 3);
+			}
+			else if (drawMethod == ConnectionDrawMethod.StraightLine)
+				RTEditorGUI.DrawLine (startPos, endPos, col * Color.gray, null, 3);
+		}
+
+		/// <summary>
+		/// Gets the second connection vector that matches best, accounting for positions
+		/// </summary>
+		internal static Vector2 GetSecondConnectionVector (Vector2 startPos, Vector2 endPos, Vector2 firstVector) 
+		{
+			if (firstVector.x != 0 && firstVector.y == 0)
+				return startPos.x <= endPos.x? -firstVector : firstVector;
+			else if (firstVector.y != 0 && firstVector.x == 0)
+				return startPos.y <= endPos.y? -firstVector : firstVector;
+			else
+				return -firstVector;
+		}
+
+		#endregion
 	}
 }

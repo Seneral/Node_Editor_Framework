@@ -1,11 +1,12 @@
 ﻿using UnityEngine;
 using NodeEditorFramework;
 
-[Node (false, "AllAround Node", false)]
+[Node (false, "AllAround Node")]
 public class AllAroundNode : Node 
 {
 	public const string ID = "allaroundNode";
 	public override string GetID { get { return ID; } }
+
 	public override bool AllowRecursion { get { return true; } }
 	public override bool ContinueCalculation { get { return true; } }
 
@@ -16,20 +17,20 @@ public class AllAroundNode : Node
 		node.rect = new Rect (pos.x, pos.y, 60, 60);
 		node.name = "AllAround Node";
 		
-		node.CreateInput ("Input Top", "Float");
-		node.CreateInput ("Input Bottom", "Float");
-		node.CreateInput ("Input Right", "Float");
-		node.CreateInput ("Input Left", "Float");
+		node.CreateInput ("Input Top", "Float", NodeSide.Top, 20);
+		node.CreateInput ("Input Bottom", "Float", NodeSide.Bottom, 20);
+		node.CreateInput ("Input Right", "Float", NodeSide.Right, 20);
+		node.CreateInput ("Input Left", "Float", NodeSide.Left, 20);
 		
-		node.CreateOutput ("Output Top", "Float");
-		node.CreateOutput ("Output Bottom", "Float");
-		node.CreateOutput ("Output Right", "Float");
-		node.CreateOutput ("Output Left", "Float");
+		node.CreateOutput ("Output Top", "Float", NodeSide.Top, 40);
+		node.CreateOutput ("Output Bottom", "Float", NodeSide.Bottom, 40);
+		node.CreateOutput ("Output Right", "Float", NodeSide.Right, 40);
+		node.CreateOutput ("Output Left", "Float", NodeSide.Left, 40);
 		
 		return node;
 	}
 	
-	public override void DrawNode () 
+	protected internal override void DrawNode () 
 	{
 		Rect nodeRect = rect;
 		nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust;
@@ -44,15 +45,7 @@ public class AllAroundNode : Node
 	
 	public override void NodeGUI () 
 	{
-		Outputs [0].SetPosition (10, NodeSide.Top);
-		Outputs [1].SetPosition (10, NodeSide.Bottom);
-		Outputs [2].SetPosition (20, NodeSide.Right);
-		Outputs [3].SetPosition (20, NodeSide.Left);
 		
-		Inputs [0].SetPosition (30, NodeSide.Top);
-		Inputs [1].SetPosition (30, NodeSide.Bottom);
-		Inputs [2].SetPosition (40, NodeSide.Right);
-		Inputs [3].SetPosition (40, NodeSide.Left);
 	}
 	
 	public override bool Calculate () 

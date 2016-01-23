@@ -5,8 +5,9 @@ using NodeEditorFramework;
 namespace NodeEditorFramework 
 {
 	public class NodeEditorState : ScriptableObject 
-	{ // holds the state of an NodeCanvas inside a NodeEditor
+	{ // holds the state of a NodeCanvas inside a NodeEditor
 		public NodeCanvas canvas;
+		public NodeEditorState parentEditor;
 
 		// Canvas options
 		public bool drawing = true; // whether to draw the canvas
@@ -14,7 +15,6 @@ namespace NodeEditorFramework
 		// Selection State
 		public Node focusedNode; // Node under mouse
 		public Node selectedNode; // selected Node
-		public Node currentNode; // current node in state system
 
 		// Current Action
 		public bool dragNode = false;

@@ -6,28 +6,47 @@ namespace NodeEditorFramework
 {
 	public class NodeInput : NodeKnob
 	{
-		public override NodeSide defaultSide { get { return NodeSide.Left; } }
-		public override GUIStyle defaultStyle { get { return new GUIStyle (GUI.skin.label); } }
+		protected override NodeSide defaultSide { get { return NodeSide.Left; } }
+		protected override GUIStyle defaultLabelStyle { get { return GUI.skin.label; } }
 
 		public NodeOutput connection;
 
 		/// <summary>
 		/// Creates a new NodeInput in NodeBody of specified type
 		/// </summary>
-		public static NodeInput Create (Node NodeBody, string InputName, string InputType)
+		public static NodeInput Create (Node nodeBody, string inputName, string inputType)
+		{
+			return Create (nodeBody, inputName, inputType, NodeSide.Left, 20);
+		}
+
+		/// <summary>
+		/// Creates a new NodeInput in NodeBody of specified type
+		/// </summary>
+		public static NodeInput Create (Node nodeBody, string inputName, string inputType, NodeSide nodeSide)
+		{
+			return Create (nodeBody, inputName, inputType, nodeSide, 20);
+		}
+
+		/// <summary>
+		/// Creates a new NodeInput in NodeBody of specified type at the specified Node Side
+		/// </summary>
+		public static NodeInput Create (Node nodeBody, string inputName, string inputType, NodeSide nodeSide, float sidePosition)
 		{
 			NodeInput input = CreateInstance <NodeInput> ();
-			input.body = NodeBody;
-			input.name = InputName;
-			input.SetType (InputType);
-			NodeBody.Inputs.Add (input);
+			input.body = nodeBody;
+			input.name = inputName;
+			input.type = inputType;
+			input.side = nodeSide;
+			input.sidePosition = sidePosition;
+			input.ReloadKnobTexture ();
+			nodeBody.Inputs.Add (input);
 			return input;
 		}
 
-		public override void SetType (string Type) 
+		protected override void ReloadType () 
 		{
-			type = Type;
-			TypeData typeData = ConnectionTypes.GetTypeData (type);
+			if (typeData.declaration == null)
+				typeData = ConnectionTypes.GetTypeData (type);
 			texturePath = typeData.declaration.InputKnob_TexPath;
 			knobTexture = typeData.InputKnob;
 		}
@@ -39,7 +58,8 @@ namespace NodeEditorFramework
 		
 		public void SetValue<T> (T value)
 		{
-			connection.SetValue<T>(value);
+			if (connection != null)
+				connection.SetValue<T> (value);
 		}
 	}
 }

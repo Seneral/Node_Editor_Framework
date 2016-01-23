@@ -3,10 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 using System.Reflection;
-using Vexe.Runtime.Extensions;
 
 namespace NodeEditorFramework.Utilities 
 {
+
 	public static class GUIScaleUtility
 	{
 		// General
@@ -14,12 +14,12 @@ namespace NodeEditorFramework.Utilities
 		private static bool initiated;
 
 		// Fast.Reflection delegates
-		private static MethodCaller<GUI, Rect> GetTopRectDelegate;
-		private static MemberGetter<GUI, Rect> topmostRectDelegate;
+		private static Func<Rect> GetTopRectDelegate;
+		private static Func<Rect> topmostRectDelegate;
 
 		// Delegate accessors
-		public static Rect getTopRect { get { return (Rect)GetTopRectDelegate.Invoke (null, null); } }
-		public static Rect getTopRectScreenSpace { get { return (Rect)topmostRectDelegate.Invoke (null); } }
+		public static Rect getTopRect { get { return (Rect)GetTopRectDelegate.Invoke (); } }
+		public static Rect getTopRectScreenSpace { get { return (Rect)topmostRectDelegate.Invoke (); } }
 
 		// Rect stack for manipulating groups
 		public static List<Rect> currentRectStack { get; private set; }
@@ -44,14 +44,42 @@ namespace NodeEditorFramework.Utilities
 		{
 			// Fetch rect acessors using Reflection
 			Assembly UnityEngine = Assembly.GetAssembly (typeof (UnityEngine.GUI));
-			Type GUIClipType = UnityEngine.GetType ("UnityEngine.GUIClip");
+			Type GUIClipType = UnityEngine.GetType ("UnityEngine.GUIClip", true);
+
+//			string log = "Members without Bindflags: ";
+//			foreach (MemberInfo member in GUIClipType.GetMembers ())
+//				log += member.MemberType + "-" + member.Name + " |-| ";
+//
+//			log += Environment.NewLine + "Both NonPublic and Public Instance Members: ";
+//			foreach (MemberInfo member in GUIClipType.GetMembers (BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
+//				log += member.MemberType + "-" + member.Name + " |-| ";
+//
+//			log += Environment.NewLine + "Nonpublic Static Members: ";
+//			foreach (MemberInfo member in GUIClipType.GetMembers (BindingFlags.Static | BindingFlags.NonPublic))
+//				log += member.MemberType + "-" + member.Name + " |-| ";
+//
+//			log += Environment.NewLine + "Public Static Members: ";
+//			foreach (MemberInfo member in GUIClipType.GetMembers (BindingFlags.Static | BindingFlags.Public))
+//				log += member.MemberType + "-" + member.Name + " |-| ";
+//			
+//			Debug.Log (log);
+
 			PropertyInfo topmostRect = GUIClipType.GetProperty ("topmostRect", BindingFlags.Static | BindingFlags.Public);
 			MethodInfo GetTopRect = GUIClipType.GetMethod ("GetTopRect", BindingFlags.Static | BindingFlags.NonPublic);
+			MethodInfo ClipRect = GUIClipType.GetMethod ("Clip", BindingFlags.Static | BindingFlags.Public, Type.DefaultBinder, new Type[] { typeof(Rect) }, new ParameterModifier[] {});
 
-			// Creating Fast.Reflection Delegates from those acessors
-			// (First generic Parameter) -> Not actually GUI we're calling on but we cannot adress GUIClip as it's private and it's static so we would pass null anyways:
-			GetTopRectDelegate = GetTopRect.DelegateForCall<GUI, Rect> ();
-			topmostRectDelegate = topmostRect.DelegateForGet<GUI, Rect> ();
+			if (GUIClipType == null || topmostRect == null || GetTopRect == null || ClipRect == null) 
+			{
+				Debug.LogWarning ("GUIScaleUtility cannot run on this system! Compability mode enabled. For you that means you're not able to use the Node Editor inside more than one group:( Please PM me (Seneral @UnityForums) so I can figure out what causes this! Thanks!");
+				Debug.LogWarning ((GUIClipType == null? "GUIClipType is Null, " : "") + (topmostRect == null? "topmostRect is Null, " : "") + (GetTopRect == null? "GetTopRect is Null, " : "") + (ClipRect == null? "ClipRect is Null, " : ""));
+				compabilityMode = true;
+				initiated = true;
+				return;
+			}
+
+			// Create simple acessor delegates
+			GetTopRectDelegate = (Func<Rect>)Delegate.CreateDelegate (typeof(Func<Rect>), GetTopRect);
+			topmostRectDelegate = (Func<Rect>)Delegate.CreateDelegate (typeof(Func<Rect>), topmostRect.GetGetMethod ());
 
 			// As we can call Begin/Ends inside another, we need to save their states hierarchial in Lists (not Stack, as we need to iterate over them!):
 			currentRectStack = new List<Rect> ();
@@ -62,11 +90,12 @@ namespace NodeEditorFramework.Utilities
 			// Sometimes, strange errors pop up (related to Mac?), which we try to catch and enable a compability Mode no supporting zooming in groups
 			try
 			{
-				topmostRectDelegate.Invoke (null);
+				topmostRectDelegate.Invoke ();
 			}
-			catch
+			catch (Exception e)
 			{
 				Debug.LogWarning ("GUIScaleUtility cannot run on this system! Compability mode enabled. For you that means you're not able to use the Node Editor inside more than one group:( Please PM me (Seneral @UnityForums) so I can figure out what causes this! Thanks!");
+				Debug.Log (e.Message);
 				compabilityMode = true;
 			}
 
@@ -76,6 +105,20 @@ namespace NodeEditorFramework.Utilities
 		#endregion
 
 		#region Scale Area
+
+//		public static Vector2 secondaryGroupOffset;
+//
+//		public static Vector2 primaryScale;
+//		public static Vector2 primaryZoomPanAdjust;
+//		public static Rect primaryInitialRect;
+//		public static Rect primaryScaledRect;
+//
+//		public static Vector2 secondaryScale;
+//		public static Vector2 secondaryZoomPanAdjust;
+//		public static Rect secondaryInitialRect;
+//		public static Rect secondaryScaledRect;
+
+		public static Vector2 getCurrentScale { get { return new Vector2 (1/GUI.matrix.GetColumn (0).magnitude, 1/GUI.matrix.GetColumn (1).magnitude); } } 
 
 		/// <summary>
 		/// Begins a scaled local area. 
@@ -96,13 +139,30 @@ namespace NodeEditorFramework.Utilities
 			}
 			else
 			{ // If it's supported, we take the completely generic way using reflected calls
-				screenRect = GUIScaleUtility.GUIToScreenRect (rect);
 				GUIScaleUtility.BeginNoClip ();
+				screenRect = GUIScaleUtility.InnerToScreenRect (rect);
 			}
 
-			// Calculate the rect of the new clipping group to draw our scaled GUI in
+//			Vector2 GUIScale = getCurrentScale;
+
 			rect = ScaleRect (screenRect, screenRect.position + zoomPivot, new Vector2 (zoom, zoom));
-			
+
+//			bool primary = adjustedGUILayout.Count == 0;
+//			if (!primary) 
+//			{
+//				rect.position += secondaryGroupOffset;
+//
+//				secondaryScale = new Vector2 (zoom, zoom);
+//				secondaryInitialRect = screenRect;
+//				secondaryScaledRect = rect;
+//			}
+//			else 
+//			{
+//				primaryScale = new Vector2 (zoom, zoom);
+//				primaryInitialRect = screenRect;
+//				primaryScaledRect = rect;
+//			}
+
 			// Now continue drawing using the new clipping group
 			GUI.BeginGroup (rect);
 			rect.position = Vector2.zero; // Adjust because we entered the new group
@@ -127,7 +187,16 @@ namespace NodeEditorFramework.Utilities
 			
 			// Scale GUI.matrix. After that we have the correct clipping group again.
 			GUIUtility.ScaleAroundPivot (new Vector2 (1/zoom, 1/zoom), zoomPosAdjust);
-			
+
+//			if (!primary) 
+//			{
+//				secondaryZoomPanAdjust = zoomPosAdjust;
+//			}
+//			else 
+//			{
+//				primaryZoomPanAdjust = zoomPosAdjust;
+//			}
+
 			return zoomPosAdjust;
 		}
 		
@@ -138,7 +207,7 @@ namespace NodeEditorFramework.Utilities
 		{
 			// Set last matrix and clipping group
 			if (GUIMatrices.Count == 0 || adjustedGUILayout.Count == 0)
-				throw new UnityException ("GUIScaleutility: You are ending more scale regions than you are beginning!");
+				throw new UnityException ("GUIScaleUtility: You are ending more scale regions than you are beginning!");
 			GUI.matrix = GUIMatrices[GUIMatrices.Count-1];
 			GUIMatrices.RemoveAt (GUIMatrices.Count-1);
 			
@@ -315,6 +384,7 @@ namespace NodeEditorFramework.Utilities
 		/// <summary>
 		/// Transforms the rect to screen space. 
 		/// Use InnerToScreenRect when you want to transform an old rect to the new space aquired with BeginNoClip or MoveClipsUp (slower, try to call this function before any of these two)!
+		/// ATTENTION: This does not work well when any of the top groups is negative, means extends to the top or left of the screen. You may consider to use InnerToScreenRect then, if possible!
 		/// </summary>
 		public static Rect GUIToScreenRect (Rect guiRect) 
 		{

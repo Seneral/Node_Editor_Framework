@@ -7,9 +7,9 @@ namespace NodeEditorFramework
 {
 	public class NodeOutput : NodeKnob
 	{
-		public override NodeSide defaultSide { get { return NodeSide.Right; } }
+		protected override NodeSide defaultSide { get { return NodeSide.Right; } }
 		private static GUIStyle _defaultStyle;
-		public override GUIStyle defaultStyle { get { if (_defaultStyle == null) { _defaultStyle = new GUIStyle (GUI.skin.label); _defaultStyle.alignment = TextAnchor.MiddleRight; } return _defaultStyle; } }
+		protected override GUIStyle defaultLabelStyle { get { if (_defaultStyle == null) { _defaultStyle = new GUIStyle (GUI.skin.label); _defaultStyle.alignment = TextAnchor.MiddleRight; } return _defaultStyle; } }
 
 		public List<NodeInput> connections = new List<NodeInput> ();
 		
@@ -21,20 +21,39 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Creates a new NodeOutput in NodeBody of specified type
 		/// </summary>
-		public static NodeOutput Create (Node NodeBody, string OutputName, string OutputType) 
+		public static NodeOutput Create (Node nodeBody, string outputName, string outputType) 
+		{
+			return Create (nodeBody, outputName, outputType, NodeSide.Right, 20);
+		}
+
+		/// <summary>
+		/// Creates a new NodeOutput in NodeBody of specified type
+		/// </summary>
+		public static NodeOutput Create (Node nodeBody, string outputName, string outputType, NodeSide nodeSide) 
+		{
+			return Create (nodeBody, outputName, outputType, nodeSide, 20);
+		}
+
+		/// <summary>
+		/// Creates a new NodeOutput in NodeBody of specified type at the specified Node Side
+		/// </summary>
+		public static NodeOutput Create (Node nodeBody, string outputName, string outputType, NodeSide nodeSide, float sidePosition) 
 		{
 			NodeOutput output = CreateInstance <NodeOutput> ();
-			output.body = NodeBody;
-			output.name = OutputName;
-			output.SetType (OutputType);
-			NodeBody.Outputs.Add (output);
+			output.body = nodeBody;
+			output.name = outputName;
+			output.type = outputType;
+			output.side = nodeSide;
+			output.sidePosition = sidePosition;
+			output.ReloadKnobTexture ();
+			nodeBody.Outputs.Add (output);
 			return output;
 		}
 
-		public override void SetType (string Type) 
+		protected override void ReloadType () 
 		{
-			type = Type;
-			TypeData typeData = ConnectionTypes.GetTypeData (type);
+			if (typeData.declaration == null)
+				typeData = ConnectionTypes.GetTypeData (type);
 			texturePath = typeData.declaration.OutputKnob_TexPath;
 			knobTexture = typeData.OutputKnob;
 		}
@@ -50,8 +69,8 @@ namespace NodeEditorFramework
 		public T GetValue<T> ()
 		{
 			if (valueType == null)
-				valueType = ConnectionTypes.GetType(type);
-			if (valueType == typeof(T))
+				valueType = ConnectionTypes.GetType (type);
+			if (valueType == typeof(T)) 
 			{
 				if (value == null)
 					value = getDefault<T> ();
@@ -71,7 +90,7 @@ namespace NodeEditorFramework
 			if (valueType == typeof(T))
 				value = Value;
 			else
-				Debug.LogError("Trying to SetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
+				Debug.LogError ("Trying to SetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
 		}
 		
 		/// <summary>
@@ -83,20 +102,14 @@ namespace NodeEditorFramework
 		}
 		
 		/// <summary>
-		/// Returns for value types the default value; for reference types:, the default constructor if existant, else null
+		/// Returns for value types the default value; for reference types, the default constructor if existant, else null
 		/// </summary>
 		public static T getDefault<T> ()
 		{
-			T var;
-			if (typeof(T).GetConstructor (Type.EmptyTypes) != null)
-			{ // Try to create using an empty constructor if existant
-				var = Activator.CreateInstance<T> ();
-			}
-			else
-			{ // Else try to get default. Returns null only on reference types
-				var = default(T);
-			}
-			return var;
+			if (typeof(T).GetConstructor (Type.EmptyTypes) != null) // Try to create using an empty constructor if existant
+				return Activator.CreateInstance<T> ();
+			else // Else try to get default. Returns null only on reference types
+				return default(T);
 		}
 
 		#endregion

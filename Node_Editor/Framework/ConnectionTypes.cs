@@ -8,12 +8,18 @@ using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
 {
+	public enum ConnectionDrawMethod { Bezier, StraightLine }
+
 	public static class ConnectionTypes
 	{
-		public static Type NullType { get { return typeof(ConnectionTypes); } }
+		private static Type NullType { get { return typeof(ConnectionTypes); } }
 		
 		// Static consistent information about types
-		static Dictionary<string, TypeData> types = new Dictionary<string, TypeData> ();
+		internal static Dictionary<string, TypeData> types = new Dictionary<string, TypeData> ();
+
+		/// <summary>
+		/// Gets the type data for the specified type name, if declared
+		/// </summary>
 		public static TypeData GetTypeData (string typeName)
 		{
 			if (types == null || types.Count == 0)
@@ -31,35 +37,33 @@ namespace NodeEditorFramework
 			}
 			return typeData;
 		}
-		
+
+		/// <summary>
+		/// Gets the Type the specified type name representates, if declared
+		/// </summary>
 		public static Type GetType (string typeName)
 		{
 			return GetTypeData (typeName).Type ?? NullType;
 		}
 		
 		/// <summary>
-		/// Fetches every Type Declaration in the assembly
+		/// Fetches every Type Declaration in the script assembly and the executing one, if the NodeEditor is packed into a .dll
 		/// </summary>
-		public static void FetchTypes () 
-		{ // Search the current and (if the NodeEditor is packed into a .dll) the calling one
+		internal static void FetchTypes () 
+		{
 			types = new Dictionary<string, TypeData> ();
 
-			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().ToList ();
+			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where ((Assembly assembly) => assembly.FullName.Contains ("Assembly")).ToList ();
 			if (!scriptAssemblies.Contains (Assembly.GetExecutingAssembly ()))
 				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
 			foreach (Assembly assembly in scriptAssemblies) 
 			{
-				if (!assembly.FullName.Contains ("Assembly"))
-					continue;
 				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.GetInterfaces ().Contains (typeof (ITypeDeclaration)))) 
 				{
 					ITypeDeclaration typeDecl = assembly.CreateInstance (type.FullName) as ITypeDeclaration;
-					if (typeDecl == null) 
-					{
-						Debug.LogError ("Error with Type Declaration " + type.FullName);
-						return;
-					}
-					types.Add (typeDecl.name, new TypeData(typeDecl));
+					if (typeDecl == null)
+						throw new UnityException ("Error with Type Declaration " + type.FullName);
+					types.Add (typeDecl.name, new TypeData (typeDecl));
 				}
 			}
 		}

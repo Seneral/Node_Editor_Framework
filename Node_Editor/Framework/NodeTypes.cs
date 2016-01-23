@@ -18,13 +18,11 @@ namespace NodeEditorFramework
 		{
 			nodes = new Dictionary<Node, NodeData> ();
 
-			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().ToList ();
+			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where ((Assembly assembly) => assembly.FullName.Contains ("Assembly")).ToList ();
 			if (!scriptAssemblies.Contains (Assembly.GetExecutingAssembly ()))
 				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
 			foreach (Assembly assembly in scriptAssemblies) 
 			{
-				if (!assembly.FullName.Contains ("Assembly"))
-					continue;
 				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.IsSubclassOf (typeof (Node)))) 
 				{
 					object[] nodeAttributes = type.GetCustomAttributes (typeof (NodeAttribute), false);
@@ -33,7 +31,7 @@ namespace NodeEditorFramework
 					{
 						Node node = ScriptableObject.CreateInstance (type.Name) as Node; // Create a 'raw' instance (not setup using the appropriate Create function)
 						node = node.Create (Vector2.zero); // From that, call the appropriate Create Method to init the previously 'raw' instance
-						nodes.Add (node, attr == null? new NodeData (node.name) : new NodeData (attr.contextText, attr.transitions));
+						nodes.Add (node, new NodeData (attr == null? node.name : attr.contextText));
 					}
 				}
 			}
@@ -44,9 +42,9 @@ namespace NodeEditorFramework
 			return nodes [getDefaultNode (node.GetID)];
 		}
 
-		public static Node getDefaultNode (string ID)
+		public static Node getDefaultNode (string nodeID)
 		{
-			return nodes.Keys.Single<Node> ((Node node) => node.GetID == ID);
+			return nodes.Keys.Single<Node> ((Node node) => node.GetID == nodeID);
 		}
 		public static T getDefaultNode<T> () where T : Node
 		{
@@ -57,18 +55,10 @@ namespace NodeEditorFramework
 	public struct NodeData 
 	{
 		public string adress;
-		public bool transitions;
-		
-		public NodeData (string ReplacedContextText, bool acceptTransitions) 
-		{
-			adress = ReplacedContextText;
-			transitions = acceptTransitions;
-		}
 
 		public NodeData (string name) 
 		{
 			adress = name;
-			transitions = false;
 		}
 	}
 
@@ -76,13 +66,11 @@ namespace NodeEditorFramework
 	{
 		public bool hide { get; private set; }
 		public string contextText { get; private set; }
-		public bool transitions { get; private set; }
 
-		public NodeAttribute (bool HideNode, string ReplacedContextText, bool acceptTransitions) 
+		public NodeAttribute (bool HideNode, string ReplacedContextText) 
 		{
 			hide = HideNode;
 			contextText = ReplacedContextText;
-			transitions = acceptTransitions;
 		}
 	}
 }

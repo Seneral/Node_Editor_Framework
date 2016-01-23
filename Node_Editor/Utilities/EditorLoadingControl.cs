@@ -74,14 +74,14 @@ namespace NodeEditorFramework
 			{ // Edit Mode
 				if (playmodeSwitchToEdit)
 				{ // After Playmode
-					Debug.Log ("LOAD PLAY MODE Values in Edit Mode!!");
+					//Debug.Log ("LOAD PLAY MODE Values in Edit Mode!!");
 					if (justLeftPlayMode != null)
 						justLeftPlayMode.Invoke ();
 					playmodeSwitchToEdit = false;
 				}
 				else 
 				{ // Before Playmode
-					Debug.Log ("SAVE EDIT MODE Values before Play Mode!!");
+					//Debug.Log ("SAVE EDIT MODE Values before Play Mode!!");
 					if (beforeEnteringPlayMode != null)
 						beforeEnteringPlayMode.Invoke ();
 				}
@@ -90,14 +90,14 @@ namespace NodeEditorFramework
 			{ // Play Mode
 				if (serializationTest) 
 				{ // Before Leaving Playmode
-					Debug.Log ("SAVE PLAY MODE Values before Edit Mode!!");
+					//Debug.Log ("SAVE PLAY MODE Values before Edit Mode!!");
 					if (beforeLeavingPlayMode != null)
 						beforeLeavingPlayMode.Invoke ();
 					playmodeSwitchToEdit = true;
 				}
 				else
 				{ // After Entering Playmode
-					Debug.Log ("LOAD EDIT MODE Values in Play Mode!!");
+					//Debug.Log ("LOAD EDIT MODE Values in Play Mode!!");
 					if (justEnteredPlayMode != null)
 						justEnteredPlayMode.Invoke ();
 					toggleLateEnteredPlaymode = true;
