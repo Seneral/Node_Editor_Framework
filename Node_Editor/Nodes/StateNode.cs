@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Events;
 using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
@@ -10,7 +9,7 @@ public class StateNode : Node
 {
 	public UnityEvent OnEnter;
 	public UnityEvent OnLeave;
-	public string stateName = "";
+	public string StateName = "";
 
 	public override bool AcceptsTranstitions { get { return true; } }
 
@@ -23,17 +22,17 @@ public class StateNode : Node
 	{
 		StateNode node = CreateInstance<StateNode> ();
 
-		node.rect = new Rect (pos.x, pos.y, 150, 100);
+		node.Rect = new Rect (pos.x, pos.y, 150, 100);
 
 		return node;
 	}
 
 	public override void NodeGUI ()
 	{
-		name = stateName = RTEditorGUI.TextField (new GUIContent ("State Name"), stateName);
+		name = StateName = RTEditorGUI.TextField (new GUIContent ("State Name"), StateName);
 		if (GUILayout.Button ("Start Transitioning from here!"))
 		{
-			NodeEditor.BeginTransitioning (NodeEditor.curNodeCanvas, this);
+			NodeEditor.BeginTransitioning (NodeEditor.CurNodeCanvas, this);
 		}
 	}
 

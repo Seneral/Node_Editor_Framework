@@ -2,7 +2,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework 
@@ -12,29 +11,29 @@ namespace NodeEditorFramework
 	public abstract class NodeKnob : ScriptableObject
 	{
 		// Main
-		public Node body;
-		public string type;
-		public TypeData typeData;
+		public Node Body;
+		public string Type;
+		public TypeData TypeData;
 
 		// Style
-		protected abstract GUIStyle defaultLabelStyle { get; }
-		protected string texturePath;
+		protected abstract GUIStyle DefaultLabelStyle { get; }
+		protected string TexturePath;
 		[NonSerialized]
-		internal Texture2D knobTexture;
+		internal Texture2D KnobTexture;
 		
 		// Position
-		protected abstract NodeSide defaultSide { get; }
-		public NodeSide side;
-		public float sidePosition = 0; // Position on the side, top->bottom, left->right
-		public float sideOffset = 0; // Offset from the side
+		protected abstract NodeSide DefaultSide { get; }
+		public NodeSide Side;
+		public float SidePosition; // Position on the side, top->bottom, left->right
+		public float SideOffset = 0; // Offset from the side
 
 		protected abstract void ReloadType ();
 
 		private void Check () 
 		{
-			if (side == 0)
-				side = defaultSide;
-			if (knobTexture == null)
+			if (Side == 0)
+				Side = DefaultSide;
+			if (KnobTexture == null)
 				ReloadKnobTexture ();
 		}
 
@@ -42,22 +41,22 @@ namespace NodeEditorFramework
 		{
 			ReloadType ();
 			
-			if (side != defaultSide) 
+			if (Side != DefaultSide) 
 			{ // Rotate Knob texture according to the side it's used on
-				int rotationSteps = getRotationStepsAntiCW (defaultSide, side);
+				int rotationSteps = GetRotationStepsAntiCW (DefaultSide, Side);
 
-				ResourceManager.MemoryTexture memoryTex = ResourceManager.FindInMemory (knobTexture);
-				List<string> mods = memoryTex.modifications.ToList ();
+				ResourceManager.MemoryTexture memoryTex = ResourceManager.FindInMemory (KnobTexture);
+				List<string> mods = memoryTex.Modifications.ToList ();
 				mods.Add ("Rotation:" + rotationSteps);
 
-				Texture2D knobTextureInMemory = ResourceManager.GetTexture (texturePath, mods.ToArray ());
+				Texture2D knobTextureInMemory = ResourceManager.GetTexture (TexturePath, mods.ToArray ());
 
 				if (knobTextureInMemory != null)
-					knobTexture = knobTextureInMemory;
+					KnobTexture = knobTextureInMemory;
 				else 
 				{
-					knobTexture = RTEditorGUI.RotateTextureAntiCW (knobTexture, rotationSteps);
-					ResourceManager.AddTexture (texturePath, knobTexture, mods.ToArray ());
+					KnobTexture = RTEditorGUI.RotateTextureAntiCW (KnobTexture, rotationSteps);
+					ResourceManager.AddTexture (TexturePath, KnobTexture, mods.ToArray ());
 				}
 			}
 		}
@@ -69,7 +68,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void DisplayLayout () 
 		{
-			DisplayLayout (new GUIContent (name), defaultLabelStyle);
+			DisplayLayout (new GUIContent (name), DefaultLabelStyle);
 		}
 		
 		public void DisplayLayout (GUIStyle style)
@@ -82,7 +81,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void DisplayLayout (GUIContent content) 
 		{
-			DisplayLayout (content, defaultLabelStyle);
+			DisplayLayout (content, DefaultLabelStyle);
 		}
 
 		/// <summary>
@@ -100,9 +99,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void SetPosition (float position, NodeSide nodeSide) 
 		{
-			if (side != nodeSide) 
+			if (Side != nodeSide) 
 			{
-				side = nodeSide;
+				Side = nodeSide;
 				ReloadKnobTexture ();
 			}
 			SetPosition (position);
@@ -113,7 +112,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void SetPosition (float position) 
 		{
-			sidePosition = position;
+			SidePosition = position;
 		}
 		
 		/// <summary>
@@ -121,8 +120,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void SetPosition () 
 		{
-			Vector2 pos = GUILayoutUtility.GetLastRect ().center + body.contentOffset;
-			sidePosition = side == NodeSide.Bottom || side == NodeSide.Top? pos.x : pos.y;
+			Vector2 pos = GUILayoutUtility.GetLastRect ().center + Body.ContentOffset;
+			SidePosition = Side == NodeSide.Bottom || Side == NodeSide.Top? pos.x : pos.y;
 		}
 
 		#endregion
@@ -135,22 +134,22 @@ namespace NodeEditorFramework
 		public Rect GetGUIKnob () 
 		{
 			Check ();
-			Vector2 knobSize = new Vector2 ((knobTexture.width/knobTexture.height) * NodeEditorGUI.knobSize,
-											(knobTexture.height/knobTexture.width) * NodeEditorGUI.knobSize);
-			Vector2 knobCenter = new Vector2 (body.rect.x + (side == NodeSide.Bottom || side == NodeSide.Top? 
-						/* Top | Bottom */	sidePosition :
-									(side == NodeSide.Left? 
-						/* Left */			-sideOffset-knobSize.x/2 : 
-						/* Right */			body.rect.width+sideOffset+knobSize.x/2
+			Vector2 knobSize = new Vector2 ((KnobTexture.width/KnobTexture.height) * NodeEditorGUI.KnobSize,
+											(KnobTexture.height/KnobTexture.width) * NodeEditorGUI.KnobSize);
+			Vector2 knobCenter = new Vector2 (Body.Rect.x + (Side == NodeSide.Bottom || Side == NodeSide.Top? 
+						/* Top | Bottom */	SidePosition :
+									(Side == NodeSide.Left? 
+						/* Left */			-SideOffset-knobSize.x/2 : 
+						/* Right */			Body.Rect.width+SideOffset+knobSize.x/2
 									)),
-									body.rect.y + (side == NodeSide.Left || side == NodeSide.Right? 
-						/* Left | Right */	sidePosition :
-									(side == NodeSide.Top? 
-						/* Top */			-sideOffset-knobSize.y/2 : 
-						/* Bottom */		body.rect.height+sideOffset+knobSize.y/2
+									Body.Rect.y + (Side == NodeSide.Left || Side == NodeSide.Right? 
+						/* Left | Right */	SidePosition :
+									(Side == NodeSide.Top? 
+						/* Top */			-SideOffset-knobSize.y/2 : 
+						/* Bottom */		Body.Rect.height+SideOffset+knobSize.y/2
 									)));
-			return new Rect (knobCenter.x - knobSize.x/2 + NodeEditor.curEditorState.zoomPanAdjust.x, 
-							knobCenter.y - knobSize.y/2 + NodeEditor.curEditorState.zoomPanAdjust.y, 
+			return new Rect (knobCenter.x - knobSize.x/2 + NodeEditor.CurEditorState.ZoomPanAdjust.x, 
+							knobCenter.y - knobSize.y/2 + NodeEditor.CurEditorState.ZoomPanAdjust.y, 
 							knobSize.x, knobSize.y);
 		}
 		
@@ -160,7 +159,7 @@ namespace NodeEditorFramework
 		public Rect GetScreenKnob () 
 		{
 			Rect rect = GetGUIKnob ();
-			rect.position -= NodeEditor.curEditorState.zoomPanAdjust; // Remove zoomPanAdjust added in GetGUIKnob
+			rect.position -= NodeEditor.CurEditorState.ZoomPanAdjust; // Remove zoomPanAdjust added in GetGUIKnob
 			return NodeEditor.CanvasGUIToScreenRect (rect);
 		}
 
@@ -169,16 +168,16 @@ namespace NodeEditorFramework
 		/// </summary>
 		public Vector2 GetDirection () 
 		{
-			return side == NodeSide.Right? 	Vector2.right : 
-					(side == NodeSide.Bottom? Vector2.up : 
-				 	(side == NodeSide.Top? 	Vector2.down : 
+			return Side == NodeSide.Right? 	Vector2.right : 
+					(Side == NodeSide.Bottom? Vector2.up : 
+				 	(Side == NodeSide.Top? 	Vector2.down : 
 				 			/* Left */		Vector2.left));
 		}
 
 		/// <summary>
 		/// Gets the rotation steps anti-clockwise from NodeSide A to B
 		/// </summary>
-		internal static int getRotationStepsAntiCW (NodeSide sideA, NodeSide sideB) 
+		internal static int GetRotationStepsAntiCW (NodeSide sideA, NodeSide sideB) 
 		{
 			return sideB - sideA + (sideA>sideB? 4 : 0);
 		}

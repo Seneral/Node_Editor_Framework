@@ -1,15 +1,13 @@
-﻿using System;
-using UnityEngine;
-using NodeEditorFramework;
+﻿using UnityEngine;
 
 namespace NodeEditorFramework
 {
 	public class NodeInput : NodeKnob
 	{
-		protected override NodeSide defaultSide { get { return NodeSide.Left; } }
-		protected override GUIStyle defaultLabelStyle { get { return GUI.skin.label; } }
+		protected override NodeSide DefaultSide { get { return NodeSide.Left; } }
+		protected override GUIStyle DefaultLabelStyle { get { return GUI.skin.label; } }
 
-		public NodeOutput connection;
+		public NodeOutput Connection;
 
 		/// <summary>
 		/// Creates a new NodeInput in NodeBody of specified type
@@ -33,11 +31,11 @@ namespace NodeEditorFramework
 		public static NodeInput Create (Node nodeBody, string inputName, string inputType, NodeSide nodeSide, float sidePosition)
 		{
 			NodeInput input = CreateInstance <NodeInput> ();
-			input.body = nodeBody;
+			input.Body = nodeBody;
 			input.name = inputName;
-			input.type = inputType;
-			input.side = nodeSide;
-			input.sidePosition = sidePosition;
+			input.Type = inputType;
+			input.Side = nodeSide;
+			input.SidePosition = sidePosition;
 			input.ReloadKnobTexture ();
 			nodeBody.Inputs.Add (input);
 			return input;
@@ -45,21 +43,21 @@ namespace NodeEditorFramework
 
 		protected override void ReloadType () 
 		{
-			if (typeData.declaration == null)
-				typeData = ConnectionTypes.GetTypeData (type);
-			texturePath = typeData.declaration.InputKnob_TexPath;
-			knobTexture = typeData.InputKnob;
+			if (TypeData.Declaration == null)
+				TypeData = ConnectionTypes.GetTypeData (Type);
+			TexturePath = TypeData.Declaration.InputKnobTexPath;
+			KnobTexture = TypeData.InputKnob;
 		}
 
 		public T GetValue<T> ()
 		{
-			return connection != null? connection.GetValue<T> () : NodeOutput.getDefault<T> ();
+			return Connection != null? Connection.GetValue<T> () : NodeOutput.GetDefault<T> ();
 		}
 		
 		public void SetValue<T> (T value)
 		{
-			if (connection != null)
-				connection.SetValue<T> (value);
+			if (Connection != null)
+				Connection.SetValue<T> (value);
 		}
 	}
 }

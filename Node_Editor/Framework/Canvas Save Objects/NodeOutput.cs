@@ -1,21 +1,20 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
-using NodeEditorFramework;
 
 namespace NodeEditorFramework 
 {
 	public class NodeOutput : NodeKnob
 	{
-		protected override NodeSide defaultSide { get { return NodeSide.Right; } }
-		private static GUIStyle _defaultStyle;
-		protected override GUIStyle defaultLabelStyle { get { if (_defaultStyle == null) { _defaultStyle = new GUIStyle (GUI.skin.label); _defaultStyle.alignment = TextAnchor.MiddleRight; } return _defaultStyle; } }
+		protected override NodeSide DefaultSide { get { return NodeSide.Right; } }
+		private static GUIStyle defaultStyle;
+		protected override GUIStyle DefaultLabelStyle { get { if (defaultStyle == null) { defaultStyle = new GUIStyle (GUI.skin.label); defaultStyle.alignment = TextAnchor.MiddleRight; } return defaultStyle; } }
 
-		public List<NodeInput> connections = new List<NodeInput> ();
+		public List<NodeInput> Connections = new List<NodeInput> ();
 		
 		// Value
 		[NonSerialized]
-		private object value = null;
+		private object value;
 		private Type valueType;
 		
 		/// <summary>
@@ -40,11 +39,11 @@ namespace NodeEditorFramework
 		public static NodeOutput Create (Node nodeBody, string outputName, string outputType, NodeSide nodeSide, float sidePosition) 
 		{
 			NodeOutput output = CreateInstance <NodeOutput> ();
-			output.body = nodeBody;
+			output.Body = nodeBody;
 			output.name = outputName;
-			output.type = outputType;
-			output.side = nodeSide;
-			output.sidePosition = sidePosition;
+			output.Type = outputType;
+			output.Side = nodeSide;
+			output.SidePosition = sidePosition;
 			output.ReloadKnobTexture ();
 			nodeBody.Outputs.Add (output);
 			return output;
@@ -52,10 +51,10 @@ namespace NodeEditorFramework
 
 		protected override void ReloadType () 
 		{
-			if (typeData.declaration == null)
-				typeData = ConnectionTypes.GetTypeData (type);
-			texturePath = typeData.declaration.OutputKnob_TexPath;
-			knobTexture = typeData.OutputKnob;
+			if (TypeData.Declaration == null)
+				TypeData = ConnectionTypes.GetTypeData (Type);
+			TexturePath = TypeData.Declaration.OutputKnobTexPath;
+			KnobTexture = TypeData.OutputKnob;
 		}
 
 		#region Value
@@ -69,15 +68,15 @@ namespace NodeEditorFramework
 		public T GetValue<T> ()
 		{
 			if (valueType == null)
-				valueType = ConnectionTypes.GetType (type);
+				valueType = ConnectionTypes.GetType (Type);
 			if (valueType == typeof(T)) 
 			{
 				if (value == null)
-					value = getDefault<T> ();
+					value = GetDefault<T> ();
 				return (T)value;
 			}
 			Debug.LogError ("Trying to GetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
-			return getDefault<T> ();
+			return GetDefault<T> ();
 		}
 		
 		/// <summary>
@@ -86,7 +85,7 @@ namespace NodeEditorFramework
 		public void SetValue<T> (T Value)
 		{
 			if (valueType == null)
-				valueType = ConnectionTypes.GetType(type);
+				valueType = ConnectionTypes.GetType(Type);
 			if (valueType == typeof(T))
 				value = Value;
 			else
@@ -104,9 +103,9 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Returns for value types the default value; for reference types, the default constructor if existant, else null
 		/// </summary>
-		public static T getDefault<T> ()
+		public static T GetDefault<T> ()
 		{
-			if (typeof(T).GetConstructor (Type.EmptyTypes) != null) // Try to create using an empty constructor if existant
+			if (typeof(T).GetConstructor (System.Type.EmptyTypes) != null) // Try to create using an empty constructor if existant
 				return Activator.CreateInstance<T> ();
 			else // Else try to get default. Returns null only on reference types
 				return default(T);

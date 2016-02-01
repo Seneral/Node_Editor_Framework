@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
 using NodeEditorFramework;
 
 [System.Serializable]
@@ -10,15 +9,15 @@ public class DisplayNode : Node
 	public override string GetID { get { return ID; } }
 
 	[HideInInspector]
-	public bool assigned = false;
-	public float value = 0;
+	public bool Assigned;
+	public float Value;
 
 	public override Node Create (Vector2 pos) 
 	{ // This function has to be registered in Node_Editor.ContextCallback
 		DisplayNode node = CreateInstance <DisplayNode> ();
 		
 		node.name = "Display Node";
-		node.rect = new Rect (pos.x, pos.y, 150, 50);
+		node.Rect = new Rect (pos.x, pos.y, 150, 50);
 		
 		NodeInput.Create (node, "Value", "Float");
 
@@ -27,20 +26,20 @@ public class DisplayNode : Node
 	
 	public override void NodeGUI () 
 	{
-		Inputs [0].DisplayLayout (new GUIContent ("Value : " + (assigned? value.ToString () : ""), "The input value to display"));
+		Inputs [0].DisplayLayout (new GUIContent ("Value : " + (Assigned? Value.ToString () : ""), "The input value to display"));
 	}
 	
 	public override bool Calculate () 
 	{
-		if (!allInputsReady ()) 
+		if (!AllInputsReady ()) 
 		{
-			value = 0;
-			assigned = false;
+			Value = 0;
+			Assigned = false;
 			return false;
 		}
 
-		value = Inputs[0].connection.GetValue<float>();
-		assigned = true;
+		Value = Inputs[0].Connection.GetValue<float>();
+		Assigned = true;
 
 		return true;
 	}

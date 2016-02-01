@@ -5,14 +5,14 @@ namespace NodeEditorFramework.Utilities
 {
 	public static class OverlayGUI 
 	{
-		public static PopupMenu currentPopup;
+		public static PopupMenu CurrentPopup;
 
 		/// <summary>
 		/// Returns if any popup currently has control.
 		/// </summary>
 		public static bool HasPopupControl () 
 		{
-			return currentPopup != null;
+			return CurrentPopup != null;
 		}
 
 		/// <summary>
@@ -20,8 +20,8 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static void StartOverlayGUI () 
 		{
-			if (currentPopup != null && Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint)
-				currentPopup.Draw ();
+			if (CurrentPopup != null && Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint)
+				CurrentPopup.Draw ();
 		}
 
 		/// <summary>
@@ -29,8 +29,8 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static void EndOverlayGUI () 
 		{
-			if (currentPopup != null && (Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint))
-				currentPopup.Draw ();
+			if (CurrentPopup != null && (Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint))
+				CurrentPopup.Draw ();
 		}
 	}
 
@@ -42,7 +42,7 @@ namespace NodeEditorFramework.Utilities
 		public delegate void MenuFunction ();
 		public delegate void MenuFunctionData (object userData);
 		
-		public List<MenuItem> menuItems = new List<MenuItem> ();
+		public List<MenuItem> MenuItems = new List<MenuItem> ();
 		
 		// State
 		private Rect position;
@@ -52,10 +52,10 @@ namespace NodeEditorFramework.Utilities
 		private bool close;
 		
 		// GUI variables
-		public static GUIStyle backgroundStyle;
-		public static Texture2D expandRight;
-		public static float itemHeight;
-		public static GUIStyle selectedLabel;
+		public static GUIStyle BackgroundStyle;
+		public static Texture2D ExpandRight;
+		public static float ItemHeight;
+		public static GUIStyle SelectedLabel;
 		
 		public PopupMenu () 
 		{
@@ -64,20 +64,21 @@ namespace NodeEditorFramework.Utilities
 		
 		public void SetupGUI () 
 		{
-			backgroundStyle = new GUIStyle (GUI.skin.box);
-			backgroundStyle.contentOffset = new Vector2 (2, 2);
-			expandRight = NodeEditorFramework.Utilities.ResourceManager.LoadTexture ("Textures/expandRight.png");
-			itemHeight = GUI.skin.label.CalcHeight (new GUIContent ("text"), 100);
-			
-			selectedLabel = new GUIStyle (GUI.skin.label);
-			selectedLabel.normal.background = NodeEditorFramework.Utilities.RTEditorGUI.ColorToTex (1, new Color (0.4f, 0.4f, 0.4f));
+		    BackgroundStyle = new GUIStyle(GUI.skin.box) {contentOffset = new Vector2(2, 2)};
+		    ExpandRight = ResourceManager.LoadTexture ("Textures/expandRight.png");
+			ItemHeight = GUI.skin.label.CalcHeight (new GUIContent ("text"), 100);
+
+		    SelectedLabel = new GUIStyle(GUI.skin.label)
+		    {
+		        normal = {background = RTEditorGUI.ColorToTex(1, new Color(0.4f, 0.4f, 0.4f))}
+		    };
 		}
 		
 		public void Show (Rect pos)
 		{
 			position = pos;
 			selectedPath = "";
-			OverlayGUI.currentPopup = this;
+			OverlayGUI.CurrentPopup = this;
 		}
 		
 		#region Creation
@@ -87,9 +88,9 @@ namespace NodeEditorFramework.Utilities
 			string path;
 			MenuItem parent = AddHierarchy (ref content, out path);
 			if (parent != null)
-				parent.subItems.Add (new MenuItem (path, content, func, userData));
+				parent.SubItems.Add (new MenuItem (path, content, func, userData));
 			else
-				menuItems.Add (new MenuItem (path, content, func, userData));
+				MenuItems.Add (new MenuItem (path, content, func, userData));
 		}
 		
 		public void AddItem (GUIContent content, bool on, MenuFunction func)
@@ -97,9 +98,9 @@ namespace NodeEditorFramework.Utilities
 			string path;
 			MenuItem parent = AddHierarchy (ref content, out path);
 			if (parent != null)
-				parent.subItems.Add (new MenuItem (path, content, func));
+				parent.SubItems.Add (new MenuItem (path, content, func));
 			else
-				menuItems.Add (new MenuItem (path, content, func));
+				MenuItems.Add (new MenuItem (path, content, func));
 		}
 		
 		public void AddSeparator (string path)
@@ -107,9 +108,9 @@ namespace NodeEditorFramework.Utilities
 			GUIContent content = new GUIContent (path);
 			MenuItem parent = AddHierarchy (ref content, out path);
 			if (parent != null)
-				parent.subItems.Add (new MenuItem ());
+				parent.SubItems.Add (new MenuItem ());
 			else
-				menuItems.Add (new MenuItem ());
+				MenuItems.Add (new MenuItem ());
 		}
 		
 		private MenuItem AddHierarchy (ref GUIContent content, out string path) 
@@ -121,18 +122,18 @@ namespace NodeEditorFramework.Utilities
 				string folderPath = subContents[0];
 				
 				// top level group
-				MenuItem parent = menuItems.Find ((MenuItem item) => item.content != null && item.content.text == folderPath);
+				MenuItem parent = MenuItems.Find (item => item.Content != null && item.Content.text == folderPath);
 				if (parent == null)
-					menuItems.Add (parent = new MenuItem (folderPath, new GUIContent (folderPath), true));
+					MenuItems.Add (parent = new MenuItem (folderPath, new GUIContent (folderPath), true));
 				
 				// additional level groups
 				for (int groupCnt = 1; groupCnt < subContents.Length-1; groupCnt++)
 				{
 					string folder = subContents[groupCnt];
 					folderPath += "/" + folder;
-					MenuItem subGroup = parent.subItems.Find ((MenuItem item) => item.content != null && item.content.text == folder);
+					MenuItem subGroup = parent.SubItems.Find (item => item.Content != null && item.Content.text == folder);
 					if (subGroup == null)
-						parent.subItems.Add (subGroup = new MenuItem (folderPath, new GUIContent (folder), true));
+						parent.SubItems.Add (subGroup = new MenuItem (folderPath, new GUIContent (folder), true));
 					parent = subGroup;
 				}
 				
@@ -150,28 +151,28 @@ namespace NodeEditorFramework.Utilities
 		
 		public void Draw () 
 		{
-			bool inRect = DrawGroup (position, menuItems);
+			bool inRect = DrawGroup (position, MenuItems);
 			
 			while (groupToDraw != null && !close)
 			{
 				MenuItem group = groupToDraw;
 				groupToDraw = null;
-				if (group.group)
+				if (group.Group)
 				{
-					if (DrawGroup (group.groupPos, group.subItems))
+					if (DrawGroup (group.GroupPos, group.SubItems))
 						inRect = true;
 				}
 			}
 			
 			if (!inRect || close)
-				OverlayGUI.currentPopup = null;
+				OverlayGUI.CurrentPopup = null;
 			
-			NodeEditorFramework.NodeEditor.RepaintClients ();
+			NodeEditor.RepaintClients ();
 		}
 		
 		private bool DrawGroup (Rect pos, List<MenuItem> menuItems) 
 		{
-			Rect rect = calculateRect (pos.position, menuItems);
+			Rect rect = CalculateRect (pos.position, menuItems);
 			
 			Rect clickRect = new Rect (rect);
 			clickRect.xMax += 20;
@@ -180,8 +181,8 @@ namespace NodeEditorFramework.Utilities
 			clickRect.yMin -= 20;
 			bool inRect = clickRect.Contains (Event.current.mousePosition);
 			
-			currentItemHeight = backgroundStyle.contentOffset.y;
-			GUI.BeginGroup (extendRect (rect, backgroundStyle.contentOffset), GUIContent.none, backgroundStyle);
+			currentItemHeight = BackgroundStyle.contentOffset.y;
+			GUI.BeginGroup (ExtendRect (rect, BackgroundStyle.contentOffset), GUIContent.none, BackgroundStyle);
 			for (int itemCnt = 0; itemCnt < menuItems.Count; itemCnt++)
 			{
 				DrawItem (menuItems[itemCnt], rect);
@@ -194,31 +195,31 @@ namespace NodeEditorFramework.Utilities
 		
 		private void DrawItem (MenuItem item, Rect groupRect) 
 		{
-			if (item.separator) 
+			if (item.Separator) 
 			{
 				if (Event.current.type == EventType.Repaint)
-					RTEditorGUI.Seperator (new Rect (backgroundStyle.contentOffset.x+1, currentItemHeight+1, groupRect.width-2, 1));
+					RTEditorGUI.Seperator (new Rect (BackgroundStyle.contentOffset.x+1, currentItemHeight+1, groupRect.width-2, 1));
 				currentItemHeight += 3;
 			}
 			else 
 			{
-				Rect labelRect = new Rect (backgroundStyle.contentOffset.x, currentItemHeight, groupRect.width, itemHeight);
+				Rect labelRect = new Rect (BackgroundStyle.contentOffset.x, currentItemHeight, groupRect.width, ItemHeight);
 				
-				bool selected = selectedPath.Contains (item.path);
+				bool selected = selectedPath.Contains (item.Path);
 				if (labelRect.Contains (Event.current.mousePosition))
 				{
-					selectedPath = item.path;
+					selectedPath = item.Path;
 					selected = true;
 				}
 				
-				GUI.Label (labelRect, item.content, selected? selectedLabel : GUI.skin.label);
+				GUI.Label (labelRect, item.Content, selected? SelectedLabel : GUI.skin.label);
 				
-				if (item.group) 
+				if (item.Group) 
 				{
-					GUI.DrawTexture (new Rect (labelRect.x+labelRect.width-12, labelRect.y+(labelRect.height-12)/2, 12, 12), expandRight);
+					GUI.DrawTexture (new Rect (labelRect.x+labelRect.width-12, labelRect.y+(labelRect.height-12)/2, 12, 12), ExpandRight);
 					if (selected)
 					{
-						item.groupPos = new Rect (groupRect.x+groupRect.width+4, groupRect.y+currentItemHeight-2, 0, 0);
+						item.GroupPos = new Rect (groupRect.x+groupRect.width+4, groupRect.y+currentItemHeight-2, 0, 0);
 						groupToDraw = item;
 					}
 				}
@@ -229,11 +230,11 @@ namespace NodeEditorFramework.Utilities
 					Event.current.Use ();
 				}
 				
-				currentItemHeight += itemHeight;
+				currentItemHeight += ItemHeight;
 			}
 		}
 		
-		private static Rect extendRect (Rect rect, Vector2 extendValue) 
+		private static Rect ExtendRect (Rect rect, Vector2 extendValue) 
 		{
 			rect.x -= extendValue.x;
 			rect.y -= extendValue.y;
@@ -242,20 +243,20 @@ namespace NodeEditorFramework.Utilities
 			return rect;
 		}
 		
-		private static Rect calculateRect (Vector2 position, List<MenuItem> menuItems) 
+		private static Rect CalculateRect (Vector2 position, List<MenuItem> menuItems) 
 		{
 			Vector2 size;
 			float width = 40, height = 0;
 			
-			for (int itemCnt = 0; itemCnt < menuItems.Count; itemCnt++)
+			for (var itemCnt = 0; itemCnt < menuItems.Count; itemCnt++)
 			{
 				MenuItem item = menuItems[itemCnt];
-				if (item.separator)
+				if (item.Separator)
 					height += 3;
 				else
 				{
-					width = Mathf.Max (width, GUI.skin.label.CalcSize (item.content).x + (item.group? 22 : 10));
-					height += itemHeight;
+					width = Mathf.Max (width, GUI.skin.label.CalcSize (item.Content).x + (item.Group? 22 : 10));
+					height += ItemHeight;
 				}
 			}
 			
@@ -270,56 +271,56 @@ namespace NodeEditorFramework.Utilities
 		
 		public class MenuItem
 		{
-			public string path;
+			public string Path;
 			// -!Separator
-			public GUIContent content;
+			public GUIContent Content;
 			// -Executable Item
-			public MenuFunction func;
-			public MenuFunctionData funcData;
-			public object userData;
+			public MenuFunction Func;
+			public MenuFunctionData FuncData;
+			public object UserData;
 			// -Non-executables
-			public bool separator = false;
+			public bool Separator;
 			// --Group
-			public bool group = false;
-			public Rect groupPos;
-			public List<MenuItem> subItems;
+			public bool Group;
+			public Rect GroupPos;
+			public List<MenuItem> SubItems;
 			
 			public MenuItem ()
 			{
-				separator = true;
+				Separator = true;
 			}
 			
-			public MenuItem (string _path, GUIContent _content, bool _group)
+			public MenuItem (string path, GUIContent content, bool group)
 			{
-				path = _path;
-				content = _content;
-				group = _group;
+				Path = path;
+				Content = content;
+				Group = group;
 				
-				if (group)
-					subItems = new List<MenuItem> ();
+				if (Group)
+					SubItems = new List<MenuItem> ();
 			}
 			
-			public MenuItem (string _path, GUIContent _content, MenuFunction _func)
+			public MenuItem (string path, GUIContent content, MenuFunction func)
 			{
-				path = _path;
-				content = _content;
-				func = _func;
+				Path = path;
+				Content = content;
+				Func = func;
 			}
 			
-			public MenuItem (string _path, GUIContent _content, MenuFunctionData _func, object _userData)
+			public MenuItem (string path, GUIContent content, MenuFunctionData func, object userData)
 			{
-				path = _path;
-				content = _content;
-				funcData = _func;
-				userData = _userData;
+				Path = path;
+				Content = content;
+				FuncData = func;
+				UserData = userData;
 			}
 			
 			public void Execute ()
 			{
-				if (funcData != null)
-					funcData (userData);
-				else if (func != null)
-					func ();
+				if (FuncData != null)
+					FuncData (UserData);
+				else if (Func != null)
+					Func ();
 			}
 		}
 		

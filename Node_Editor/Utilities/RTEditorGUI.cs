@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using System;
 using System.Globalization;
-using System.Linq;
 using System.Collections.Generic;
 
 namespace NodeEditorFramework.Utilities 
@@ -27,7 +26,7 @@ namespace NodeEditorFramework.Utilities
 		#region FloatField
 
 		private static int activeFloatField = -1;
-		private static float activeFloatFieldLastValue = 0;
+		private static float activeFloatFieldLastValue;
 		private static string activeFloatFieldString = "";
 
 		/// <summary>
@@ -203,7 +202,7 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static void Seperator () 
 		{
-			setupSeperator ();
+			SetupSeperator ();
 			GUILayout.Box (GUIContent.none, seperator, new GUILayoutOption[] { GUILayout.Height (1) });
 		}
 
@@ -212,19 +211,21 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static void Seperator (Rect rect) 
 		{
-			setupSeperator ();
+			SetupSeperator ();
 			GUI.Box (new Rect (rect.x, rect.y, rect.width, 1), GUIContent.none, seperator);
 		}
 
 		private static GUIStyle seperator;
-		private static void setupSeperator () 
+		private static void SetupSeperator () 
 		{
 			if (seperator == null) 
 			{
-				seperator = new GUIStyle();
-				seperator.normal.background = ColorToTex (1, new Color (0.6f, 0.6f, 0.6f));
-				seperator.stretchWidth = true;
-				seperator.margin = new RectOffset(0, 0, 7, 7);
+			    seperator = new GUIStyle
+			    {
+			        normal = {background = ColorToTex(1, new Color(0.6f, 0.6f, 0.6f))},
+			        stretchWidth = true,
+			        margin = new RectOffset(0, 0, 7, 7)
+			    };
 			}
 		}
 
@@ -429,9 +430,9 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static Texture2D Tint (Texture2D tex, Color color) 
 		{
-			Texture2D tintedTex = UnityEngine.Object.Instantiate (tex);
-			for (int x = 0; x < tex.width; x++) 
-				for (int y = 0; y < tex.height; y++) 
+			var tintedTex = UnityEngine.Object.Instantiate (tex);
+			for (var x = 0; x < tex.width; x++) 
+				for (var y = 0; y < tex.height; y++) 
 					tintedTex.SetPixel (x, y, tex.GetPixel (x, y) * color);
 			tintedTex.Apply ();
 			return tintedTex;

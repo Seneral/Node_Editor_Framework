@@ -1,25 +1,24 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
-using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
 {
 	public abstract class Node : ScriptableObject
 	{
-		public Rect rect = new Rect ();
-		internal Vector2 contentOffset = Vector2.zero;
+		public Rect Rect = new Rect ();
+		internal Vector2 ContentOffset = Vector2.zero;
 
 		// Calculation graph
 		public List<NodeInput> Inputs = new List<NodeInput>();
 		public List<NodeOutput> Outputs = new List<NodeOutput>();
 		[HideInInspector]
 		[NonSerialized]
-		internal bool calculated = true;
+		internal bool Calculated = true;
 		
 		// State graph
-		public List<Transition> transitions = new List<Transition> ();
+		public List<Transition> Transitions = new List<Transition> ();
 
 		#region General
 
@@ -82,8 +81,8 @@ namespace NodeEditorFramework
 		protected internal void InitBase () 
 		{
 			Calculate ();
-			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
-				NodeEditor.curNodeCanvas.nodes.Add (this);
+			if (!NodeEditor.CurNodeCanvas.nodes.Contains (this))
+				NodeEditor.CurNodeCanvas.nodes.Add (this);
 			#if UNITY_EDITOR
 			if (name == "")
 				name = UnityEditor.ObjectNames.NicifyVariableName (GetID);
@@ -95,21 +94,21 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void Delete () 
 		{
-			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
-				throw new UnityException ("The Node " + name + " does not exist on the Canvas " + NodeEditor.curNodeCanvas.name + "!");
-			NodeEditor.curNodeCanvas.nodes.Remove (this);
+			if (!NodeEditor.CurNodeCanvas.nodes.Contains (this))
+				throw new UnityException ("The Node " + name + " does not exist on the Canvas " + NodeEditor.CurNodeCanvas.name + "!");
+			NodeEditor.CurNodeCanvas.nodes.Remove (this);
 			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 			{
 				NodeOutput output = Outputs [outCnt];
-				while (output.connections.Count != 0)
-					RemoveConnection (output.connections[0]);
+				while (output.Connections.Count != 0)
+					RemoveConnection (output.Connections[0]);
 				DestroyImmediate (output, true);
 			}
 			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 			{
 				NodeInput input = Inputs [inCnt];
-				if (input.connection != null)
-					input.connection.connections.Remove (input);
+				if (input.Connection != null)
+					input.Connection.Connections.Remove (input);
 				DestroyImmediate (input, true);
 			}
 			NodeEditorCallbacks.IssueOnDeleteNode (this);
@@ -126,14 +125,14 @@ namespace NodeEditorFramework
 		protected internal virtual void DrawNode () 
 		{
 			// TODO: Node Editor Feature: Custom Windowing System
-			Rect nodeRect = rect;
-			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust;
-			contentOffset = new Vector2 (0, 20);
+			Rect nodeRect = Rect;
+			nodeRect.position += NodeEditor.CurEditorState.ZoomPanAdjust;
+			ContentOffset = new Vector2 (0, 20);
 
-			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, contentOffset.y);
-			GUI.Label (headerRect, name, NodeEditor.curEditorState.selectedNode == this? NodeEditorGUI.nodeBoxBold : NodeEditorGUI.nodeBox);
+			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, ContentOffset.y);
+			GUI.Label (headerRect, name, NodeEditor.CurEditorState.SelectedNode == this? NodeEditorGUI.NodeBoxBold : NodeEditorGUI.NodeBox);
 
-			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + contentOffset.y, nodeRect.width, nodeRect.height - contentOffset.y);
+			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + ContentOffset.y, nodeRect.width, nodeRect.height - ContentOffset.y);
 			GUI.changed = false;
 
 			GUI.BeginGroup (bodyRect, GUI.skin.box);
@@ -155,13 +154,13 @@ namespace NodeEditorFramework
 			{
 				NodeOutput output = Outputs[outCnt];
 				Rect knobRect = output.GetGUIKnob ();
-				GUI.DrawTexture (knobRect, output.knobTexture);
+				GUI.DrawTexture (knobRect, output.KnobTexture);
 			}
 			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 			{
 				NodeInput input = Inputs[inCnt];
 				Rect knobRect = input.GetGUIKnob ();
-				GUI.DrawTexture (knobRect, input.knobTexture);
+				GUI.DrawTexture (knobRect, input.KnobTexture);
 			}
 		}
 		/// <summary>
@@ -175,14 +174,14 @@ namespace NodeEditorFramework
 				Vector2 startPos = output.GetGUIKnob ().center;
 				Vector2 startDir = output.GetDirection ();
 
-				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
+				for (int conCnt = 0; conCnt < output.Connections.Count; conCnt++) 
 				{
-					NodeInput input = output.connections [conCnt];
+					NodeInput input = output.Connections [conCnt];
 					NodeEditorGUI.DrawConnection (startPos,
 					                           startDir,
 					                           input.GetGUIKnob ().center,
 					                           input.GetDirection (),
-					                           ConnectionTypes.GetTypeData (output.type).col);
+					                           ConnectionTypes.GetTypeData (output.Type).Col);
 				}
 			}
 		}
@@ -192,16 +191,15 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void DrawTransitions () 
 		{
-			for (int cnt = 0; cnt < transitions.Count; cnt++)
+			for (int cnt = 0; cnt < Transitions.Count; cnt++)
 			{
-				Vector2 StartPoint = transitions[cnt].startNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
-				Vector2 EndPoint = transitions[cnt].endNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
-				RTEditorGUI.DrawLine (StartPoint, EndPoint, Color.grey, null, 3);
-				
-				Rect selectRect = new Rect (0, 0, 20, 20);
-				selectRect.center = Vector2.Lerp (StartPoint, EndPoint, 0.5f);
-				
-				if (GUI.Button (selectRect, "#"))
+				Vector2 startPoint = Transitions[cnt].StartNode.Rect.center + NodeEditor.CurEditorState.ZoomPanAdjust;
+				Vector2 endPoint = Transitions[cnt].EndNode.Rect.center + NodeEditor.CurEditorState.ZoomPanAdjust;
+				RTEditorGUI.DrawLine (startPoint, endPoint, Color.grey, null, 3);
+
+			    Rect selectRect = new Rect(0, 0, 20, 20) {center = Vector2.Lerp(startPoint, endPoint, 0.5f)};
+
+			    if (GUI.Button (selectRect, "#"))
 				{
 					// TODO: Select
 				}
@@ -216,11 +214,11 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Checks if there are no unassigned and no null-value inputs.
 		/// </summary>
-		protected internal bool allInputsReady ()
+		protected internal bool AllInputsReady ()
 		{
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
+			for (var inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 			{
-				if (Inputs[inCnt].connection == null || Inputs[inCnt].connection.IsValueNull)
+				if (Inputs[inCnt].Connection == null || Inputs[inCnt].Connection.IsValueNull)
 					return false;
 			}
 			return true;
@@ -228,10 +226,10 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Checks if there are any unassigned inputs.
 		/// </summary>
-		protected internal bool hasUnassignedInputs () 
+		protected internal bool HasUnassignedInputs () 
 		{
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++)
-				if (Inputs [inCnt].connection == null)
+			for (var inCnt = 0; inCnt < Inputs.Count; inCnt++)
+				if (Inputs [inCnt].Connection == null)
 					return true;
 			return false;
 		}
@@ -239,11 +237,11 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Returns whether every direct dexcendant has been calculated
 		/// </summary>
-		protected internal bool descendantsCalculated () 
+		protected internal bool DescendantsCalculated () 
 		{
-			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
+			for (var cnt = 0; cnt < Inputs.Count; cnt++) 
 			{
-				if (Inputs [cnt].connection != null && !Inputs [cnt].connection.body.calculated)
+				if (Inputs [cnt].Connection != null && !Inputs [cnt].Connection.Body.Calculated)
 					return false;
 			}
 			return true;
@@ -252,10 +250,10 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Returns whether the node acts as an input (no inputs or no inputs assigned)
 		/// </summary>
-		protected internal bool isInput () 
+		protected internal bool IsInput () 
 		{
-			for (int cnt = 0; cnt < Inputs.Count; cnt++)
-				if (Inputs [cnt].connection != null)
+			for (var cnt = 0; cnt < Inputs.Count; cnt++)
+				if (Inputs [cnt].Connection != null)
 					return false;
 			return true;
 		}
@@ -366,19 +364,19 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Recursively checks whether this node is a child of the other node
 		/// </summary>
-		public bool isChildOf (Node otherNode)
+		public bool IsChildOf (Node otherNode)
 		{
 			if (otherNode == null || otherNode == this)
 				return false;
 			if (BeginRecursiveSearchLoop ()) return false;
 			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
 			{
-				NodeOutput connection = Inputs [cnt].connection;
+				NodeOutput connection = Inputs [cnt].Connection;
 				if (connection != null) 
 				{
-					if (connection.body != startRecursiveSearchNode)
+					if (connection.Body != startRecursiveSearchNode)
 					{
-						if (connection.body == otherNode || connection.body.isChildOf (otherNode))
+						if (connection.Body == otherNode || connection.Body.IsChildOf (otherNode))
 						{
 							StopRecursiveSearchLoop ();
 							return true;
@@ -393,15 +391,15 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Recursively checks whether this node is in a loop
 		/// </summary>
-		internal bool isInLoop ()
+		internal bool IsInLoop ()
 		{
 			if (BeginRecursiveSearchLoop ()) return this == startRecursiveSearchNode;
 			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
 			{
-				NodeOutput connection = Inputs [cnt].connection;
+				NodeOutput connection = Inputs [cnt].Connection;
 				if (connection != null) 
 				{
-					if (connection.body.isInLoop ())
+					if (connection.Body.IsInLoop ())
 					{
 						StopRecursiveSearchLoop ();
 						return true;
@@ -417,7 +415,7 @@ namespace NodeEditorFramework
 		/// Other node is the node this node needs connect to in order to fill the loop (other node being the node coming AFTER this node).
 		/// That means isChildOf has to be confirmed before calling this!
 		/// </summary>
-		internal bool allowsLoopRecursion (Node otherNode)
+		internal bool AllowsLoopRecursion (Node otherNode)
 		{
 			if (AllowRecursion)
 				return true;
@@ -426,12 +424,12 @@ namespace NodeEditorFramework
 			if (BeginRecursiveSearchLoop ()) return false;
 			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
 			{
-				NodeOutput connection = Inputs [cnt].connection;
+				NodeOutput connection = Inputs [cnt].Connection;
 				if (connection != null) 
 				{
-					if (connection.body != startRecursiveSearchNode)
+					if (connection.Body != startRecursiveSearchNode)
 					{
-						if (connection.body.allowsLoopRecursion (otherNode))
+						if (connection.Body.AllowsLoopRecursion (otherNode))
 						{
 							StopRecursiveSearchLoop ();
 							return true;
@@ -450,12 +448,12 @@ namespace NodeEditorFramework
 		public void ClearCalculation () 
 		{
 			if (BeginRecursiveSearchLoop ()) return;
-			calculated = false;
+			Calculated = false;
 			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++)
 			{
 				NodeOutput output = Outputs [outCnt];
-				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-					output.connections [conCnt].body.ClearCalculation ();
+				for (int conCnt = 0; conCnt < output.Connections.Count; conCnt++)
+					output.Connections [conCnt].Body.ClearCalculation ();
 			}
 			EndRecursiveSearchLoop ();
 		}
@@ -516,15 +514,15 @@ namespace NodeEditorFramework
 		{
 			if (input == null || output == null)
 				return false;
-			if (input.body == output.body || input.connection == output)
+			if (input.Body == output.Body || input.Connection == output)
 				return false;
-			if (input.type != output.type)
+			if (input.Type != output.Type)
 				return false;
 
-			bool isRecursive = output.body.isChildOf (input.body);
+			bool isRecursive = output.Body.IsChildOf (input.Body);
 			if (isRecursive) 
 			{
-				if (!output.body.allowsLoopRecursion (input.body))
+				if (!output.Body.AllowsLoopRecursion (input.Body))
 				{
 					// TODO: Generic Notification
 					Debug.LogWarning ("Cannot apply connection: Recursion detected!");
@@ -541,14 +539,14 @@ namespace NodeEditorFramework
 		{
 			if (input != null && output != null) 
 			{
-				if (input.connection != null)
-					input.connection.connections.Remove (input);
-				input.connection = output;
-				output.connections.Add (input);
+				if (input.Connection != null)
+					input.Connection.Connections.Remove (input);
+				input.Connection = output;
+				output.Connections.Add (input);
 
-				NodeEditor.RecalculateFrom (input.body);
-				output.body.OnAddOutputConnection (output);
-				input.body.OnAddInputConnection (input);
+				NodeEditor.RecalculateFrom (input.Body);
+				output.Body.OnAddOutputConnection (output);
+				input.Body.OnAddInputConnection (input);
 				NodeEditorCallbacks.IssueOnAddConnection (input);
 			}
 		}
@@ -559,9 +557,9 @@ namespace NodeEditorFramework
 		public static void RemoveConnection (NodeInput input)
 		{
 			NodeEditorCallbacks.IssueOnRemoveConnection (input);
-			input.connection.connections.Remove (input);
-			input.connection = null;
-			NodeEditor.RecalculateFrom (input.body);
+			input.Connection.Connections.Remove (input);
+			input.Connection = null;
+			NodeEditor.RecalculateFrom (input.Body);
 		}
 
 		public static void CreateTransition (Node fromNode, Node toNode) 

@@ -14,7 +14,7 @@ public class AllAroundNode : Node
 	{
 		AllAroundNode node = CreateInstance<AllAroundNode> ();
 		
-		node.rect = new Rect (pos.x, pos.y, 60, 60);
+		node.Rect = new Rect (pos.x, pos.y, 60, 60);
 		node.name = "AllAround Node";
 		
 		node.CreateInput ("Input Top", "Float", NodeSide.Top, 20);
@@ -32,8 +32,8 @@ public class AllAroundNode : Node
 	
 	protected internal override void DrawNode () 
 	{
-		Rect nodeRect = rect;
-		nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust;
+		Rect nodeRect = Rect;
+		nodeRect.position += NodeEditor.CurEditorState.ZoomPanAdjust;
 		
 		Rect bodyRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, nodeRect.height);
 		
@@ -50,10 +50,10 @@ public class AllAroundNode : Node
 	
 	public override bool Calculate () 
 	{
-		Outputs [0].SetValue<float> (Inputs [0].GetValue<float> ());
-		Outputs [1].SetValue<float> (Inputs [1].GetValue<float> ());
-		Outputs [2].SetValue<float> (Inputs [2].GetValue<float> ());
-		Outputs [3].SetValue<float> (Inputs [3].GetValue<float> ());
+		Outputs [0].SetValue (Inputs [0].GetValue<float> ());
+		Outputs [1].SetValue (Inputs [1].GetValue<float> ());
+		Outputs [2].SetValue (Inputs [2].GetValue<float> ());
+		Outputs [3].SetValue (Inputs [3].GetValue<float> ());
 
 		return true;
 	}

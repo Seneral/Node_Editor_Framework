@@ -7,11 +7,11 @@ namespace NodeEditorFramework.Utilities
 {
 	public static class ResourceManager 
 	{
-		public static string resourcePath;
+		public static string ResourcePath;
 		
-		public static void Init (string _resourcePath) 
+		public static void Init (string resourcePath) 
 		{
-			resourcePath = _resourcePath;
+			ResourcePath = resourcePath;
 		}
 		
 		/// <summary>
@@ -23,7 +23,7 @@ namespace NodeEditorFramework.Utilities
 			if (!Application.isPlaying) 
 			{
 				#if UNITY_EDITOR
-				string fullPath = System.IO.Path.Combine (resourcePath, path);
+				string fullPath = System.IO.Path.Combine (ResourcePath, path);
 				obj = UnityEditor.AssetDatabase.LoadAssetAtPath (fullPath, typeof (T)) as T;
 				if (obj == null)
 					Debug.LogError (string.Format ("ResourceManager: Resource not found at '{0}', did you install the plugin correctly?", fullPath));
@@ -48,13 +48,13 @@ namespace NodeEditorFramework.Utilities
 		{
 			if (String.IsNullOrEmpty (texPath))
 				return null;
-			int existingInd = loadedTextures.FindIndex ((MemoryTexture memTex) => memTex.path == texPath);
+			var existingInd = loadedTextures.FindIndex (memTex => memTex.Path == texPath);
 			if (existingInd != -1) 
 			{
-				if (loadedTextures[existingInd].texture == null)
+				if (loadedTextures[existingInd].Texture == null)
 					loadedTextures.RemoveAt (existingInd);
 				else
-					return loadedTextures[existingInd].texture;
+					return loadedTextures[existingInd].Texture;
 			}
 			//Debug.Log ("Loading " + texPath + " first time");
 			
@@ -62,7 +62,7 @@ namespace NodeEditorFramework.Utilities
 			
 			#if UNITY_EDITOR
 			{
-				string fullPath = System.IO.Path.Combine(resourcePath, texPath);
+				string fullPath = System.IO.Path.Combine(ResourcePath, texPath);
 				tex = UnityEditor.AssetDatabase.LoadAssetAtPath(fullPath, typeof(Texture2D)) as Texture2D;
 				if (tex == null)
 					Debug.LogError(string.Format("ResourceManager: Texture not found at '{0}', did you install the plugin correctly?", fullPath));
@@ -84,14 +84,13 @@ namespace NodeEditorFramework.Utilities
 		
 		public static Texture2D GetTintedTexture (string texPath, Color col) 
 		{
-			Texture2D tintedTexture;
-			string texMod = "Tint:" + col.ToString ();
-			tintedTexture = ResourceManager.GetTexture (texPath, texMod);
+		    string texMod = "Tint:" + col.ToString ();
+			var tintedTexture = GetTexture (texPath, texMod);
 			if (tintedTexture == null)
 			{
-				tintedTexture = ResourceManager.LoadTexture (texPath);
-				tintedTexture = NodeEditorFramework.Utilities.RTEditorGUI.Tint (tintedTexture, col);
-				ResourceManager.AddTexture (texPath, tintedTexture, texMod); // Register texture for re-use
+				tintedTexture = LoadTexture (texPath);
+				tintedTexture = RTEditorGUI.Tint (tintedTexture, col);
+				AddTexture (texPath, tintedTexture, texMod); // Register texture for re-use
 			}
 			return tintedTexture;
 		}
@@ -111,7 +110,7 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static MemoryTexture FindInMemory (Texture2D tex)
 		{
-			int existingInd = loadedTextures.FindIndex ((MemoryTexture memTex) => memTex.texture == tex);
+			var existingInd = loadedTextures.FindIndex (memTex => memTex.Texture == tex);
 			return existingInd != -1? loadedTextures[existingInd] : null;
 		}
 		
@@ -120,8 +119,8 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static bool Contains (string texturePath, params string[] modifications)
 		{
-			int existingInd = loadedTextures.FindIndex ((MemoryTexture memTex) => memTex.path == texturePath);
-			return existingInd != -1 && EqualModifications (loadedTextures[existingInd].modifications, modifications);
+			int existingInd = loadedTextures.FindIndex ((memTex) => memTex.Path == texturePath);
+			return existingInd != -1 && EqualModifications (loadedTextures[existingInd].Modifications, modifications);
 		}
 		
 		/// <summary>
@@ -129,11 +128,11 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static MemoryTexture GetMemoryTexture (string texturePath, params string[] modifications)
 		{
-			List<MemoryTexture> textures = loadedTextures.FindAll ((MemoryTexture memTex) => memTex.path == texturePath);
+			var textures = loadedTextures.FindAll (memTex => memTex.Path == texturePath);
 			if (textures == null || textures.Count == 0)
 				return null;
-			foreach (MemoryTexture tex in textures)
-				if (EqualModifications (tex.modifications, modifications))
+			foreach (var tex in textures)
+				if (EqualModifications (tex.Modifications, modifications))
 					return tex;
 			return null;
 		}
@@ -143,8 +142,8 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static Texture2D GetTexture (string texturePath, params string[] modifications)
 		{
-			MemoryTexture memTex = GetMemoryTexture (texturePath, modifications);
-			return memTex == null? null : memTex.texture;
+			var memTex = GetMemoryTexture (texturePath, modifications);
+			return memTex == null? null : memTex.Texture;
 		}
 		
 		private static bool EqualModifications (string[] modsA, string[] modsB) 
@@ -154,15 +153,15 @@ namespace NodeEditorFramework.Utilities
 		
 		public class MemoryTexture 
 		{
-			public string path;
-			public Texture2D texture;
-			public string[] modifications;
+			public string Path;
+			public Texture2D Texture;
+			public string[] Modifications;
 			
 			public MemoryTexture (string texPath, Texture2D tex, params string[] mods) 
 			{
-				path = texPath;
-				texture = tex;
-				modifications = mods;
+				Path = texPath;
+				Texture = tex;
+				Modifications = mods;
 			}
 		}
 		
