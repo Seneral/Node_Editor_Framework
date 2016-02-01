@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
-using NodeEditorFramework;
+using Object = UnityEngine.Object;
 
 namespace NodeEditorFramework 
 {
@@ -29,7 +29,7 @@ namespace NodeEditorFramework
 
 		public static void SetupReceivers () 
 		{
-			callbackReceiver = new List<NodeEditorCallbackReceiver> (MonoBehaviour.FindObjectsOfType<NodeEditorCallbackReceiver> ());
+			callbackReceiver = new List<NodeEditorCallbackReceiver> (Object.FindObjectsOfType<NodeEditorCallbackReceiver> ());
 			receiverCount = callbackReceiver.Count;
 		}
 

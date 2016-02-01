@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
-using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework 
@@ -8,27 +6,27 @@ namespace NodeEditorFramework
 	public static class NodeEditorGUI 
 	{
 		// static GUI settings, textures and styles
-		public static int knobSize = 16;
+		public static int KnobSize = 16;
 
-		public static Color NE_LightColor = new Color (0.4f, 0.4f, 0.4f);
-		public static Color NE_TextColor = new Color (0.7f, 0.7f, 0.7f);
+		public static Color NELightColor = new Color (0.4f, 0.4f, 0.4f);
+		public static Color NETextColor = new Color (0.7f, 0.7f, 0.7f);
 
 		public static Texture2D Background;
 		public static Texture2D AALineTex;
 		public static Texture2D GUIBox;
 		public static Texture2D GUIButton;
 
-		public static GUISkin nodeSkin;
-		public static GUISkin defaultSkin;
+		public static GUISkin NodeSkin;
+		public static GUISkin DefaultSkin;
 
-		public static GUIStyle nodeLabel;
-		public static GUIStyle nodeLabelBold;
-		public static GUIStyle nodeLabelSelected;
+		public static GUIStyle NodeLabel;
+		public static GUIStyle NodeLabelBold;
+		public static GUIStyle NodeLabelSelected;
 
-		public static GUIStyle nodeBox;
-		public static GUIStyle nodeBoxBold;
+		public static GUIStyle NodeBox;
+		public static GUIStyle NodeBoxBold;
 		
-		public static bool Init (bool GUIFunction) 
+		public static bool Init (bool guiFunction) 
 		{
 			// Textures
 			Background = ResourceManager.LoadTexture ("Textures/background.png");
@@ -38,49 +36,49 @@ namespace NodeEditorFramework
 			
 			if (!Background || !AALineTex || !GUIBox || !GUIButton)
 				return false;
-			if (!GUIFunction)
+			if (!guiFunction)
 				return true;
 
 			// Skin & Styles
-			nodeSkin = Object.Instantiate<GUISkin> (GUI.skin);
+			NodeSkin = Object.Instantiate (GUI.skin);
 
 			// Label
-			nodeSkin.label.normal.textColor = NE_TextColor;
-			nodeLabel = nodeSkin.label;
+			NodeSkin.label.normal.textColor = NETextColor;
+			NodeLabel = NodeSkin.label;
 			// Box
-			nodeSkin.box.normal.textColor = NE_TextColor;
-			nodeSkin.box.normal.background = GUIBox;
-			nodeBox = nodeSkin.box;
+			NodeSkin.box.normal.textColor = NETextColor;
+			NodeSkin.box.normal.background = GUIBox;
+			NodeBox = NodeSkin.box;
 			// Button
-			nodeSkin.button.normal.textColor = NE_TextColor;
-			nodeSkin.button.normal.background = GUIButton;
+			NodeSkin.button.normal.textColor = NETextColor;
+			NodeSkin.button.normal.background = GUIButton;
 			// TextArea
-			nodeSkin.textArea.normal.background = GUIBox;
-			nodeSkin.textArea.active.background = GUIBox;
+			NodeSkin.textArea.normal.background = GUIBox;
+			NodeSkin.textArea.active.background = GUIBox;
 			// Bold Label
-			nodeLabelBold = new GUIStyle (nodeLabel);
-			nodeLabelBold.fontStyle = FontStyle.Bold;
+			NodeLabelBold = new GUIStyle (NodeLabel);
+			NodeLabelBold.fontStyle = FontStyle.Bold;
 			// Selected Label
-			nodeLabelSelected = new GUIStyle (nodeLabel);
-			nodeLabelSelected.normal.background = RTEditorGUI.ColorToTex (1, NE_LightColor);
+			NodeLabelSelected = new GUIStyle (NodeLabel);
+			NodeLabelSelected.normal.background = RTEditorGUI.ColorToTex (1, NELightColor);
 			// Bold Box
-			nodeBoxBold = new GUIStyle (nodeBox);
-			nodeBoxBold.fontStyle = FontStyle.Bold;
+			NodeBoxBold = new GUIStyle (NodeBox);
+			NodeBoxBold.fontStyle = FontStyle.Bold;
 
 			return true;
 		}
 
 		public static void StartNodeGUI () 
 		{
-			defaultSkin = GUI.skin;
-			if (nodeSkin == null)
+			DefaultSkin = GUI.skin;
+			if (NodeSkin == null)
 				Init (true);
-			GUI.skin = nodeSkin;
+			GUI.skin = NodeSkin;
 		}
 
 		public static void EndNodeGUI () 
 		{
-			GUI.skin = defaultSkin;
+			GUI.skin = DefaultSkin;
 		}
 
 		#region Connection Drawing

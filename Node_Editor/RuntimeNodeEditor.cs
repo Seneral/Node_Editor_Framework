@@ -1,27 +1,25 @@
 ﻿using UnityEngine;
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using NodeEditorFramework;
 
 public class RuntimeNodeEditor : MonoBehaviour 
 {
-	public string canvasPath;
-	public NodeCanvas canvas;
+	public string CanvasPath;
+	public NodeCanvas Canvas;
 	private NodeEditorState state;
 
-	public bool screenSize = false;
+	public bool ScreenSize;
 	private Rect canvasRect;
-	public Rect specifiedRootRect;
-	public Rect specifiedCanvasRect;
+	public Rect SpecifiedRootRect;
+	public Rect SpecifiedCanvasRect;
 
 	public void Start () 
 	{
-		if (!string.IsNullOrEmpty (canvasPath))
-			LoadNodeCanvas (canvasPath);
+		if (!string.IsNullOrEmpty (CanvasPath))
+			LoadNodeCanvas (CanvasPath);
 		else
 			NewNodeCanvas ();
-		NodeEditor.initiated = false;
+		NodeEditor.Initiated = false;
 		FPSCounter.Create ();
 	}
 
@@ -32,9 +30,9 @@ public class RuntimeNodeEditor : MonoBehaviour
 
 	public void OnGUI ()
 	{
-		if (canvas != null && state != null) 
+		if (Canvas != null && state != null) 
 		{
-			NodeEditor.checkInit ();
+			NodeEditor.CheckInit ();
 			if (NodeEditor.InitiationError) 
 			{
 				GUILayout.Label ("Initiation failed! Check console for more information!");
@@ -43,15 +41,15 @@ public class RuntimeNodeEditor : MonoBehaviour
 
 			try
 			{
-				if (!screenSize && specifiedRootRect.max != specifiedRootRect.min) GUI.BeginGroup (specifiedRootRect, NodeEditorGUI.nodeSkin.box);
+				if (!ScreenSize && SpecifiedRootRect.max != SpecifiedRootRect.min) GUI.BeginGroup (SpecifiedRootRect, NodeEditorGUI.NodeSkin.box);
 
-				canvasRect = screenSize? new Rect (0, 0, Screen.width, Screen.height) : specifiedCanvasRect;
+				canvasRect = ScreenSize? new Rect (0, 0, Screen.width, Screen.height) : SpecifiedCanvasRect;
 				canvasRect.width -= 200;
-				state.canvasRect = canvasRect;
-				NodeEditor.DrawCanvas (canvas, state);
+				state.CanvasRect = canvasRect;
+				NodeEditor.DrawCanvas (Canvas, state);
 				SideGUI ();
 
-				if (!screenSize && specifiedRootRect.max != specifiedRootRect.min) GUI.EndGroup ();
+				if (!ScreenSize && SpecifiedRootRect.max != SpecifiedRootRect.min) GUI.EndGroup ();
 			}
 			catch (UnityException e)
 			{ // on exceptions in drawing flush the canvas to avoid locking the ui.
@@ -64,20 +62,20 @@ public class RuntimeNodeEditor : MonoBehaviour
 
 	public void SideGUI () 
 	{
-		GUILayout.BeginArea (new Rect (canvasRect.x + state.canvasRect.width, state.canvasRect.y, 200, state.canvasRect.height), NodeEditorGUI.nodeSkin.box);
-		GUILayout.Label (new GUIContent ("Node Editor (" + canvas.name + ")", "The currently opened canvas in the Node Editor"));
-		screenSize = GUILayout.Toggle (screenSize, "Adapt to Screen");
-		GUILayout.Label ("FPS: " + FPSCounter.currentFPS);
+		GUILayout.BeginArea (new Rect (canvasRect.x + state.CanvasRect.width, state.CanvasRect.y, 200, state.CanvasRect.height), NodeEditorGUI.NodeSkin.box);
+		GUILayout.Label (new GUIContent ("Node Editor (" + Canvas.name + ")", "The currently opened canvas in the Node Editor"));
+		ScreenSize = GUILayout.Toggle (ScreenSize, "Adapt to Screen");
+		GUILayout.Label ("FPS: " + FPSCounter.CurrentFPS);
 		GUILayout.EndArea ();
 	}
 
 	public void LoadNodeCanvas (string path) 
 	{
 		// Load the NodeCanvas
-		canvas = NodeEditor.LoadNodeCanvas (path);
-		if (canvas == null)
+		Canvas = NodeEditor.LoadNodeCanvas (path);
+		if (Canvas == null)
 		{
-			canvas = ScriptableObject.CreateInstance<NodeCanvas> ();
+			Canvas = ScriptableObject.CreateInstance<NodeCanvas> ();
 		}
 
 		// Load the associated MainEditorState
@@ -89,16 +87,16 @@ public class RuntimeNodeEditor : MonoBehaviour
 			state = editorStates.Find (x => x.name == "MainEditorState");
 			if (state == null) state = editorStates[0];
 		}
-		state.canvas = canvas;
+		state.Canvas = Canvas;
 		
-		NodeEditor.RecalculateAll (canvas);
+		NodeEditor.RecalculateAll (Canvas);
 	}
 
 	public void NewNodeCanvas () 
 	{
-		canvas = ScriptableObject.CreateInstance<NodeCanvas> ();
+		Canvas = ScriptableObject.CreateInstance<NodeCanvas> ();
 		state = ScriptableObject.CreateInstance<NodeEditorState> ();
-		state.canvas = canvas;
+		state.Canvas = Canvas;
 		state.name = "MainEditorState";
 	}
 }
@@ -107,9 +105,9 @@ public class RuntimeNodeEditor : MonoBehaviour
 public class FPSCounter
 {
 	public static float FPSMeasurePeriod = 0.1f;
-	private int FPSAccumulator;
-	private float FPSNextPeriod;
-	public static int currentFPS;
+	private int fpsAccumulator;
+	private float fpsNextPeriod;
+	public static int CurrentFPS;
 
 	private static FPSCounter instance;
 
@@ -117,8 +115,7 @@ public class FPSCounter
 	{
 		if (instance == null)
 		{
-			instance = new FPSCounter ();
-			instance.FPSNextPeriod = Time.realtimeSinceStartup + FPSMeasurePeriod;
+		    instance = new FPSCounter {fpsNextPeriod = Time.realtimeSinceStartup + FPSMeasurePeriod};
 		}
 	}
 
@@ -126,12 +123,12 @@ public class FPSCounter
 	public static void Update ()
 	{
 		Create ();
-		instance.FPSAccumulator++;
-		if (Time.realtimeSinceStartup > instance.FPSNextPeriod)
+		instance.fpsAccumulator++;
+		if (Time.realtimeSinceStartup > instance.fpsNextPeriod)
 		{
-			currentFPS = (int) (instance.FPSAccumulator/FPSMeasurePeriod);
-			instance.FPSAccumulator = 0;
-			instance.FPSNextPeriod += FPSMeasurePeriod;
+			CurrentFPS = (int) (instance.fpsAccumulator/FPSMeasurePeriod);
+			instance.fpsAccumulator = 0;
+			instance.fpsNextPeriod += FPSMeasurePeriod;
 		}
 	}
 }

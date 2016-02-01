@@ -11,7 +11,7 @@ public class ExampleNode : Node
 	{
 		ExampleNode node = CreateInstance<ExampleNode> ();
 		
-		node.rect = new Rect (pos.x, pos.y, 150, 60);
+		node.Rect = new Rect (pos.x, pos.y, 150, 60);
 		node.name = "Example Node";
 		
 		node.CreateInput ("Value", "Float");
@@ -41,9 +41,9 @@ public class ExampleNode : Node
 	
 	public override bool Calculate () 
 	{
-		if (!allInputsReady ())
+		if (!AllInputsReady ())
 			return false;
-		Outputs[0].SetValue<float> (Inputs[0].GetValue<float> () * 5);
+		Outputs[0].SetValue (Inputs[0].GetValue<float> () * 5);
 		return true;
 	}
 }

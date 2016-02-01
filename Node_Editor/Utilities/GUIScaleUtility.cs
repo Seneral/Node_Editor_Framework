@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using System;
 using System.Reflection;
@@ -14,19 +13,19 @@ namespace NodeEditorFramework.Utilities
 		private static bool initiated;
 
 		// Fast.Reflection delegates
-		private static Func<Rect> GetTopRectDelegate;
+		private static Func<Rect> getTopRectDelegate;
 		private static Func<Rect> topmostRectDelegate;
 
 		// Delegate accessors
-		public static Rect getTopRect { get { return (Rect)GetTopRectDelegate.Invoke (); } }
-		public static Rect getTopRectScreenSpace { get { return (Rect)topmostRectDelegate.Invoke (); } }
+		public static Rect GetTopRect { get { return getTopRectDelegate.Invoke (); } }
+		public static Rect GetTopRectScreenSpace { get { return topmostRectDelegate.Invoke (); } }
 
 		// Rect stack for manipulating groups
-		public static List<Rect> currentRectStack { get; private set; }
+		public static List<Rect> CurrentRectStack { get; private set; }
 		private static List<List<Rect>> rectStackGroups;
 
 		// Matrices stack
-		private static List<Matrix4x4> GUIMatrices;
+		private static List<Matrix4x4> guiMatrices;
 		private static List<bool> adjustedGUILayout;
 
 		private static FieldInfo currentGUILayoutCache;
@@ -78,13 +77,13 @@ namespace NodeEditorFramework.Utilities
 			}
 
 			// Create simple acessor delegates
-			GetTopRectDelegate = (Func<Rect>)Delegate.CreateDelegate (typeof(Func<Rect>), GetTopRect);
+			getTopRectDelegate = (Func<Rect>)Delegate.CreateDelegate (typeof(Func<Rect>), GetTopRect);
 			topmostRectDelegate = (Func<Rect>)Delegate.CreateDelegate (typeof(Func<Rect>), topmostRect.GetGetMethod ());
 
 			// As we can call Begin/Ends inside another, we need to save their states hierarchial in Lists (not Stack, as we need to iterate over them!):
-			currentRectStack = new List<Rect> ();
+			CurrentRectStack = new List<Rect> ();
 			rectStackGroups = new List<List<Rect>> ();
-			GUIMatrices = new List<Matrix4x4> ();
+			guiMatrices = new List<Matrix4x4> ();
 			adjustedGUILayout = new List<bool> ();
 
 			// Sometimes, strange errors pop up (related to Mac?), which we try to catch and enable a compability Mode no supporting zooming in groups
@@ -118,7 +117,7 @@ namespace NodeEditorFramework.Utilities
 //		public static Rect secondaryInitialRect;
 //		public static Rect secondaryScaledRect;
 
-		public static Vector2 getCurrentScale { get { return new Vector2 (1/GUI.matrix.GetColumn (0).magnitude, 1/GUI.matrix.GetColumn (1).magnitude); } } 
+		public static Vector2 GetCurrentScale { get { return new Vector2 (1/GUI.matrix.GetColumn (0).magnitude, 1/GUI.matrix.GetColumn (1).magnitude); } } 
 
 		/// <summary>
 		/// Begins a scaled local area. 
@@ -139,8 +138,8 @@ namespace NodeEditorFramework.Utilities
 			}
 			else
 			{ // If it's supported, we take the completely generic way using reflected calls
-				GUIScaleUtility.BeginNoClip ();
-				screenRect = GUIScaleUtility.InnerToScreenRect (rect);
+				BeginNoClip ();
+				screenRect = InnerToScreenRect (rect);
 			}
 
 //			Vector2 GUIScale = getCurrentScale;
@@ -183,7 +182,7 @@ namespace NodeEditorFramework.Utilities
 			}
 			
 			// Take a matrix backup to restore back later on
-			GUIMatrices.Add (GUI.matrix);
+			guiMatrices.Add (GUI.matrix);
 			
 			// Scale GUI.matrix. After that we have the correct clipping group again.
 			GUIUtility.ScaleAroundPivot (new Vector2 (1/zoom, 1/zoom), zoomPosAdjust);
@@ -206,10 +205,10 @@ namespace NodeEditorFramework.Utilities
 		public static void EndScale () 
 		{
 			// Set last matrix and clipping group
-			if (GUIMatrices.Count == 0 || adjustedGUILayout.Count == 0)
+			if (guiMatrices.Count == 0 || adjustedGUILayout.Count == 0)
 				throw new UnityException ("GUIScaleUtility: You are ending more scale regions than you are beginning!");
-			GUI.matrix = GUIMatrices[GUIMatrices.Count-1];
-			GUIMatrices.RemoveAt (GUIMatrices.Count-1);
+			GUI.matrix = guiMatrices[guiMatrices.Count-1];
+			guiMatrices.RemoveAt (guiMatrices.Count-1);
 			
 			// End GUILayout zoomPosAdjustment
 			if (adjustedGUILayout[adjustedGUILayout.Count-1])
@@ -231,7 +230,7 @@ namespace NodeEditorFramework.Utilities
 			}
 			else
 			{ // Else, restore the clips (groups)
-				GUIScaleUtility.RestoreClips ();
+				RestoreClips ();
 			}
 		}
 		
@@ -246,17 +245,17 @@ namespace NodeEditorFramework.Utilities
 		{
 			// Record and close all clips one by one, from bottom to top, until we hit the 'origin'
 			List<Rect> rectStackGroup = new List<Rect> ();
-			Rect topMostClip = getTopRect;
+			Rect topMostClip = GetTopRect;
 			while (topMostClip != new Rect (-10000, -10000, 40000, 40000)) 
 			{
 				rectStackGroup.Add (topMostClip);
 				GUI.EndClip ();
-				topMostClip = getTopRect;
+				topMostClip = GetTopRect;
 			}
 			// Store the clips appropriately
 			rectStackGroup.Reverse ();
 			rectStackGroups.Add (rectStackGroup);
-			currentRectStack.AddRange (rectStackGroup);
+			CurrentRectStack.AddRange (rectStackGroup);
 		}
 
 		/// <summary>
@@ -266,18 +265,18 @@ namespace NodeEditorFramework.Utilities
 		{
 			// Record and close all clips one by one, from bottom to top, until reached the count or hit the 'origin'
 			List<Rect> rectStackGroup = new List<Rect> ();
-			Rect topMostClip = getTopRect;
+			Rect topMostClip = GetTopRect;
 			while (topMostClip != new Rect (-10000, -10000, 40000, 40000) && count > 0)
 			{
 				rectStackGroup.Add (topMostClip);
 				GUI.EndClip ();
-				topMostClip = getTopRect;
+				topMostClip = GetTopRect;
 				count--;
 			}
 			// Store the clips appropriately
 			rectStackGroup.Reverse ();
 			rectStackGroups.Add (rectStackGroup);
-			currentRectStack.AddRange (rectStackGroup);
+			CurrentRectStack.AddRange (rectStackGroup);
 		}
 
 		/// <summary>
@@ -296,7 +295,7 @@ namespace NodeEditorFramework.Utilities
 			for (int clipCnt = 0; clipCnt < rectStackGroup.Count; clipCnt++)
 			{
 				GUI.BeginClip (rectStackGroup[clipCnt]);
-				currentRectStack.RemoveAt (currentRectStack.Count-1);
+				CurrentRectStack.RemoveAt (CurrentRectStack.Count-1);
 			}
 			rectStackGroups.RemoveAt (rectStackGroups.Count-1);
 		}
@@ -313,7 +312,7 @@ namespace NodeEditorFramework.Utilities
 			if (compabilityMode)
 				return;
 			// Will mimic a new layout by creating a new group at (0, 0). Will be restored though after ending the new Layout
-			Rect topMostClip = getTopRect;
+			Rect topMostClip = GetTopRect;
 			if (topMostClip != new Rect (-10000, -10000, 40000, 40000))
 				GUILayout.BeginArea (new Rect (0, 0, topMostClip.width, topMostClip.height));
 			else
@@ -335,7 +334,7 @@ namespace NodeEditorFramework.Utilities
 		public static void BeginIgnoreMatrix () 
 		{
 			// Store and clean current matrix
-			GUIMatrices.Add (GUI.matrix);
+			guiMatrices.Add (GUI.matrix);
 			GUI.matrix = Matrix4x4.identity;
 		}
 
@@ -344,11 +343,11 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static void EndIgnoreMatrix () 
 		{
-			if (GUIMatrices.Count == 0)
+			if (guiMatrices.Count == 0)
 				throw new UnityException ("GUIScaleutility: You are ending more ignoreMatrices than you are beginning!");
 			// Read and assign previous matrix
-			GUI.matrix = GUIMatrices[GUIMatrices.Count-1];
-			GUIMatrices.RemoveAt (GUIMatrices.Count-1);
+			GUI.matrix = guiMatrices[guiMatrices.Count-1];
+			guiMatrices.RemoveAt (guiMatrices.Count-1);
 		}
 
 		#endregion
@@ -388,7 +387,7 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static Rect GUIToScreenRect (Rect guiRect) 
 		{
-			guiRect.position += getTopRectScreenSpace.position;
+			guiRect.position += GetTopRectScreenSpace.position;
 			return guiRect;
 		}
 

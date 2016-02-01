@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEditor;
 #if UNITY_5_3
 using UnityEngine.SceneManagement;
-using UnityEditor.SceneManagement;
 #endif
 using System;
 
@@ -19,16 +18,16 @@ namespace NodeEditorFramework
 	    private static string loadedScene;
 #endif
 
-        private static bool serializationTest = false;
-		private static bool playmodeSwitchToEdit = false;
-		private static bool toggleLateEnteredPlaymode = false;
+        private static bool serializationTest;
+		private static bool playmodeSwitchToEdit;
+		private static bool toggleLateEnteredPlaymode;
 
-		public static Action beforeEnteringPlayMode;
-		public static Action justEnteredPlayMode;
-		public static Action lateEnteredPlayMode;
-		public static Action beforeLeavingPlayMode;
-		public static Action justLeftPlayMode;
-		public static Action justOpenedNewScene;
+		public static Action BeforeEnteringPlayMode;
+		public static Action JustEnteredPlayMode;
+		public static Action LateEnteredPlayMode;
+		public static Action BeforeLeavingPlayMode;
+		public static Action JustLeftPlayMode;
+		public static Action JustOpenedNewScene;
 
 		static EditorLoadingControl () 
 		{
@@ -43,14 +42,14 @@ namespace NodeEditorFramework
 		private static void OnHierarchyChange () 
 		{
 #if UNITY_5_3
-            Scene currentSceneName = EditorSceneManager.GetActiveScene ();
+            var currentSceneName = SceneManager.GetActiveScene ();
 #else
 		    string currentSceneName = Application.loadedLevelName;
 #endif
             if (loadedScene != currentSceneName)
 			{
-				if (justOpenedNewScene != null)
-					justOpenedNewScene.Invoke ();
+				if (JustOpenedNewScene != null)
+					JustOpenedNewScene.Invoke ();
 				loadedScene = currentSceneName;
 			}
 		}
@@ -61,8 +60,8 @@ namespace NodeEditorFramework
 			if (toggleLateEnteredPlaymode)
 			{
 				toggleLateEnteredPlaymode = false;
-				if (lateEnteredPlayMode != null)
-					lateEnteredPlayMode.Invoke ();
+				if (LateEnteredPlayMode != null)
+					LateEnteredPlayMode.Invoke ();
 			}
 			serializationTest = true;
 		}
@@ -75,15 +74,15 @@ namespace NodeEditorFramework
 				if (playmodeSwitchToEdit)
 				{ // After Playmode
 					//Debug.Log ("LOAD PLAY MODE Values in Edit Mode!!");
-					if (justLeftPlayMode != null)
-						justLeftPlayMode.Invoke ();
+					if (JustLeftPlayMode != null)
+						JustLeftPlayMode.Invoke ();
 					playmodeSwitchToEdit = false;
 				}
 				else 
 				{ // Before Playmode
 					//Debug.Log ("SAVE EDIT MODE Values before Play Mode!!");
-					if (beforeEnteringPlayMode != null)
-						beforeEnteringPlayMode.Invoke ();
+					if (BeforeEnteringPlayMode != null)
+						BeforeEnteringPlayMode.Invoke ();
 				}
 			}
 			else
@@ -91,15 +90,15 @@ namespace NodeEditorFramework
 				if (serializationTest) 
 				{ // Before Leaving Playmode
 					//Debug.Log ("SAVE PLAY MODE Values before Edit Mode!!");
-					if (beforeLeavingPlayMode != null)
-						beforeLeavingPlayMode.Invoke ();
+					if (BeforeLeavingPlayMode != null)
+						BeforeLeavingPlayMode.Invoke ();
 					playmodeSwitchToEdit = true;
 				}
 				else
 				{ // After Entering Playmode
 					//Debug.Log ("LOAD EDIT MODE Values in Play Mode!!");
-					if (justEnteredPlayMode != null)
-						justEnteredPlayMode.Invoke ();
+					if (JustEnteredPlayMode != null)
+						JustEnteredPlayMode.Invoke ();
 					toggleLateEnteredPlaymode = true;
 				}
 

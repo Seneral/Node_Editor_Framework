@@ -1,24 +1,23 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
-using NodeEditorFramework;
 
 namespace NodeEditorFramework
 {
 	public class Transition : ScriptableObject
 	{
-		public Node startNode;
-		public Node endNode;
+		public Node StartNode;
+		public Node EndNode;
 
-		public List<Func<Transition, bool>> conditions;
+		public List<Func<Transition, bool>> Conditions;
 
-		public float transitionTime;
+		public float TransitionTime;
 
-		public bool conditionsMet () 
+		public bool ConditionsMet () 
 		{
-			for (int condCnt = 0; condCnt < conditions.Count; condCnt++) 
+			for (var condCnt = 0; condCnt < Conditions.Count; condCnt++) 
 			{
-				if (!conditions[condCnt].Invoke (this))
+				if (!Conditions[condCnt].Invoke (this))
 					return false;
 			}
 			return true;
@@ -29,23 +28,23 @@ namespace NodeEditorFramework
 			if (fromNode.AcceptsTranstitions == false || toNode.AcceptsTranstitions == false || fromNode == toNode)
 				return null;
 
-			Transition transition = CreateInstance<Transition> ();
+			var transition = CreateInstance<Transition> ();
 			transition.name = "Transition " + fromNode.name + "-" + toNode.name;
-			transition.startNode = fromNode;
-			transition.endNode = toNode;
-			transition.conditions = new List<Func<Transition, bool>> ();
+			transition.StartNode = fromNode;
+			transition.EndNode = toNode;
+			transition.Conditions = new List<Func<Transition, bool>> ();
 
-			fromNode.transitions.Add (transition);
-			toNode.transitions.Add (transition);
+			fromNode.Transitions.Add (transition);
+			toNode.Transitions.Add (transition);
 
 			return transition;
 		}
 
 		public void Delete () 
 		{
-			startNode.transitions.Remove (this);
-			endNode.transitions.Remove (this);
-			UnityEngine.Object.DestroyImmediate (this);
+			StartNode.Transitions.Remove (this);
+			EndNode.Transitions.Remove (this);
+			DestroyImmediate (this);
 		}
 	}
 }

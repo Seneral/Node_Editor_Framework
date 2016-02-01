@@ -3,7 +3,6 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
-using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
@@ -15,22 +14,22 @@ namespace NodeEditorFramework
 		private static Type NullType { get { return typeof(ConnectionTypes); } }
 		
 		// Static consistent information about types
-		internal static Dictionary<string, TypeData> types = new Dictionary<string, TypeData> ();
+		internal static Dictionary<string, TypeData> Types = new Dictionary<string, TypeData> ();
 
 		/// <summary>
 		/// Gets the type data for the specified type name, if declared
 		/// </summary>
 		public static TypeData GetTypeData (string typeName)
 		{
-			if (types == null || types.Count == 0)
+			if (Types == null || Types.Count == 0)
 				NodeEditor.ReInit (false);
 			TypeData typeData;
-			if (!types.TryGetValue (typeName, out typeData))
+			if (!Types.TryGetValue (typeName, out typeData))
 			{
 				Debug.LogError ("No TypeData defined for: " + typeName);
-				typeData = types.First ().Value;
+				typeData = Types.First ().Value;
 			}
-			if (typeData.declaration == null || typeData.InputKnob == null || typeData.OutputKnob == null)
+			if (typeData.Declaration == null || typeData.InputKnob == null || typeData.OutputKnob == null)
 			{
 				NodeEditor.ReInit (false);
 				typeData = GetTypeData (typeName);
@@ -51,9 +50,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		internal static void FetchTypes () 
 		{
-			types = new Dictionary<string, TypeData> ();
+			Types = new Dictionary<string, TypeData> ();
 
-			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where ((Assembly assembly) => assembly.FullName.Contains ("Assembly")).ToList ();
+			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where (assembly => assembly.FullName.Contains ("Assembly")).ToList ();
 			if (!scriptAssemblies.Contains (Assembly.GetExecutingAssembly ()))
 				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
 			foreach (Assembly assembly in scriptAssemblies) 
@@ -63,7 +62,7 @@ namespace NodeEditorFramework
 					ITypeDeclaration typeDecl = assembly.CreateInstance (type.FullName) as ITypeDeclaration;
 					if (typeDecl == null)
 						throw new UnityException ("Error with Type Declaration " + type.FullName);
-					types.Add (typeDecl.name, new TypeData (typeDecl));
+					Types.Add (typeDecl.Name, new TypeData (typeDecl));
 				}
 			}
 		}
@@ -71,39 +70,39 @@ namespace NodeEditorFramework
 
 	public struct TypeData 
 	{
-		public ITypeDeclaration declaration;
+		public ITypeDeclaration Declaration;
 		public Type Type;
-		public Color col;
+		public Color Col;
 		public Texture2D InputKnob;
 		public Texture2D OutputKnob;
 		
 		public TypeData (ITypeDeclaration typeDecl) 
 		{
-			declaration = typeDecl;
-			Type = declaration.Type;
-			col = declaration.col;
+			Declaration = typeDecl;
+			Type = Declaration.Type;
+			Col = Declaration.Col;
 
-			InputKnob = ResourceManager.GetTintedTexture (declaration.InputKnob_TexPath, col);
-			OutputKnob = ResourceManager.GetTintedTexture (declaration.OutputKnob_TexPath, col);
+			InputKnob = ResourceManager.GetTintedTexture (Declaration.InputKnobTexPath, Col);
+			OutputKnob = ResourceManager.GetTintedTexture (Declaration.OutputKnobTexPath, Col);
 		}
 	}
 
 	public interface ITypeDeclaration
 	{
-		string name { get; }
-		Color col { get; }
-		string InputKnob_TexPath { get; }
-		string OutputKnob_TexPath { get; }
+		string Name { get; }
+		Color Col { get; }
+		string InputKnobTexPath { get; }
+		string OutputKnobTexPath { get; }
 		Type Type { get; }
 	}
 
 	// TODO: Node Editor: Built-In Connection Types
 	public class FloatType : ITypeDeclaration 
 	{
-		public string name { get { return "Float"; } }
-		public Color col { get { return Color.cyan; } }
-		public string InputKnob_TexPath { get { return "Textures/In_Knob.png"; } }
-		public string OutputKnob_TexPath { get { return "Textures/Out_Knob.png"; } }
+		public string Name { get { return "Float"; } }
+		public Color Col { get { return Color.cyan; } }
+		public string InputKnobTexPath { get { return "Textures/In_Knob.png"; } }
+		public string OutputKnobTexPath { get { return "Textures/Out_Knob.png"; } }
 		public Type Type { get { return typeof(float); } }
 	}
 

@@ -1,36 +1,35 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
-using NodeEditorFramework;
 
 namespace NodeEditorFramework 
 {
 	public class NodeEditorState : ScriptableObject 
 	{ // holds the state of a NodeCanvas inside a NodeEditor
-		public NodeCanvas canvas;
-		public NodeEditorState parentEditor;
+		public NodeCanvas Canvas;
+		public NodeEditorState ParentEditor;
 
 		// Canvas options
-		public bool drawing = true; // whether to draw the canvas
+		public bool Drawing = true; // whether to draw the canvas
 
 		// Selection State
-		public Node focusedNode; // Node under mouse
-		public Node selectedNode; // selected Node
+		public Node FocusedNode; // Node under mouse
+		public Node SelectedNode; // selected Node
 
 		// Current Action
-		public bool dragNode = false;
-		public Node makeTransition; // make transition from node
-		public NodeOutput connectOutput; // connection this output
+		public bool DragNode = false;
+		public Node MakeTransition; // make transition from node
+		public NodeOutput ConnectOutput; // connection this output
 
 		// Navigation State
-		public bool navigate = false; // navigation ('N')
-		public bool panWindow = false; // window panning
-		public Vector2 panOffset = new Vector2 (); // pan offset
-		public float zoom = 1; // zoom; Ranges in 0.2er-steps from 0.6-2.0; applied 1/zoom;
+		public bool Navigate = false; // navigation ('N')
+		public bool PanWindow = false; // window panning
+		public Vector2 PanOffset = new Vector2 (); // pan offset
+		public float Zoom = 1; // zoom; Ranges in 0.2er-steps from 0.6-2.0; applied 1/zoom;
 
 		// Temporary State variables
-		public Rect canvasRect; // canvas Rect
-		public Vector2 zoomPos { get { return canvasRect.size/2; } } // zoom center in canvas space
-		public Vector2 zoomPanAdjust; // calculated value to offset elements with when zooming
-		public List<Rect> ignoreInput = new List<Rect> (); // Rects inside the canvas to ignore input in (nested canvases, fE)
+		public Rect CanvasRect; // canvas Rect
+		public Vector2 ZoomPos { get { return CanvasRect.size/2; } } // zoom center in canvas space
+		public Vector2 ZoomPanAdjust; // calculated value to offset elements with when zooming
+		public List<Rect> IgnoreInput = new List<Rect> (); // Rects inside the canvas to ignore input in (nested canvases, fE)
 	}
 }
