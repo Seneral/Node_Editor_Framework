@@ -24,6 +24,7 @@ namespace NodeEditorFramework
 
 		private static bool unfocusControls;
 		public static Vector2 mousePos;
+		public static Vector2 contextMenuPos;
 
 		public static Action ClientRepaints;
 		public static void RepaintClients () 
@@ -418,6 +419,7 @@ namespace NodeEditorFramework
 					}
 					else if (e.button == 1) 
 					{ // Right click -> Editor Context Click
+						contextMenuPos = e.mousePosition;   //Position of created GenericMenu
 						if (curEditorState.connectOutput != null || curEditorState.makeTransition != null) 
 						{
 							GenericMenu menu = new GenericMenu ();
@@ -612,7 +614,7 @@ namespace NodeEditorFramework
 				break;
 
 			default:
-				Vector2 createPos = ScreenToGUIPos (mousePos);
+				Vector2 createPos = ScreenToGUIPos(contextMenuPos);
 
 				Node node = NodeTypes.getDefaultNode (callback.message);
 				if (node == null)
