@@ -518,7 +518,7 @@ namespace NodeEditorFramework
 				return false;
 			if (input.body == output.body || input.connection == output)
 				return false;
-			if (input.type != output.type)
+			if (input.typeData.Type != output.typeData.Type)
 				return false;
 
 			bool isRecursive = output.body.isChildOf (input.body);
