@@ -4,6 +4,8 @@ using System.Globalization;
 using System.Linq;
 using System.Collections.Generic;
 
+using Object = UnityEngine.Object;
+
 namespace NodeEditorFramework.Utilities 
 {
 	public static class RTEditorGUI 
@@ -24,6 +26,60 @@ namespace NodeEditorFramework.Utilities
 			return text;
 		}
 
+		#region Slider Extended
+
+		/// <summary>
+		/// A slider that emulates the EditorGUILayout version. 
+		/// HorizontalSlider with an additional float field thereafter.
+		/// </summary>
+		public static float Slider (float value, float minValue, float maxValue, params GUILayoutOption[] sliderOptions) 
+		{
+		#if UNITY_EDITOR
+			if (!Application.isPlaying)
+				return UnityEditor.EditorGUILayout.Slider (value, minValue, maxValue, sliderOptions);
+		#endif
+			return Slider (GUIContent.none, value, minValue, maxValue, sliderOptions);
+		}
+
+		/// <summary>
+		/// A slider that emulates the EditorGUILayout version. 
+		/// HorizontalSlider with a label prefixed and an additional float field thereafter if desired.
+		/// </summary>
+		public static float Slider (GUIContent label, float value, float minValue, float maxValue, params GUILayoutOption[] sliderOptions) 
+		{
+		#if UNITY_EDITOR
+			if (!Application.isPlaying)
+				return UnityEditor.EditorGUILayout.Slider (label, value, minValue, maxValue, sliderOptions);
+		#endif
+			GUILayout.BeginHorizontal ();
+			if (label != GUIContent.none)
+				GUILayout.Label (label, GUILayout.ExpandWidth (true));
+			value = GUILayout.HorizontalSlider (value, minValue, maxValue, sliderOptions);
+			value = Mathf.Min (maxValue, Mathf.Max (minValue, FloatField (value)));
+			GUILayout.EndHorizontal ();
+			return value;
+		}
+
+		/// <summary>
+		/// An integer slider that emulates the EditorGUILayout version. 
+		/// HorizontalSlider with a label prefixed and an additional int field thereafter if desired.
+		/// </summary>
+		public static int IntSlider (GUIContent label, int value, int minValue, int maxValue, params GUILayoutOption[] sliderOptions) 
+		{
+			return (int)Slider (label, value, minValue, maxValue, sliderOptions);
+		}
+
+		/// <summary>
+		/// An integer slider that emulates the EditorGUILayout version. 
+		/// HorizontalSlider with a label prefixed and an additional int field thereafter if desired.
+		/// </summary>
+		public static int IntSlider (int value, int minValue, int maxValue, params GUILayoutOption[] sliderOptions) 
+		{
+			return (int)Slider (GUIContent.none, value, minValue, maxValue, sliderOptions);
+		}
+
+		#endregion
+
 		#region FloatField
 
 		private static int activeFloatField = -1;
@@ -33,15 +89,12 @@ namespace NodeEditorFramework.Utilities
 		/// <summary>
 		/// Float Field for ingame purposes. Behaves exactly like UnityEditor.EditorGUILayout.FloatField, besides the label slide field
 		/// </summary>
-		public static float FloatField (GUIContent label, float value)
+		public static float FloatField (GUIContent label, float value, params GUILayoutOption[] fieldOptions)
 		{
-		#if UNITY_EDITOR
-			if (!Application.isPlaying)
-				return UnityEditor.EditorGUILayout.FloatField (label, value);
-		#endif
 			GUILayout.BeginHorizontal ();
-			GUILayout.Label (label, label != GUIContent.none? GUILayout.ExpandWidth (true) : GUILayout.ExpandWidth (false));
-			value = FloatField (value);
+			if (label != GUIContent.none)
+				GUILayout.Label (label, GUILayout.ExpandWidth (true));
+			value = FloatField (value, fieldOptions);
 			GUILayout.EndHorizontal ();
 			return value;
 		}
@@ -49,36 +102,33 @@ namespace NodeEditorFramework.Utilities
 		/// <summary>
 		/// Float Field for ingame purposes. Behaves exactly like UnityEditor.EditorGUILayout.FloatField
 		/// </summary>
-		public static float FloatField (float value)
+		public static float FloatField (float value, params GUILayoutOption[] fieldOptions)
 		{
-		#if UNITY_EDITOR
-			if (!Application.isPlaying)
-				return UnityEditor.EditorGUILayout.FloatField (value);
-		#endif
-
 			// Get rect and control for this float field for identification
-			Rect pos = GUILayoutUtility.GetRect (new GUIContent (value.ToString ()), GUI.skin.label, new GUILayoutOption[] { GUILayout.ExpandWidth (false), GUILayout.MinWidth (40) });
-			
+			if (fieldOptions.Length == 0)
+				fieldOptions = new GUILayoutOption[] { GUILayout.ExpandWidth (false), GUILayout.MinWidth (50) };
+			Rect pos = GUILayoutUtility.GetRect (new GUIContent (value.ToString ()), GUI.skin.label, fieldOptions);
+
 			int floatFieldID = GUIUtility.GetControlID ("FloatField".GetHashCode (), FocusType.Keyboard, pos) + 1;
 			if (floatFieldID == 0)
 				return value;
-			
+
 			bool recorded = activeFloatField == floatFieldID;
 			bool active = floatFieldID == GUIUtility.keyboardControl;
-			
+
 			if (active && recorded && activeFloatFieldLastValue != value)
 			{ // Value has been modified externally
 				activeFloatFieldLastValue = value;
 				activeFloatFieldString = value.ToString ();
 			}
-			
+
 			// Get stored string for the text field if this one is recorded
 			string str = recorded? activeFloatFieldString : value.ToString ();
-			
+
 			string strValue = GUI.TextField (pos, str);
 			if (recorded)
 				activeFloatFieldString = strValue;
-			
+
 			// Try Parse if value got changed. If the string could not be parsed, ignore it and keep last value
 			bool parsed = true;
 			if (strValue == "")
@@ -90,7 +140,7 @@ namespace NodeEditorFramework.Utilities
 				if (parsed)
 					value = activeFloatFieldLastValue = newValue;
 			}
-			
+
 			if (active && !recorded)
 			{ // Gained focus this frame
 				activeFloatField = floatFieldID;
@@ -103,10 +153,10 @@ namespace NodeEditorFramework.Utilities
 				if (!parsed)
 					value = strValue.ForceParse ();
 			}
-			
+
 			return value;
 		}
-		
+
 		/// <summary>
 		/// Forces to parse to float by cleaning string if necessary
 		/// </summary>
@@ -116,7 +166,7 @@ namespace NodeEditorFramework.Utilities
 			float value;
 			if (float.TryParse (str, out value))
 				return value;
-			
+
 			// Clean string if it could not be parsed
 			bool recordedDecimalPoint = false;
 			List<char> strVal = new List<char> (str);
@@ -138,7 +188,7 @@ namespace NodeEditorFramework.Utilities
 					recordedDecimalPoint = true;
 				}
 			}
-			
+
 			// Parse again
 			if (strVal.Count == 0)
 				return 0;
@@ -155,27 +205,25 @@ namespace NodeEditorFramework.Utilities
 		/// <summary>
 		/// Provides an object field both for editor (using default) and for runtime (not yet implemented other that displaying object)
 		/// </summary>
-		public static T ObjectField<T> (T obj, bool allowSceneObjects) where T : UnityEngine.Object
+		public static T ObjectField<T> (T obj, bool allowSceneObjects) where T : Object
 		{
-		#if UNITY_EDITOR
-			if (!Application.isPlaying)
-				return UnityEditor.EditorGUILayout.ObjectField (obj, typeof (T), allowSceneObjects) as T;
-		#endif	
 			return ObjectField<T> (GUIContent.none, obj, allowSceneObjects);
 		}
 
 		/// <summary>
 		/// Provides an object field both for editor (using default) and for runtime (not yet implemented other that displaying object)
 		/// </summary>
-		public static T ObjectField<T> (GUIContent label, T obj, bool allowSceneObjects) where T : UnityEngine.Object
+		public static T ObjectField<T> (GUIContent label, T obj, bool allowSceneObjects) where T : Object
 		{
-		#if UNITY_EDITOR
+			#if UNITY_EDITOR
 			if (!Application.isPlaying)
-				return UnityEditor.EditorGUILayout.ObjectField (label, obj, typeof (T), allowSceneObjects) as T;
-		#endif
-			throw new NotImplementedException ();
+				return UnityEditor.EditorGUILayout.ObjectField (GUIContent.none, obj, typeof (T), allowSceneObjects) as T;
+			#endif	
+			throw new System.NotImplementedException ();
+//		if (Application.isPlaying)
+//		{
 //			bool open = false;
-//			if ((obj as Texture2D) != null) 
+//			if (typeof(T).Name == "UnityEngine.Texture2D") 
 //			{
 //				label.image = obj as Texture2D;
 //				GUIStyle style = new GUIStyle (GUI.skin.box);
@@ -191,7 +239,79 @@ namespace NodeEditorFramework.Utilities
 //			{
 //				Debug.Log ("Selecting Object!");
 //			}
-//			return obj;
+//		}
+//		return obj;
+		}
+
+		#endregion
+
+		#region Popups
+
+		// TODO: Implement RT Popup
+
+		public static System.Enum EnumPopup (GUIContent label, System.Enum selected) 
+		{
+			#if UNITY_EDITOR
+			selected = UnityEditor.EditorGUILayout.EnumPopup (label, selected);
+			#else
+			label.text += ": " + selected.ToString ();
+			GUILayout.Label (label);
+			#endif
+			return selected;
+		}
+
+		public static System.Enum EnumPopup (string label, System.Enum selected) 
+		{
+			#if UNITY_EDITOR
+			selected = UnityEditor.EditorGUILayout.EnumPopup (label, selected);
+			#else
+			GUILayout.Label (label + ": " + selected.ToString ());
+			#endif
+			return selected;
+		}
+
+		public static System.Enum EnumPopup (System.Enum selected) 
+		{
+			#if UNITY_EDITOR
+			selected = UnityEditor.EditorGUILayout.EnumPopup (selected);
+			#else
+			GUILayout.Label (selected.ToString ());
+			#endif
+			return selected;
+		}
+
+		public static int Popup (GUIContent label, int selected, string[] displayedOptions) 
+		{
+			GUILayout.BeginHorizontal ();
+			#if UNITY_EDITOR
+			GUILayout.Label (label);
+			selected = UnityEditor.EditorGUILayout.Popup (selected, displayedOptions);
+			#else
+			label.text += ": " + selected.ToString ();
+			GUILayout.Label (label);
+			#endif
+			GUILayout.EndHorizontal ();
+			return selected;
+		}
+
+		public static int Popup (string label, int selected, string[] displayedOptions) 
+		{
+			#if UNITY_EDITOR
+			selected = UnityEditor.EditorGUILayout.Popup (label, selected, displayedOptions);
+			#else
+			GUILayout.Label (label + ": " + selected.ToString ());
+			#endif
+			return selected;
+		}
+
+		public static int Popup (int selected, string[] displayedOptions) 
+		{
+			#if UNITY_EDITOR
+			selected = UnityEditor.EditorGUILayout.Popup (selected, displayedOptions);
+			#else
+			GUILayout.Label (selected.ToString ());
+			#endif
+			return selected;
 		}
 
 		#endregion
@@ -438,32 +558,26 @@ namespace NodeEditorFramework.Utilities
 		}
 		
 		/// <summary>
-		/// Rotates the texture Anti-Clockwise, 'NintyDegrSteps' specifying the times
+		/// Rotates the texture Counter-Clockwise, 'NintyDegrSteps' specifying the times
 		/// </summary>
-		public static Texture2D RotateTextureAntiCW (Texture2D tex, int NintyDegrSteps) 
+		public static Texture2D RotateTextureCCW (Texture2D tex, int quarterSteps) 
 		{
 			if (tex == null)
 				return null;
+			// Copy and setup working arrays
 			tex = UnityEngine.Object.Instantiate (tex);
 			int width = tex.width, height = tex.height;
 			Color[] col = tex.GetPixels ();
 			Color[] rotatedCol = new Color[width*height];
-			for (int itCnt = 0; itCnt < NintyDegrSteps; itCnt++) 
-			{
-				for (int x = 0; x < width; x++) 
-				{
-					for (int y = 0; y < height; y++) 
-					{
+			for (int itCnt = 0; itCnt < quarterSteps; itCnt++) 
+			{ // For each iteration, perform rotation of 90 degrees
+				for (int x = 0; x < width; x++)
+					for (int y = 0; y < height; y++)
 						rotatedCol[x*width + y] = col[(width-y-1) * width + x];
-					}
-				}
-				if (itCnt < NintyDegrSteps-1)
-				{
-					col = rotatedCol;
-					rotatedCol = new Color[width*height];
-				}
+				rotatedCol.CopyTo (col, 0); // Push rotation for next iteration
 			}
-			tex.SetPixels (rotatedCol);
+			// Apply rotated working arrays
+			tex.SetPixels (col);
 			tex.Apply ();
 			return tex;
 		}

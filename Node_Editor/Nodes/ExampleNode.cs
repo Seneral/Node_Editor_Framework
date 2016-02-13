@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using NodeEditorFramework;
+using NodeEditorFramework.Utilities;
 
 [Node (true, "Example Node")]
 public class ExampleNode : Node 
@@ -20,7 +21,7 @@ public class ExampleNode : Node
 		return node;
 	}
 	
-	public override void NodeGUI () 
+	protected internal override void NodeGUI () 
 	{
 		GUILayout.Label ("This is a custom Node!");
 

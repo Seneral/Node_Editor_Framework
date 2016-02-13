@@ -1,23 +1,28 @@
 ﻿using UnityEngine;
-using System;
 using System.Collections.Generic;
-using NodeEditorFramework;
 
 namespace NodeEditorFramework 
 {
+	/// <summary>
+	/// Node output accepts multiple connections to NodeInputs by default
+	/// </summary>
 	public class NodeOutput : NodeKnob
 	{
+		// NodeKnob Members
 		protected override NodeSide defaultSide { get { return NodeSide.Right; } }
 		private static GUIStyle _defaultStyle;
 		protected override GUIStyle defaultLabelStyle { get { if (_defaultStyle == null) { _defaultStyle = new GUIStyle (GUI.skin.label); _defaultStyle.alignment = TextAnchor.MiddleRight; } return _defaultStyle; } }
 
+		// NodeInput Members
 		public List<NodeInput> connections = new List<NodeInput> ();
-		
-		// Value
-		[NonSerialized]
+		public string type;
+		[System.NonSerialized]
+		internal TypeData typeData;
+		[System.NonSerialized]
 		private object value = null;
-		private Type valueType;
-		
+
+		#region Contructors
+
 		/// <summary>
 		/// Creates a new NodeOutput in NodeBody of specified type
 		/// </summary>
@@ -40,61 +45,73 @@ namespace NodeEditorFramework
 		public static NodeOutput Create (Node nodeBody, string outputName, string outputType, NodeSide nodeSide, float sidePosition) 
 		{
 			NodeOutput output = CreateInstance <NodeOutput> ();
-			output.body = nodeBody;
-			output.name = outputName;
 			output.type = outputType;
-			output.side = nodeSide;
-			output.sidePosition = sidePosition;
-			output.ReloadKnobTexture ();
+			output.InitBase (nodeBody, nodeSide, sidePosition, outputName);
 			nodeBody.Outputs.Add (output);
 			return output;
 		}
 
-		protected override void ReloadType () 
+		#endregion
+
+		#region Additional Serialization
+
+		protected internal override void CopyScriptableObjects (System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) 
 		{
-			if (typeData.declaration == null)
-				typeData = ConnectionTypes.GetTypeData (type);
-			texturePath = typeData.declaration.OutputKnob_TexPath;
+			for (int conCnt = 0; conCnt < connections.Count; conCnt++) 
+				connections[conCnt] = replaceSerializableObject.Invoke (connections[conCnt]) as NodeInput;
+		}
+
+		#endregion
+
+		#region KnobType
+
+		protected override void ReloadTexture () 
+		{
+			CheckType ();
 			knobTexture = typeData.OutputKnob;
 		}
+
+		private void CheckType () 
+		{
+			if (typeData.declaration == null || typeData.Type == null) 
+				typeData = ConnectionTypes.GetTypeData (type);
+		}
+
+		#endregion
 
 		#region Value
 		
 		public bool IsValueNull { get { return value == null; } }
 		
 		/// <summary>
-		/// Gets the output value.
+		/// Gets the output value if the type matches
 		/// </summary>
 		/// <returns>Value, if null default(T) (-> For reference types, null. For value types, default value)</returns>
 		public T GetValue<T> ()
 		{
-			if (valueType == null)
-				valueType = ConnectionTypes.GetType (type);
-			if (valueType == typeof(T)) 
-			{
-				if (value == null)
-					value = getDefault<T> ();
-				return (T)value;
-			}
-			Debug.LogError ("Trying to GetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
-			return getDefault<T> ();
+			if (typeData.Type == null)
+				CheckType ();
+			if (typeData.Type == typeof(T))
+				return (T)(value?? (value = GetDefault<T> ()));
+			Debug.LogError ("Trying to GetValue<" + typeof(T).FullName + "> for Output Type: " + typeData.Type.FullName);
+			return GetDefault<T> ();
 		}
 		
 		/// <summary>
-		/// Sets the value.
+		/// Sets the output value if the type matches
 		/// </summary>
 		public void SetValue<T> (T Value)
 		{
-			if (valueType == null)
-				valueType = ConnectionTypes.GetType(type);
-			if (valueType == typeof(T))
+			if (typeData.Type == null)
+				CheckType ();
+			if (typeData.Type == typeof(T))
 				value = Value;
 			else
-				Debug.LogError ("Trying to SetValue<" + typeof(T).FullName + "> for Output Type: " + valueType.FullName);
+				Debug.LogError ("Trying to SetValue<" + typeof(T).FullName + "> for Output Type: " + typeData.Type.FullName);
 		}
 		
 		/// <summary>
-		/// Resets the value to null.
+		/// Resets the output value to null.
 		/// </summary>
 		public void ResetValue () 
 		{
@@ -102,12 +119,12 @@ namespace NodeEditorFramework
 		}
 		
 		/// <summary>
-		/// Returns for value types the default value; for reference types, the default constructor if existant, else null
+		/// For value types, the default value; for reference types, the default constructor if existant, else null
 		/// </summary>
-		public static T getDefault<T> ()
+		public static T GetDefault<T> ()
 		{
-			if (typeof(T).GetConstructor (Type.EmptyTypes) != null) // Try to create using an empty constructor if existant
-				return Activator.CreateInstance<T> ();
+			if (typeof(T).GetConstructor (System.Type.EmptyTypes) != null) // Try to create using an empty constructor if existant
+				return System.Activator.CreateInstance<T> ();
 			else // Else try to get default. Returns null only on reference types
 				return default(T);
 		}

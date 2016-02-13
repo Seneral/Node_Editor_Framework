@@ -3,19 +3,30 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
-using NodeEditorFramework;
+
 using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
 {
 	public enum ConnectionDrawMethod { Bezier, StraightLine }
 
+	/// <summary>
+	/// Handles fetching and storing of all ConnecionTypes
+	/// </summary>
 	public static class ConnectionTypes
 	{
 		private static Type NullType { get { return typeof(ConnectionTypes); } }
 		
 		// Static consistent information about types
-		internal static Dictionary<string, TypeData> types = new Dictionary<string, TypeData> ();
+		private static Dictionary<string, TypeData> types;
+
+		/// <summary>
+		/// Gets the Type the specified type name representates, if declared
+		/// </summary>
+		public static Type GetType (string typeName)
+		{
+			return GetTypeData (typeName).Type ?? NullType;
+		}
 
 		/// <summary>
 		/// Gets the type data for the specified type name, if declared
@@ -37,17 +48,9 @@ namespace NodeEditorFramework
 			}
 			return typeData;
 		}
-
-		/// <summary>
-		/// Gets the Type the specified type name representates, if declared
-		/// </summary>
-		public static Type GetType (string typeName)
-		{
-			return GetTypeData (typeName).Type ?? NullType;
-		}
 		
 		/// <summary>
-		/// Fetches every Type Declaration in the script assembly and the executing one, if the NodeEditor is packed into a .dll
+		/// Fetches every Type Declaration in the script assemblies and the executing one, if the NodeEditor is packed into a .dll
 		/// </summary>
 		internal static void FetchTypes () 
 		{

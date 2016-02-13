@@ -1,25 +1,30 @@
 ﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
+
 using NodeEditorFramework;
 
 namespace NodeEditorFramework 
 {
 	public abstract class NodeEditorCallbackReceiver : MonoBehaviour
 	{
+		// Editor
 		public virtual void OnEditorStartUp () {}
-
+		// Save and Load
 		public virtual void OnLoadCanvas (NodeCanvas canvas) {}
 		public virtual void OnLoadEditorState (NodeEditorState editorState) {}
 		public virtual void OnSaveCanvas (NodeCanvas canvas) {}
 		public virtual void OnSaveEditorState (NodeEditorState editorState) {}
-		
+		// Node
 		public virtual void OnAddNode (Node node) {}
 		public virtual void OnDeleteNode (Node node) {}
 		public virtual void OnMoveNode (Node node) {}
-		
+		// Connection
 		public virtual void OnAddConnection (NodeInput input) {}
 		public virtual void OnRemoveConnection (NodeInput input) {}
+		// Transition
+		public virtual void OnAddTransition (Transition transition) {}
+		public virtual void OnRemoveTransition (Transition transition) {}
 	}
 
 	public static class NodeEditorCallbacks
@@ -33,7 +38,8 @@ namespace NodeEditorFramework
 			receiverCount = callbackReceiver.Count;
 		}
 
-		// EDITOR
+		#region Editor (1)
+
 		public static Action OnEditorStartUp = null;
 		public static void IssueOnEditorStartUp () 
 		{
@@ -48,7 +54,10 @@ namespace NodeEditorFramework
 			}
 		}
 
-		// CANVAS
+		#endregion
+
+		#region Save and Load (4)
+
 		public static Action<NodeCanvas> OnLoadCanvas;
 		public static void IssueOnLoadCanvas (NodeCanvas canvas) 
 		{
@@ -62,6 +71,7 @@ namespace NodeEditorFramework
 					callbackReceiver [cnt].OnLoadCanvas (canvas) ;
 			}
 		}
+
 		public static Action<NodeEditorState> OnLoadEditorState;
 		public static void IssueOnLoadEditorState (NodeEditorState editorState) 
 		{
@@ -75,6 +85,7 @@ namespace NodeEditorFramework
 					callbackReceiver [cnt].OnLoadEditorState (editorState) ;
 			}
 		}
+
 		public static Action<NodeCanvas> OnSaveCanvas;
 		public static void IssueOnSaveCanvas (NodeCanvas canvas) 
 		{
@@ -88,6 +99,7 @@ namespace NodeEditorFramework
 					callbackReceiver [cnt].OnSaveCanvas (canvas) ;
 			}
 		}
+
 		public static Action<NodeEditorState> OnSaveEditorState;
 		public static void IssueOnSaveEditorState (NodeEditorState editorState) 
 		{
@@ -102,7 +114,10 @@ namespace NodeEditorFramework
 			}
 		}
 
-		// NODE
+		#endregion
+
+		#region Node (3)
+
 		public static Action<Node> OnAddNode;
 		public static void IssueOnAddNode (Node node) 
 		{
@@ -116,6 +131,7 @@ namespace NodeEditorFramework
 					callbackReceiver [cnt].OnAddNode (node);
 			}
 		}
+
 		public static Action<Node> OnDeleteNode;
 		public static void IssueOnDeleteNode (Node node) 
 		{
@@ -132,6 +148,7 @@ namespace NodeEditorFramework
 				}
 			}
 		}
+
 		public static Action<Node> OnMoveNode;
 		public static void IssueOnMoveNode (Node node) 
 		{
@@ -146,7 +163,10 @@ namespace NodeEditorFramework
 			}
 		}
 
-		// CONNECTION
+		#endregion
+
+		#region Connection (2)
+
 		public static Action<NodeInput> OnAddConnection;
 		public static void IssueOnAddConnection (NodeInput input) 
 		{
@@ -160,6 +180,7 @@ namespace NodeEditorFramework
 					callbackReceiver [cnt].OnAddConnection (input);
 			}
 		}
+
 		public static Action<NodeInput> OnRemoveConnection;
 		public static void IssueOnRemoveConnection (NodeInput input) 
 		{
@@ -173,5 +194,39 @@ namespace NodeEditorFramework
 					callbackReceiver [cnt].OnRemoveConnection (input);
 			}
 		}
+
+		#endregion
+
+		#region Transition (2)
+
+		public static Action<Transition> OnAddTransition;
+		public static void IssueOnAddTransition (Transition transition) 
+		{
+			if (OnAddTransition != null)
+				OnAddTransition.Invoke (transition);
+			for (int cnt = 0; cnt < receiverCount; cnt++) 
+			{
+				if (callbackReceiver [cnt] == null)
+					callbackReceiver.RemoveAt (cnt--);
+				else
+					callbackReceiver [cnt].OnAddTransition (transition);
+			}
+		}
+
+		public static Action<Transition> OnRemoveTransition;
+		public static void IssueOnRemoveTransition (Transition transition) 
+		{
+			if (OnRemoveTransition != null)
+				OnRemoveTransition.Invoke ( transition);
+			for (int cnt = 0; cnt < receiverCount; cnt++) 
+			{
+				if (callbackReceiver [cnt] == null)
+					callbackReceiver.RemoveAt (cnt--);
+				else
+					callbackReceiver [cnt].OnRemoveTransition ( transition);
+			}
+		}
+
+		#endregion
 	}
 }

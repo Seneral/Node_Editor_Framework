@@ -24,7 +24,7 @@ public class InputNode : Node
 		return node;
 	}
 
-	public override void NodeGUI () 
+	protected internal override void NodeGUI () 
 	{
 		value = RTEditorGUI.FloatField (new GUIContent ("Value", "The input value of type float"), value);
 		OutputKnob (0);

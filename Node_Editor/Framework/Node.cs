@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System;
+using System.Linq;
 using System.Collections.Generic;
+
 using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
@@ -10,9 +12,15 @@ namespace NodeEditorFramework
 	{
 		public Rect rect = new Rect ();
 		internal Vector2 contentOffset = Vector2.zero;
+		[SerializeField]
+		public List<NodeKnob> nodeKnobs = new List<NodeKnob> ();
 
 		// Calculation graph
+//		[NonSerialized]
+		[SerializeField, HideInInspector]
 		public List<NodeInput> Inputs = new List<NodeInput>();
+//		[NonSerialized]
+		[SerializeField, HideInInspector]
 		public List<NodeOutput> Outputs = new List<NodeOutput>();
 		[HideInInspector]
 		[NonSerialized]
@@ -22,59 +30,6 @@ namespace NodeEditorFramework
 		public List<Transition> transitions = new List<Transition> ();
 
 		#region General
-
-		/// <summary>
-		/// Get the ID of the Node
-		/// </summary>
-		public abstract string GetID { get; }
-
-		/// <summary>
-		/// Should we allow recursion? Recursion is allowed if atleast a single Node in the loop allows for recursion
-		/// </summary>
-		public virtual bool AllowRecursion { get { return false; } }
-		/// <summary>
-		/// After the Calculate function is called on this node, should the Nodes afterwards be calculated?
-		/// </summary>
-		public virtual bool ContinueCalculation { get { return true; } }
-		/// <summary>
-		/// Does this Node accepts Transitions?
-		/// </summary>
-		public virtual bool AcceptsTranstitions { get { return false; } }
-
-		/// <summary>
-		/// Function implemented by the children to create the node
-		/// </summary>
-		/// <param name="pos">Position.</param>
-		public abstract Node Create (Vector2 pos);
-		
-		/// <summary>
-		/// Function implemented by the children to draw the node
-		/// </summary>
-		public abstract void NodeGUI ();
-		
-		/// <summary>
-		/// Function implemented by the children to calculate their outputs
-		/// Should return Success/Fail
-		/// </summary>
-		public abstract bool Calculate ();
-		
-		/// <summary>
-		/// Optional callback when the node is deleted
-		/// </summary>
-		protected internal virtual void OnDelete () {}
-		/// <summary>
-		/// Optional callback when the NodeInput input was assigned a new connection
-		/// </summary>
-		protected internal virtual void OnAddInputConnection (NodeInput input) {}
-		/// <summary>
-		/// Optional callback when the NodeOutput output was assigned a new connection (the last in the list)
-		/// </summary>
-		protected internal virtual void OnAddOutputConnection (NodeOutput output) {}
-		/// <summary>
-		/// Optional callback when the transition was created
-		/// </summary>
-		protected internal virtual void OnAddTransition (Transition transition) {}
-
 
 		/// <summary>
 		/// Init the Node Base after the Node has been created. This includes adding to canvas, and to calculate for the first time
@@ -91,18 +46,19 @@ namespace NodeEditorFramework
 		}
 
 		/// <summary>
-		/// Deletes this Node from curNodeCanvas
+		/// Deletes this Node from curNodeCanvas and the save file
 		/// </summary>
 		public void Delete () 
 		{
 			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
 				throw new UnityException ("The Node " + name + " does not exist on the Canvas " + NodeEditor.curNodeCanvas.name + "!");
+			NodeEditorCallbacks.IssueOnDeleteNode (this);
 			NodeEditor.curNodeCanvas.nodes.Remove (this);
 			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 			{
 				NodeOutput output = Outputs [outCnt];
 				while (output.connections.Count != 0)
-					RemoveConnection (output.connections[0]);
+					output.connections[0].RemoveConnection ();
 				DestroyImmediate (output, true);
 			}
 			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
@@ -112,63 +68,194 @@ namespace NodeEditorFramework
 					input.connection.connections.Remove (input);
 				DestroyImmediate (input, true);
 			}
-			NodeEditorCallbacks.IssueOnDeleteNode (this);
+			for (int knobCnt = 0; knobCnt < nodeKnobs.Count; knobCnt++) 
+			{ // Inputs/Outputs need specific treatment, unfortunately
+				if (nodeKnobs[knobCnt] != null)
+					DestroyImmediate (nodeKnobs[knobCnt], true);
+			}
+			for (int transCnt = 0; transCnt < transitions.Count; transCnt++) 
+			{
+				transitions [transCnt].Delete ();
+			}
 			DestroyImmediate (this, true);
+		}
+
+		public static Node Create (string nodeID, Vector2 position) 
+		{
+			Node node = NodeTypes.getDefaultNode (nodeID);
+			if (node == null)
+				throw new UnityException ("Cannot create Node with id " + nodeID + " as no such Node type is registered!");
+
+			node = node.Create (position);
+			node.InitBase ();
+
+			NodeEditorCallbacks.IssueOnAddNode (node);
+			return node;
+		}
+
+		/// <summary>
+		/// Makes sure this Node has migrated from the previous save version of NodeKnobs to the current mixed and generic one
+		/// </summary>
+		internal void CheckNodeKnobMigration () 
+		{ // TODO: Migration from previous NodeKnob system; Remove later on
+			if (nodeKnobs.Count == 0 && (Inputs.Count != 0 || Outputs.Count != 0)) 
+			{
+				nodeKnobs.AddRange (Inputs.Cast<NodeKnob> ());
+				nodeKnobs.AddRange (Outputs.Cast<NodeKnob> ());
+			}
 		}
 
 		#endregion
 
-		#region Drawing
+		#region Node Type methods (abstract)
 
 		/// <summary>
-		/// Draws the node. Depends on curEditorState. Can be overridden by an node type.
+		/// Get the ID of the Node
+		/// </summary>
+		public abstract string GetID { get; }
+
+		/// <summary>
+		/// Create an instance of this Node at the given position
+		/// </summary>
+		public abstract Node Create (Vector2 pos);
+		
+		/// <summary>
+		/// Draw the Node immediately
+		/// </summary>
+		protected internal abstract void NodeGUI ();
+		
+		/// <summary>
+		/// Calculate the outputs of this Node
+		/// Return Success/Fail
+		/// Might be dependant on previous nodes
+		/// </summary>
+		public abstract bool Calculate ();
+
+		#endregion
+
+		#region Node Type Properties
+
+		/// <summary>
+		/// Does this node allow recursion? Recursion is allowed if atleast a single Node in the loop allows for recursion
+		/// </summary>
+		public virtual bool AllowRecursion { get { return false; } }
+
+		/// <summary>
+		/// Should the following Nodes be calculated after finishing the Calculation function of this node?
+		/// </summary>
+		public virtual bool ContinueCalculation { get { return true; } }
+
+		/// <summary>
+		/// Does this Node accepts Transitions?
+		/// </summary>
+		public virtual bool AcceptsTranstitions { get { return false; } }
+
+        #endregion
+
+		#region Protected Callbacks
+
+		/// <summary>
+		/// Callback when the node is deleted
+		/// </summary>
+		protected internal virtual void OnDelete () {}
+
+		/// <summary>
+		/// Callback when the NodeInput was assigned a new connection
+		/// </summary>
+		protected internal virtual void OnAddInputConnection (NodeInput input) {}
+
+		/// <summary>
+		/// Callback when the NodeOutput was assigned a new connection (the last in the list)
+		/// </summary>
+		protected internal virtual void OnAddOutputConnection (NodeOutput output) {}
+
+		/// <summary>
+		/// Callback when the Transition was created
+		/// </summary>
+		protected internal virtual void OnAddTransition (Transition transition) {}
+
+
+		/// <summary>
+		/// Callback when the this Node is being transitioned to. 
+		/// OriginTransition is the transition from which was transitioned to this node OR null if the transitioning process was started on this Node
+		/// </summary>
+		protected internal virtual void OnEnter (Transition originTransition) {}
+
+		/// <summary>
+		/// Callback when the this Node is transitioning to another Node through the passed Transition
+		/// </summary>
+		protected internal virtual void OnLeave (Transition transition) {}
+
+		#endregion
+
+		#region Additional Serialization
+
+		/// <summary>
+		/// Returns all additional ScriptableObjects this Node holds. 
+		/// That means only the actual SOURCES, simple REFERENCES will not be returned
+		/// This means all SciptableObjects returned here do not have it's source elsewhere
+		/// </summary>
+		protected internal virtual ScriptableObject[] GetScriptableObjects () { return new ScriptableObject[0]; }
+
+		/// <summary>
+		/// Replaces all REFERENCES aswell as SOURCES of any ScriptableObjects this Node holds with the cloned versions in the serialization process.
+		/// </summary>
+		protected internal virtual void CopyScriptableObjects (System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) {}
+
+		#endregion
+
+		#region Node and Knob Drawing
+
+		/// <summary>
+		/// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
 		/// </summary>
 		protected internal virtual void DrawNode () 
 		{
 			// TODO: Node Editor Feature: Custom Windowing System
+			// Create a rect that is adjusted to the editor zoom
 			Rect nodeRect = rect;
 			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust;
 			contentOffset = new Vector2 (0, 20);
 
+			// Mark the current transitioning node as such by outlining it
+			if (NodeEditor.curNodeCanvas.currentNode == this)
+				GUI.DrawTexture (new Rect (nodeRect.x-8, nodeRect.y-8, nodeRect.width+16, nodeRect.height+16), NodeEditorGUI.GUIBoxSelection);
+
+			// Create a headerRect out of the previous rect and draw it, marking the selected node as such by making the header bold
 			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, contentOffset.y);
 			GUI.Label (headerRect, name, NodeEditor.curEditorState.selectedNode == this? NodeEditorGUI.nodeBoxBold : NodeEditorGUI.nodeBox);
 
+			// Begin the body frame around the NodeGUI
 			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + contentOffset.y, nodeRect.width, nodeRect.height - contentOffset.y);
-			GUI.changed = false;
-
 			GUI.BeginGroup (bodyRect, GUI.skin.box);
 			bodyRect.position = Vector2.zero;
 			GUILayout.BeginArea (bodyRect, GUI.skin.box);
-
+			// Call NodeGUI
+			GUI.changed = false;
 			NodeGUI ();
-
+			// End NodeGUI frame
 			GUILayout.EndArea ();
 			GUI.EndGroup ();
 		}
 
 		/// <summary>
-		/// Draws the node knobs; splitted from curves because of the render order
+		/// Draws the nodeKnobs
 		/// </summary>
 		protected internal virtual void DrawKnobs () 
 		{
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-			{
-				NodeOutput output = Outputs[outCnt];
-				Rect knobRect = output.GetGUIKnob ();
-				GUI.DrawTexture (knobRect, output.knobTexture);
-			}
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-			{
-				NodeInput input = Inputs[inCnt];
-				Rect knobRect = input.GetGUIKnob ();
-				GUI.DrawTexture (knobRect, input.knobTexture);
-			}
+			CheckNodeKnobMigration ();
+			for (int knobCnt = 0; knobCnt < nodeKnobs.Count; knobCnt++) 
+				nodeKnobs[knobCnt].DrawKnob ();
 		}
+
 		/// <summary>
-		/// Draws the node curves; splitted from knobs because of the render order
+		/// Draws the node curves
 		/// </summary>
 		protected internal virtual void DrawConnections () 
 		{
+			CheckNodeKnobMigration ();
+			if (Event.current.type != EventType.Repaint)
+				return;
 			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 			{
 				NodeOutput output = Outputs [outCnt];
@@ -188,24 +275,14 @@ namespace NodeEditorFramework
 		}
 		
 		/// <summary>
-		/// Draws the node transitions.
+		/// Draws the node transitions starting from this node
 		/// </summary>
 		public void DrawTransitions () 
 		{
 			for (int cnt = 0; cnt < transitions.Count; cnt++)
 			{
-				Vector2 StartPoint = transitions[cnt].startNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
-				Vector2 EndPoint = transitions[cnt].endNode.rect.center + NodeEditor.curEditorState.zoomPanAdjust;
-				RTEditorGUI.DrawLine (StartPoint, EndPoint, Color.grey, null, 3);
-				
-				Rect selectRect = new Rect (0, 0, 20, 20);
-				selectRect.center = Vector2.Lerp (StartPoint, EndPoint, 0.5f);
-				
-				if (GUI.Button (selectRect, "#"))
-				{
-					// TODO: Select
-				}
-				
+				if (transitions[cnt].startNode == this)
+					transitions[cnt].DrawFromStartNode ();
 			}
 		}
 
@@ -510,60 +587,8 @@ namespace NodeEditorFramework
 		#region Static Connection Utility
 
 		/// <summary>
-		/// Check if an output and an input can be connected (same type, ...)
+		/// Creates a transition from node to node
 		/// </summary>
-		public static bool CanApplyConnection (NodeOutput output, NodeInput input)
-		{
-			if (input == null || output == null)
-				return false;
-			if (input.body == output.body || input.connection == output)
-				return false;
-			if (input.typeData.Type != output.typeData.Type)
-				return false;
-
-			bool isRecursive = output.body.isChildOf (input.body);
-			if (isRecursive) 
-			{
-				if (!output.body.allowsLoopRecursion (input.body))
-				{
-					// TODO: Generic Notification
-					Debug.LogWarning ("Cannot apply connection: Recursion detected!");
-					return false;
-				}
-			}
-			return true;
-		}
-
-		/// <summary>
-		/// Applies a connection between output and input. 'CanApplyConnection' has to be checked before
-		/// </summary>
-		public static void ApplyConnection (NodeOutput output, NodeInput input)
-		{
-			if (input != null && output != null) 
-			{
-				if (input.connection != null)
-					input.connection.connections.Remove (input);
-				input.connection = output;
-				output.connections.Add (input);
-
-				NodeEditor.RecalculateFrom (input.body);
-				output.body.OnAddOutputConnection (output);
-				input.body.OnAddInputConnection (input);
-				NodeEditorCallbacks.IssueOnAddConnection (input);
-			}
-		}
-
-		/// <summary>
-		/// Removes the connection from NodeInput.
-		/// </summary>
-		public static void RemoveConnection (NodeInput input)
-		{
-			NodeEditorCallbacks.IssueOnRemoveConnection (input);
-			input.connection.connections.Remove (input);
-			input.connection = null;
-			NodeEditor.RecalculateFrom (input.body);
-		}
-
 		public static void CreateTransition (Node fromNode, Node toNode) 
 		{
 			Transition trans = Transition.Create (fromNode, toNode);
@@ -571,6 +596,7 @@ namespace NodeEditorFramework
 			{
 				fromNode.OnAddTransition (trans);
 				toNode.OnAddTransition (trans);
+				NodeEditorCallbacks.IssueOnAddTransition (trans);
 			}
 		}
 

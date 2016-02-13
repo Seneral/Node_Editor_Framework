@@ -358,6 +358,14 @@ namespace NodeEditorFramework.Utilities
 		/// <summary>
 		/// Scales the rect around the pivot with scale
 		/// </summary>
+		public static Vector2 ScalePosition (Vector2 pos, Vector2 pivot, Vector2 scale) 
+		{
+			return Vector2.Scale (pos - pivot, scale) + pivot;
+		}
+
+		/// <summary>
+		/// Scales the rect around the pivot with scale
+		/// </summary>
 		public static Rect ScaleRect (Rect rect, Vector2 pivot, Vector2 scale) 
 		{
 			rect.position = Vector2.Scale (rect.position - pivot, scale) + pivot;

@@ -29,7 +29,7 @@ public class GroupNode : Node
 		return node;
 	}
 	
-	public override void NodeGUI () 
+	protected internal override void NodeGUI () 
 	{
 		GUILayout.BeginHorizontal ();
 #if UNITY_EDITOR
@@ -49,7 +49,7 @@ public class GroupNode : Node
 		}
 		if (GUILayout.Button (new GUIContent ("Save", "Saves the group as a new Canvas Asset File"))) 
 		{
-			NodeEditor.SaveNodeCanvas (nodeGroupCanvas, UnityEditor.EditorUtility.SaveFilePanelInProject ("Save Group Node Canvas", "Group Canvas", "asset", "", NodeEditor.editorPath + "Saves/"));
+			NodeEditorSaveManager.SaveNodeCanvas (UnityEditor.EditorUtility.SaveFilePanelInProject ("Save Group Node Canvas", "Group Canvas", "asset", "", NodeEditor.editorPath + "Saves/"), nodeGroupCanvas);
 		}
 #endif
 		if (GUILayout.Button (new GUIContent ("New Group Canvas", "Creates a new Canvas"))) 
@@ -127,10 +127,10 @@ public class GroupNode : Node
 
 	public void LoadNodeCanvas (string path) 
 	{
-		nodeGroupCanvas = NodeEditor.LoadNodeCanvas (path);
+		nodeGroupCanvas = NodeEditorSaveManager.LoadNodeCanvas (path);
 		if (nodeGroupCanvas != null) 
 		{
-			List<NodeEditorState> editorStates = NodeEditor.LoadEditorStates (path);
+			List<NodeEditorState> editorStates = NodeEditorSaveManager.LoadEditorStates (path);
 			editorState = editorStates.Count == 0? CreateInstance<NodeEditorState> () : editorStates[0];
 			editorState.canvas = nodeGroupCanvas;
 			editorState.parentEditor = NodeEditor.curEditorState;

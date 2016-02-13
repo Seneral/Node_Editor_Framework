@@ -43,7 +43,7 @@ public class AllAroundNode : Node
 		GUILayout.EndArea ();
 	}
 	
-	public override void NodeGUI () 
+	protected internal override void NodeGUI () 
 	{
 		
 	}

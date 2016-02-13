@@ -5,44 +5,84 @@ using System.Collections.Generic;
 
 namespace NodeEditorFramework.Utilities 
 {
+	/// <summary>
+	/// Provides methods for loading resources both at runtime and in the editor; 
+	/// Though, to load at runtime, they have to be in a resources folder
+	/// </summary>
 	public static class ResourceManager 
 	{
-		public static string resourcePath;
-		
-		public static void Init (string _resourcePath) 
+
+		private static string _ResourcePath = "";
+		public static void SetDefaultResourcePath (string defaultResourcePath) 
 		{
-			resourcePath = _resourcePath;
+			_ResourcePath = defaultResourcePath;
 		}
-		
+
+		#region Common Resource Loading
+
+		/// <summary>
+		/// Prepares the path; At Runtime, it will return path relative to Resources, in editor, it will return the assets relative to Assets. Takes any path.
+		/// </summary>
+		public static string PreparePath (string path) 
+		{
+			path = path.Replace (Application.dataPath, "Assets");
+			if (Application.isPlaying)
+			{ // At runtime
+				if (path.Contains ("Resources"))
+					path = path.Substring (path.LastIndexOf ("Resources") + 10);
+				path = path.Substring (0, path.LastIndexOf ('.'));
+				return path;
+			}
+			// In the editor
+			if (!path.StartsWith ("Assets/"))
+				path = _ResourcePath + path;
+			return path;
+		}
+
+		/// <summary>
+		/// Loads a resource in the resources folder in both the editor and at runtime. 
+		/// Path can be global, relative to the assets folder or, if used at runtime only, any subfolder, but has to be in a Resource folder to be loaded at runtime
+		/// </summary>
+		public static T[] LoadResources<T> (string path) where T : UnityEngine.Object
+		{
+			path = PreparePath (path);
+			if (Application.isPlaying) // At runtime
+				return UnityEngine.Resources.LoadAll<T> (path);
+		#if UNITY_EDITOR
+			// In the editor
+			return UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path).Cast<T> ().ToArray ();
+		#else
+			return null;
+		#endif
+		}
+
 		/// <summary>
 		/// Loads a resource in the resources folder in both the editor and at runtime
+		/// Path can be global, relative to the assets folder or, if used at runtime only, any subfolder, but has to be in a Resource folder to be loaded at runtime
 		/// </summary>
 		public static T LoadResource<T> (string path) where T : UnityEngine.Object
 		{
-			T obj = null;
-			if (!Application.isPlaying) 
-			{
-				#if UNITY_EDITOR
-				string fullPath = System.IO.Path.Combine (resourcePath, path);
-				obj = UnityEditor.AssetDatabase.LoadAssetAtPath (fullPath, typeof (T)) as T;
-				if (obj == null)
-					Debug.LogError (string.Format ("ResourceManager: Resource not found at '{0}', did you install the plugin correctly?", fullPath));
-				#endif
-			}
-			else
-			{
-				path = path.Split ('.') [0];
-				obj = Resources.Load<T> (path);
-				if (obj == null)
-					Debug.LogError (string.Format ("ResourceManager: Resource not found at '{0}' in any Resource Folder!", path));
-			}
-			return obj;
+			path = PreparePath (path);
+			if (Application.isPlaying) // At runtime
+				return UnityEngine.Resources.Load<T> (path);
+		#if UNITY_EDITOR
+			// In the editor
+			return UnityEditor.AssetDatabase.LoadAssetAtPath<T> (path);
+		#else
+			return null;
+		#endif
 		}
+
+		#endregion
 		
+		#region Texture Management
+
 		private static List<MemoryTexture> loadedTextures = new List<MemoryTexture> ();
-		
+
 		/// <summary>
-		/// Loads a texture in the resources folder in both the editor and at runtime
+		/// Loads a texture in the resources folder in both the editor and at runtime and manages it in a memory for later use.
+		/// If you don't wan't to optimise memory, just use LoadResource instead
+		/// It's adviced to prepare the texPath using the function before to create a uniform 'path format', because textures are compared through their paths
 		/// </summary>
 		public static Texture2D LoadTexture (string texPath)
 		{
@@ -50,64 +90,49 @@ namespace NodeEditorFramework.Utilities
 				return null;
 			int existingInd = loadedTextures.FindIndex ((MemoryTexture memTex) => memTex.path == texPath);
 			if (existingInd != -1) 
-			{
+			{ // If we have this texture in memory already, return it
 				if (loadedTextures[existingInd].texture == null)
 					loadedTextures.RemoveAt (existingInd);
 				else
 					return loadedTextures[existingInd].texture;
 			}
-			//Debug.Log ("Loading " + texPath + " first time");
-			
-			Texture2D tex = null;
-			
-			#if UNITY_EDITOR
-			{
-				string fullPath = System.IO.Path.Combine(resourcePath, texPath);
-				tex = UnityEditor.AssetDatabase.LoadAssetAtPath(fullPath, typeof(Texture2D)) as Texture2D;
-				if (tex == null)
-					Debug.LogError(string.Format("ResourceManager: Texture not found at '{0}', did you install the plugin correctly?", fullPath));
-			}
-			#else
-			{
-				texPath = texPath.Split ('.') [0];
-				tex = Resources.Load<Texture2D> (texPath);
-				if (tex == null)
-					Debug.LogError (string.Format ("ResourceManager: Texture not found at '{0}' in any Resource Folder!", texPath));
-			}
-			#endif
-
-			loadedTextures.Add (new MemoryTexture (texPath, tex));
+			// Else, load up the texture and store it in memory
+			Texture2D tex = LoadResource<Texture2D> (texPath);
+			AddTextureToMemory (texPath, tex);
 			return tex;
 		}
-		
-		#region Texture Management
-		
+
+		/// <summary>
+		/// Loads up a texture tinted with col, and manages it in a memory for later use.
+		/// It's adviced to prepare the texPath using the function before to create a uniform 'path format', because textures are compared through their paths
+		/// </summary>
 		public static Texture2D GetTintedTexture (string texPath, Color col) 
 		{
-			Texture2D tintedTexture;
 			string texMod = "Tint:" + col.ToString ();
-			tintedTexture = ResourceManager.GetTexture (texPath, texMod);
+			Texture2D tintedTexture = GetTexture (texPath, texMod);
 			if (tintedTexture == null)
-			{
-				tintedTexture = ResourceManager.LoadTexture (texPath);
+			{ // We have to create a tinted version, perhaps even load the default texture if not yet in memory, and store it
+				tintedTexture = LoadTexture (texPath);
+				AddTextureToMemory (texPath, tintedTexture); // Register default texture for re-use
 				tintedTexture = NodeEditorFramework.Utilities.RTEditorGUI.Tint (tintedTexture, col);
-				ResourceManager.AddTexture (texPath, tintedTexture, texMod); // Register texture for re-use
+				AddTextureToMemory (texPath, tintedTexture, texMod); // Register texture for re-use
 			}
 			return tintedTexture;
 		}
 		
 		/// <summary>
-		/// Adds an additional texture into the manager memory with optional modifications
+		/// Records an additional texture for the manager memory with optional modifications
+		/// It's adviced to prepare the texPath using the function before to create a uniform 'path format', because textures are compared through their paths
 		/// </summary>
-		public static void AddTexture (string texturePath, Texture2D texture, params string[] modifications)
+		public static void AddTextureToMemory (string texturePath, Texture2D texture, params string[] modifications)
 		{
-			if (texture == null)
-				return;
+			if (texture == null) return;
 			loadedTextures.Add (new MemoryTexture (texturePath, texture, modifications));
 		}
 		
 		/// <summary>
-		/// Whether the manager memory contains a texture with optional modifications
+		/// Returns whether the manager memory contains the texture
+		/// It's adviced to prepare the texPath using the function before to create a uniform 'path format', because textures are compared through their paths
 		/// </summary>
 		public static MemoryTexture FindInMemory (Texture2D tex)
 		{
@@ -117,8 +142,9 @@ namespace NodeEditorFramework.Utilities
 		
 		/// <summary>
 		/// Whether the manager memory contains a texture with optional modifications
+		/// It's adviced to prepare the texPath using the function before to create a uniform 'path format', because textures are compared through their paths
 		/// </summary>
-		public static bool Contains (string texturePath, params string[] modifications)
+		public static bool HasInMemory (string texturePath, params string[] modifications)
 		{
 			int existingInd = loadedTextures.FindIndex ((MemoryTexture memTex) => memTex.path == texturePath);
 			return existingInd != -1 && EqualModifications (loadedTextures[existingInd].modifications, modifications);
@@ -126,6 +152,7 @@ namespace NodeEditorFramework.Utilities
 		
 		/// <summary>
 		/// Gets a texture already in manager memory with specified modifications (check with contains before!)
+		/// It's adviced to prepare the texPath using the function before to create a uniform 'path format', because textures are compared through their paths
 		/// </summary>
 		public static MemoryTexture GetMemoryTexture (string texturePath, params string[] modifications)
 		{
@@ -139,7 +166,8 @@ namespace NodeEditorFramework.Utilities
 		}
 		
 		/// <summary>
-		/// Gets a texture already in manager memory with specified modifications (check with contains before!)
+		/// Gets a texture already in manager memory with specified modifications (check with 'HasInMemory' before!)
+		/// It's adviced to prepare the texPath using the function before to create a uniform 'path format', because textures are compared through their paths
 		/// </summary>
 		public static Texture2D GetTexture (string texturePath, params string[] modifications)
 		{

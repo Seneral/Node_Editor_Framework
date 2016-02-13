@@ -8,18 +8,18 @@ using UnityEditor.SceneManagement;
 #endif
 using System;
 
-namespace NodeEditorFramework
+namespace NodeEditorFramework.Utilities
 {
 	[InitializeOnLoad]
 	public static class EditorLoadingControl 
 	{
 #if UNITY_5_3
-        private static Scene loadedScene;
+		private static Scene loadedScene;
 #else
-	    private static string loadedScene;
+		private static string loadedScene;
 #endif
 
-        private static bool serializationTest = false;
+		private static bool serializationTest = false;
 		private static bool playmodeSwitchToEdit = false;
 		private static bool toggleLateEnteredPlaymode = false;
 
@@ -43,15 +43,15 @@ namespace NodeEditorFramework
 		private static void OnHierarchyChange () 
 		{
 #if UNITY_5_3
-            Scene currentSceneName = EditorSceneManager.GetActiveScene ();
+			Scene currentScene = EditorSceneManager.GetActiveScene ();
 #else
-		    string currentSceneName = Application.loadedLevelName;
+			string currentScene = Application.loadedLevelName;
 #endif
-            if (loadedScene != currentSceneName)
+			if (loadedScene != currentScene)
 			{
 				if (justOpenedNewScene != null)
 					justOpenedNewScene.Invoke ();
-				loadedScene = currentSceneName;
+				loadedScene = currentScene;
 			}
 		}
 

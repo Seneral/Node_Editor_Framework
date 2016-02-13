@@ -17,6 +17,7 @@ namespace NodeEditorFramework
 		public static Texture2D AALineTex;
 		public static Texture2D GUIBox;
 		public static Texture2D GUIButton;
+		public static Texture2D GUIBoxSelection;
 
 		public static GUISkin nodeSkin;
 		public static GUISkin defaultSkin;
@@ -35,6 +36,7 @@ namespace NodeEditorFramework
 			AALineTex = ResourceManager.LoadTexture ("Textures/AALine.png");
 			GUIBox = ResourceManager.LoadTexture ("Textures/NE_Box.png");
 			GUIButton = ResourceManager.LoadTexture ("Textures/NE_Button.png");
+			GUIBoxSelection = ResourceManager.LoadTexture ("Textures/BoxSelection.png");
 			
 			if (!Background || !AALineTex || !GUIBox || !GUIButton)
 				return false;
