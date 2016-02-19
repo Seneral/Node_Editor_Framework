@@ -286,6 +286,12 @@ namespace NodeEditorFramework
 			}
 		}
 
+        /// <summary>
+        /// Used to display a custom node property editor in the side window of the NodeEditorWindow
+        /// Optionally override this to implement
+        /// </summary>
+        public virtual void DrawNodePropertyEditor() { }
+
 		#endregion
 		
 		#region Node Calculation Utility
