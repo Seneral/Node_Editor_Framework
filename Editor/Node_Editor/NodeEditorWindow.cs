@@ -197,7 +197,10 @@ namespace NodeEditorFramework
 
 			NodeEditorGUI.knobSize = EditorGUILayout.IntSlider (new GUIContent ("Handle Size", "The size of the Node Input/Output handles"), NodeEditorGUI.knobSize, 12, 20);
 			mainEditorState.zoom = EditorGUILayout.Slider (new GUIContent ("Zoom", "Use the Mousewheel. Seriously."), mainEditorState.zoom, 0.6f, 2);
-		}
+
+            if (mainEditorState.selectedNode != null)
+                mainEditorState.selectedNode.DrawNodePropertyEditor();
+        }
 
 		#endregion
 
