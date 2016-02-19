@@ -199,7 +199,8 @@ namespace NodeEditorFramework
 			mainEditorState.zoom = EditorGUILayout.Slider (new GUIContent ("Zoom", "Use the Mousewheel. Seriously."), mainEditorState.zoom, 0.6f, 2);
 
             if (mainEditorState.selectedNode != null)
-                mainEditorState.selectedNode.DrawNodePropertyEditor();
+                if (Event.current.type != EventType.Ignore)
+                    mainEditorState.selectedNode.DrawNodePropertyEditor();
         }
 
 		#endregion
