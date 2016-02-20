@@ -382,8 +382,9 @@ namespace NodeEditorFramework.Utilities
 			GL.Begin (GL.TRIANGLE_STRIP);
 			GL.Color (Color.white);
 
-			Rect clippingRect = NodeEditor.curEditorState.canvasRect;
-			clippingRect = GUIScaleUtility.ScaleRect(clippingRect, Vector2.zero, GUIScaleUtility.getCurrentScale);
+			Rect clippingRect = GUIScaleUtility.getTopRect;
+			clippingRect.x = 0;
+			clippingRect.y = 0;
 
 			// Calculate optimal segment count
 			int segmentCount = CalculateBezierSegmentCount (startPos, endPos, startTan, endTan);
@@ -471,8 +472,10 @@ namespace NodeEditorFramework.Utilities
 			GL.Color (Color.white);
 			Vector2 perpWidthOffset = new Vector2 ((endPos-startPos).y, -(endPos-startPos).x).normalized * width / 2;
 
-			Rect clippingRect = NodeEditor.curEditorState.canvasRect;
-			clippingRect = GUIScaleUtility.ScaleRect(clippingRect, Vector2.zero, GUIScaleUtility.getCurrentScale);
+			Rect clippingRect = GUIScaleUtility.getTopRect;
+			clippingRect.x = 0;
+			clippingRect.y = 0;
+
 			if (SegmentRectIntersection(clippingRect, ref startPos, ref endPos))
 			{
 				DrawLineSegment (startPos, perpWidthOffset);
