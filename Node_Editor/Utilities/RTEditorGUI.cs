@@ -445,6 +445,7 @@ namespace NodeEditorFramework.Utilities
 
 					if (clippedP0)
 					{ // Just became visible, so enable GL again and draw the clipped line start point
+						GL.End();
 						GL.Begin (GL.TRIANGLE_STRIP);
 						DrawLineSegment (curPoint, perpendicular * width/2);
 					}
@@ -455,8 +456,11 @@ namespace NodeEditorFramework.Utilities
 					// Draw the actual point
 					DrawLineSegment (nextPoint, perpendicular * width/2);
 				}
-				else if (clippedP1) // Just became invisible, so disable GL
+				else if (clippedP1)
+				{ // Just became invisible, so disable GL
 					GL.End ();
+					GL.Begin (GL.TRIANGLE_STRIP);
+				}
 
 				// Update state variable
 				curPoint = nextPointOriginal;
