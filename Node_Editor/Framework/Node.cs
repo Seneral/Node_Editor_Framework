@@ -54,28 +54,26 @@ namespace NodeEditorFramework
 				throw new UnityException ("The Node " + name + " does not exist on the Canvas " + NodeEditor.curNodeCanvas.name + "!");
 			NodeEditorCallbacks.IssueOnDeleteNode (this);
 			NodeEditor.curNodeCanvas.nodes.Remove (this);
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
+			foreach (NodeOutput output in Outputs) 
 			{
-				NodeOutput output = Outputs [outCnt];
 				while (output.connections.Count != 0)
 					output.connections[0].RemoveConnection ();
 				DestroyImmediate (output, true);
 			}
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
+			foreach (NodeInput input in Inputs) 
 			{
-				NodeInput input = Inputs [inCnt];
 				if (input.connection != null)
 					input.connection.connections.Remove (input);
 				DestroyImmediate (input, true);
 			}
-			for (int knobCnt = 0; knobCnt < nodeKnobs.Count; knobCnt++) 
+			foreach  (NodeKnob knob in nodeKnobs) 
 			{ // Inputs/Outputs need specific treatment, unfortunately
-				if (nodeKnobs[knobCnt] != null)
-					DestroyImmediate (nodeKnobs[knobCnt], true);
+				if (knob != null)
+					DestroyImmediate (knob, true);
 			}
-			for (int transCnt = 0; transCnt < transitions.Count; transCnt++) 
+			foreach  (Transition transition in transitions) 
 			{
-				transitions [transCnt].Delete ();
+				transition.Delete ();
 			}
 			DestroyImmediate (this, true);
 		}
@@ -244,8 +242,8 @@ namespace NodeEditorFramework
 		protected internal virtual void DrawKnobs () 
 		{
 			CheckNodeKnobMigration ();
-			for (int knobCnt = 0; knobCnt < nodeKnobs.Count; knobCnt++) 
-				nodeKnobs[knobCnt].DrawKnob ();
+			foreach  (NodeKnob knob in nodeKnobs)
+				knob.DrawKnob ();
 		}
 
 		/// <summary>
@@ -256,15 +254,13 @@ namespace NodeEditorFramework
 			CheckNodeKnobMigration ();
 			if (Event.current.type != EventType.Repaint)
 				return;
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
+			foreach (NodeOutput output in Outputs) 
 			{
-				NodeOutput output = Outputs [outCnt];
 				Vector2 startPos = output.GetGUIKnob ().center;
 				Vector2 startDir = output.GetDirection ();
 
-				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
+				foreach (NodeInput input in output.connections) 
 				{
-					NodeInput input = output.connections [conCnt];
 					NodeEditorGUI.DrawConnection (startPos,
 					                           startDir,
 					                           input.GetGUIKnob ().center,
@@ -279,10 +275,10 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void DrawTransitions () 
 		{
-			for (int cnt = 0; cnt < transitions.Count; cnt++)
+			foreach (Transition transition in transitions)
 			{
-				if (transitions[cnt].startNode == this)
-					transitions[cnt].DrawFromStartNode ();
+				if (transition.startNode == this)
+					transition.DrawFromStartNode ();
 			}
 		}
 
@@ -301,9 +297,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal bool allInputsReady ()
 		{
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
+			foreach (NodeInput input in Inputs) 
 			{
-				if (Inputs[inCnt].connection == null || Inputs[inCnt].connection.IsValueNull)
+				if (input.connection == null || input.connection.IsValueNull)
 					return false;
 			}
 			return true;
@@ -313,8 +309,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal bool hasUnassignedInputs () 
 		{
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++)
-				if (Inputs [inCnt].connection == null)
+			foreach (NodeInput input in Inputs) 
+				if (input.connection == null)
 					return true;
 			return false;
 		}
@@ -324,9 +320,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal bool descendantsCalculated () 
 		{
-			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
+			foreach (NodeInput input in Inputs) 
 			{
-				if (Inputs [cnt].connection != null && !Inputs [cnt].connection.body.calculated)
+				if (input.connection != null && !input.connection.body.calculated)
 					return false;
 			}
 			return true;
@@ -337,8 +333,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal bool isInput () 
 		{
-			for (int cnt = 0; cnt < Inputs.Count; cnt++)
-				if (Inputs [cnt].connection != null)
+			foreach (NodeInput input in Inputs) 
+				if (input.connection != null)
 					return false;
 			return true;
 		}
@@ -386,10 +382,10 @@ namespace NodeEditorFramework
 		/// </summary>
 		public NodeOutput GetOutputAtPos (Vector2 pos) 
 		{
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
+			foreach (NodeOutput output in Outputs) 
 			{ // Search for an output at the position
-				if (Outputs [outCnt].GetScreenKnob ().Contains (new Vector3 (pos.x, pos.y)))
-					return Outputs [outCnt];
+				if (output.GetScreenKnob ().Contains (new Vector3 (pos.x, pos.y)))
+					return output;
 			}
 			return null;
 		}
@@ -434,10 +430,10 @@ namespace NodeEditorFramework
 		/// </summary>
 		public NodeInput GetInputAtPos (Vector2 pos) 
 		{
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
+			foreach (NodeInput input in Inputs) 
 			{ // Search for an input at the position
-				if (Inputs [inCnt].GetScreenKnob ().Contains (new Vector3 (pos.x, pos.y)))
-					return Inputs [inCnt];
+				if (input.GetScreenKnob ().Contains (new Vector3 (pos.x, pos.y)))
+					return input;
 			}
 			return null;
 		}
@@ -454,9 +450,9 @@ namespace NodeEditorFramework
 			if (otherNode == null || otherNode == this)
 				return false;
 			if (BeginRecursiveSearchLoop ()) return false;
-			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
+			foreach (NodeInput input in Inputs) 
 			{
-				NodeOutput connection = Inputs [cnt].connection;
+				NodeOutput connection = input.connection;
 				if (connection != null) 
 				{
 					if (connection.body != startRecursiveSearchNode)
@@ -479,9 +475,9 @@ namespace NodeEditorFramework
 		internal bool isInLoop ()
 		{
 			if (BeginRecursiveSearchLoop ()) return this == startRecursiveSearchNode;
-			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
+			foreach (NodeInput input in Inputs) 
 			{
-				NodeOutput connection = Inputs [cnt].connection;
+				NodeOutput connection = input.connection;
 				if (connection != null) 
 				{
 					if (connection.body.isInLoop ())
@@ -507,9 +503,9 @@ namespace NodeEditorFramework
 			if (otherNode == null)
 				return false;
 			if (BeginRecursiveSearchLoop ()) return false;
-			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
+			foreach (NodeInput input in Inputs)
 			{
-				NodeOutput connection = Inputs [cnt].connection;
+				NodeOutput connection = input.connection;
 				if (connection != null) 
 				{
 					if (connection.body != startRecursiveSearchNode)
@@ -534,11 +530,10 @@ namespace NodeEditorFramework
 		{
 			if (BeginRecursiveSearchLoop ()) return;
 			calculated = false;
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++)
+			foreach (NodeOutput output in Outputs)
 			{
-				NodeOutput output = Outputs [outCnt];
-				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-					output.connections [conCnt].body.ClearCalculation ();
+				foreach (NodeInput connection in output.connections)
+					connection.body.ClearCalculation ();
 			}
 			EndRecursiveSearchLoop ();
 		}
@@ -608,4 +603,7 @@ namespace NodeEditorFramework
 
 		#endregion
 	}
+
+
+
 }
