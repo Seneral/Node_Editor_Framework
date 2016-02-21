@@ -388,21 +388,35 @@ namespace NodeEditorFramework.Utilities
 
 			// Calculate optimal segment count
 			int segmentCount = CalculateBezierSegmentCount (startPos, endPos, startTan, endTan);
-			// Caluclate and draw segments:
+
+			// Calculate and draw segments:
 			Vector2 curPoint = startPos;
 			Vector2 nextPoint = curPoint;
+
+			bool previousClipped = false, currentClipped = false;
 
 			for (int segCnt = 1; segCnt <= segmentCount; segCnt++) 
 			{
 				nextPoint = GetBezierPoint ((float)segCnt/segmentCount, startPos, endPos, startTan, endTan);
-				
-				if (SegmentRectIntersection(clippingRect, ref curPoint, ref nextPoint))
+				Vector2 nextPointOriginal = nextPoint;
+
+				if (SegmentRectIntersection(clippingRect, ref curPoint, ref nextPoint, ref currentClipped))
+				{
 					DrawLineSegment (curPoint, new Vector2 (nextPoint.y-curPoint.y, curPoint.x-nextPoint.x).normalized * width/2);
+				}
+
+				if(previousClipped && currentClipped)
+				{
+					GL.End ();
+					GL.Begin (GL.TRIANGLE_STRIP);
+					nextPoint = nextPointOriginal;
+				}
 
 				curPoint = nextPoint;
+				previousClipped = currentClipped;
 			}
 
-			if (SegmentRectIntersection(clippingRect, ref curPoint, ref nextPoint))
+			if (SegmentRectIntersection(clippingRect, ref curPoint, ref nextPoint, ref currentClipped))
 				DrawLineSegment (curPoint, new Vector2 (endTan.y, -endTan.x).normalized * width/2);
 
 			GL.End ();
@@ -476,7 +490,8 @@ namespace NodeEditorFramework.Utilities
 			clippingRect.x = 0;
 			clippingRect.y = 0;
 
-			if (SegmentRectIntersection(clippingRect, ref startPos, ref endPos))
+			bool currentClipped = false;
+			if (SegmentRectIntersection(clippingRect, ref startPos, ref endPos, ref currentClipped))
 			{
 				DrawLineSegment (startPos, perpWidthOffset);
 				DrawLineSegment (endPos, perpWidthOffset);
@@ -489,7 +504,7 @@ namespace NodeEditorFramework.Utilities
 		/// Clips the line between the points p1 and p2 to the bounds rect.
 		/// Uses Liang-Barsky Line Clipping Algorithm.
 		/// </summary>
-		private static bool SegmentRectIntersection(Rect bounds, ref Vector2 p0, ref Vector2 p1)
+		private static bool SegmentRectIntersection(Rect bounds, ref Vector2 p0, ref Vector2 p1, ref bool clipped)
 		{
 
 			float t0 = 0.0f;
@@ -508,6 +523,8 @@ namespace NodeEditorFramework.Utilities
 							p1.x = p0.x + t1 * dx;
 							p1.y = p0.y + t1 * dy;
 
+							clipped = (t1 < 1);
+
 							p0.x = p0.x + t0 * dx;
 							p0.y = p0.y + t0 * dy;
 
@@ -516,6 +533,8 @@ namespace NodeEditorFramework.Utilities
 					}
 				}
 			}
+
+			clipped = true;
 
 			return false;
 		}
