@@ -393,6 +393,8 @@ namespace NodeEditorFramework.Utilities
 			Vector2 curPoint = startPos;
 			Vector2 nextPoint = curPoint;
 
+			Vector2 curEnd = curPoint;
+
 			bool previousClipped = false, currentClipped = false;
 
 			for (int segCnt = 1; segCnt <= segmentCount; segCnt++) 
@@ -402,22 +404,44 @@ namespace NodeEditorFramework.Utilities
 
 				if (SegmentRectIntersection(clippingRect, ref curPoint, ref nextPoint, ref currentClipped))
 				{
-					DrawLineSegment (curPoint, new Vector2 (nextPoint.y-curPoint.y, curPoint.x-nextPoint.x).normalized * width/2);
-				}
+					curEnd = nextPoint;
 
-				if(previousClipped && currentClipped)
-				{
-					GL.End ();
-					GL.Begin (GL.TRIANGLE_STRIP);
-					nextPoint = nextPointOriginal;
+					if(currentClipped)
+					{
+						if(previousClipped)
+						{
+							GL.End ();
+							GL.Begin (GL.TRIANGLE_STRIP);
+							DrawLineSegment (curPoint, new Vector2 (nextPointOriginal.y-curPoint.y, curPoint.x-nextPointOriginal.x).normalized * width/2);
+							DrawLineSegment (nextPoint, new Vector2 (nextPoint.y-curPoint.y, curPoint.x-nextPoint.x).normalized * width/4);
+							nextPoint = nextPointOriginal;
+						}
+						else
+						{
+							DrawLineSegment (curPoint, new Vector2 (nextPoint.y-curPoint.y, curPoint.x-nextPoint.x).normalized * width/2);
+							DrawLineSegment (nextPoint, new Vector2 (nextPoint.y-curPoint.y, curPoint.x-nextPoint.x).normalized * width/4);
+							nextPoint = nextPointOriginal;
+							GL.End ();
+							GL.Begin (GL.TRIANGLE_STRIP);
+						}
+					}
+					else
+					{
+						if(previousClipped)
+						{
+							GL.End ();
+							GL.Begin (GL.TRIANGLE_STRIP);
+						}
+
+						DrawLineSegment (curPoint, new Vector2 (nextPoint.y-curPoint.y, curPoint.x-nextPoint.x).normalized * width/2);
+					}
 				}
 
 				curPoint = nextPoint;
 				previousClipped = currentClipped;
 			}
 
-			if (SegmentRectIntersection(clippingRect, ref curPoint, ref nextPoint, ref currentClipped))
-				DrawLineSegment (curPoint, new Vector2 (endTan.y, -endTan.x).normalized * width/2);
+			DrawLineSegment(curEnd, new Vector2(endTan.y, -endTan.x).normalized * width / 2);
 
 			GL.End ();
 			GL.Color (Color.white);
