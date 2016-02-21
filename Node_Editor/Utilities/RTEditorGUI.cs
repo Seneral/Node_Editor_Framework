@@ -377,74 +377,92 @@ namespace NodeEditorFramework.Utilities
 			// Own Bezier Formula
 			// Slower than handles because of the horrendous amount of calls into the native api
 
-			// Setup
+			// Calculate optimal segment count
+			int segmentCount = CalculateBezierSegmentCount (startPos, endPos, startTan, endTan);
+			// Draw bezier with calculated segment count
+			DrawBezier (startPos, endPos, startTan, endTan, col, tex, segmentCount, width);
+		}
+
+		/// <summary>
+		/// Draws a clipped Bezier curve just as UnityEditor.Handles.DrawBezier.
+		/// If width is 1, tex is ignored; Else if tex is null, a anti-aliased texture tinted with col will be used; else, col is ignored and tex is used.
+		/// </summary>
+		public static void DrawBezier (Vector2 startPos, Vector2 endPos, Vector2 startTan, Vector2 endTan, Color col, Texture2D tex, int segmentCount, float width)
+		{
+			if (Event.current.type != EventType.Repaint && Event.current.type != EventType.KeyDown)
+				return;
+
+			// Own Bezier Formula
+			// Slower than handles because of the horrendous amount of calls into the native api
+
+			// Calculate bezier points
+			Vector2[] bezierPoints = new Vector2[segmentCount+1];
+			for (int pointCnt = 0; pointCnt <= segmentCount; pointCnt++) 
+				bezierPoints[pointCnt] = GetBezierPoint ((float)pointCnt/segmentCount, startPos, endPos, startTan, endTan);
+			// Draw polygon line from the bezier points
+			DrawPolygonLine (bezierPoints, col, tex, width);
+		}
+
+		/// <summary>
+		/// Draws a clipped polygon line from the given points. 
+		/// If width is 1, tex is ignored; Else if tex is null, a anti-aliased texture tinted with col will be used; else, col is ignored and tex is used.
+		/// </summary>
+		public static void DrawPolygonLine (Vector2[] points, Color col, Texture2D tex, float width = 1)
+		{
+			if (Event.current.type != EventType.Repaint && Event.current.type != EventType.KeyDown)
+				return;
+
+			// Simplify basic cases
+			if (points.Length == 1)
+				return;
+			else if (points.Length == 2)
+				DrawLine (points[0], points[1], col, tex, width);
+
+			// Setup for drawing
 			SetupLineMat (tex, col);
 			GL.Begin (GL.TRIANGLE_STRIP);
 			GL.Color (Color.white);
 
+			// Fetch clipping rect
 			Rect clippingRect = GUIScaleUtility.getTopRect;
-			clippingRect.x = 0;
-			clippingRect.y = 0;
+			clippingRect.x = clippingRect.y = 0;
 
-			// Calculate optimal segment count
-			int segmentCount = CalculateBezierSegmentCount (startPos, endPos, startTan, endTan);
-
-			// Calculate and draw segments:
-			Vector2 curPoint = startPos;
-			Vector2 nextPoint = curPoint;
-
-			Vector2 curEnd = curPoint;
-
-			bool previousClipped = false, currentClipped = false;
-
-			for (int segCnt = 1; segCnt <= segmentCount; segCnt++) 
+			Vector2 curPoint = points[0], nextPoint, perpendicular;
+			bool clippedP0, clippedP1;
+			for (int pointCnt = 1; pointCnt < points.Length; pointCnt++) 
 			{
-				nextPoint = GetBezierPoint ((float)segCnt/segmentCount, startPos, endPos, startTan, endTan);
-				Vector2 nextPointOriginal = nextPoint;
+				nextPoint = points[pointCnt];
 
-				if (SegmentRectIntersection(clippingRect, ref curPoint, ref nextPoint, ref currentClipped))
-				{
-					curEnd = nextPoint;
+				// Clipping test
+				Vector2 curPointOriginal = curPoint, nextPointOriginal = nextPoint;
+				if (SegmentRectIntersection (clippingRect, ref curPoint, ref nextPoint, out clippedP0, out clippedP1))
+				{ // (partially) visible
+					// Calculate apropriate perpendicular
+					if (pointCnt < points.Length-1) // Interpolate perpendicular inbetween the point chain
+						perpendicular = CalculatePointPerpendicular (curPointOriginal, nextPointOriginal, points[pointCnt+1]);
+					else // At the end, there's no further point to interpolate the perpendicular from
+						perpendicular = CalculateLinePerpendicular (curPointOriginal, nextPointOriginal);
 
-					if(currentClipped)
-					{
-						if(previousClipped)
-						{
-							GL.End ();
-							GL.Begin (GL.TRIANGLE_STRIP);
-							DrawLineSegment (curPoint, new Vector2 (nextPointOriginal.y-curPoint.y, curPoint.x-nextPointOriginal.x).normalized * width/2);
-							DrawLineSegment (nextPoint, new Vector2 (nextPoint.y-curPoint.y, curPoint.x-nextPoint.x).normalized * width/4);
-							nextPoint = nextPointOriginal;
-						}
-						else
-						{
-							DrawLineSegment (curPoint, new Vector2 (nextPoint.y-curPoint.y, curPoint.x-nextPoint.x).normalized * width/2);
-							DrawLineSegment (nextPoint, new Vector2 (nextPoint.y-curPoint.y, curPoint.x-nextPoint.x).normalized * width/4);
-							nextPoint = nextPointOriginal;
-							GL.End ();
-							GL.Begin (GL.TRIANGLE_STRIP);
-						}
+					if (clippedP0)
+					{ // Just became visible, so enable GL again and draw the clipped line start point
+						GL.Begin (GL.TRIANGLE_STRIP);
+						DrawLineSegment (curPoint, perpendicular * width/2);
 					}
-					else
-					{
-						if(previousClipped)
-						{
-							GL.End ();
-							GL.Begin (GL.TRIANGLE_STRIP);
-						}
 
-						DrawLineSegment (curPoint, new Vector2 (nextPoint.y-curPoint.y, curPoint.x-nextPoint.x).normalized * width/2);
-					}
+					// Draw first point before starting with the point chain. Placed here instead of before because of clipping
+					if (pointCnt == 1)
+						DrawLineSegment (curPoint, CalculateLinePerpendicular (curPoint, nextPoint) * width/2);
+					// Draw the actual point
+					DrawLineSegment (nextPoint, perpendicular * width/2);
 				}
+				else if (clippedP1) // Just became invisible, so disable GL
+					GL.End ();
 
-				curPoint = nextPoint;
-				previousClipped = currentClipped;
+				// Update state variable
+				curPoint = nextPointOriginal;
 			}
-
-			DrawLineSegment(curEnd, new Vector2(endTan.y, -endTan.x).normalized * width / 2);
-
+			// Finalize drawing
 			GL.End ();
-			GL.Color (Color.white);
 		}
 
 		/// <summary>
@@ -457,6 +475,22 @@ namespace NodeEditorFramework.Utilities
 			float distanceFactor = 1 + (startPos-endPos).magnitude;
 			distanceFactor = Mathf.Pow (distanceFactor, 1.0f/4);
 			return 4 + (int)(straightFactor * distanceFactor);
+		}
+
+		/// <summary>
+		/// Calculates the normalized perpendicular vector of the give line
+		/// </summary>
+		private static Vector2 CalculateLinePerpendicular (Vector2 startPos, Vector2 endPos) 
+		{
+			return new Vector2 (endPos.y-startPos.y, startPos.x-endPos.x).normalized;
+		}
+
+		/// <summary>
+		/// Calculates the normalized perpendicular vector for the pointPos interpolated with its two neighbours prevPos and nextPos
+		/// </summary>
+		private static Vector2 CalculatePointPerpendicular (Vector2 prevPos, Vector2 pointPos, Vector2 nextPos) 
+		{
+			return CalculateLinePerpendicular (pointPos, pointPos + (nextPos-prevPos));
 		}
 
 		/// <summary>
@@ -478,22 +512,10 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		private static void DrawLineSegment (Vector2 point, Vector2 perpendicular) 
 		{
-			Vector2 straight = new Vector2 (perpendicular.y, -perpendicular.x) * 2;
-
 			GL.TexCoord2 (0, 0);
-			GL.Vertex (point-straight - perpendicular);
+			GL.Vertex (point - perpendicular);
 			GL.TexCoord2 (0, 1);
-			GL.Vertex (point-straight + perpendicular);
-			// Showcase line segmentation
-			//			GL.TexCoord2 (0, 0);
-			//			GL.Vertex (point - perpendicular*2);
-			//			GL.TexCoord2 (0, 1);
-			//			GL.Vertex (point + perpendicular*2);
-			//
-			//			GL.TexCoord2 (0, 0);
-			//			GL.Vertex (point+straight - perpendicular);
-			//			GL.TexCoord2 (0, 1);
-			//			GL.Vertex (point+straight + perpendicular);
+			GL.Vertex (point + perpendicular);
 		}
 
 		/// <summary>
@@ -503,54 +525,69 @@ namespace NodeEditorFramework.Utilities
 		{
 			if (Event.current.type != EventType.Repaint)
 				return;
-			
-			SetupLineMat (tex, col);
 
+			// Setup
+			SetupLineMat (tex, col);
 			GL.Begin (GL.TRIANGLE_STRIP);
 			GL.Color (Color.white);
-			Vector2 perpWidthOffset = new Vector2 ((endPos-startPos).y, -(endPos-startPos).x).normalized * width / 2;
-
+			// Fetch clipping rect
 			Rect clippingRect = GUIScaleUtility.getTopRect;
-			clippingRect.x = 0;
-			clippingRect.y = 0;
-
-			bool currentClipped = false;
-			if (SegmentRectIntersection(clippingRect, ref startPos, ref endPos, ref currentClipped))
-			{
+			clippingRect.x = clippingRect.y = 0;
+			// Clip to rect
+			if (SegmentRectIntersection (clippingRect, ref startPos, ref endPos))
+			{ // Draw with clipped line if it is visible
+				Vector2 perpWidthOffset = CalculateLinePerpendicular (startPos, endPos) * width / 2;
 				DrawLineSegment (startPos, perpWidthOffset);
 				DrawLineSegment (endPos, perpWidthOffset);
 			}
-
+			// Finalize drawing
 			GL.End ();
 		}
-		
+
 		/// <summary>
 		/// Clips the line between the points p1 and p2 to the bounds rect.
 		/// Uses Liang-Barsky Line Clipping Algorithm.
 		/// </summary>
-		private static bool SegmentRectIntersection(Rect bounds, ref Vector2 p0, ref Vector2 p1, ref bool clipped)
+		private static bool SegmentRectIntersection(Rect bounds, ref Vector2 p0, ref Vector2 p1)
 		{
+			bool cP0, cP1;
+			return SegmentRectIntersection (bounds, ref p0, ref p1, out cP0, out cP1);
+		}
 
+
+		/// <summary>
+		/// Clips the line between the points p1 and p2 to the bounds rect.
+		/// Uses Liang-Barsky Line Clipping Algorithm.
+		/// </summary>
+		private static bool SegmentRectIntersection (Rect bounds, ref Vector2 p0, ref Vector2 p1, out bool clippedP0, out bool clippedP1)
+		{
 			float t0 = 0.0f;
 			float t1 = 1.0f;
 			float dx = p1.x - p0.x;
 			float dy = p1.y - p0.y;
- 
-			if (ClipTest(-dx, p0.x - bounds.xMin, ref t0, ref t1)) // Left
+
+			if (ClipTest (-dx, p0.x - bounds.xMin, ref t0, ref t1)) // Left
 			{
-				if (ClipTest(dx, bounds.xMax - p0.x, ref t0, ref t1)) // Right
+				if (ClipTest (dx, bounds.xMax - p0.x, ref t0, ref t1)) // Right
 				{
-					if (ClipTest(-dy, p0.y - bounds.yMin, ref t0, ref t1)) // Bottom
+					if (ClipTest (-dy, p0.y - bounds.yMin, ref t0, ref t1)) // Bottom
 					{
-						if (ClipTest(dy, bounds.yMax - p0.y, ref t0, ref t1)) // Top
+						if (ClipTest (dy, bounds.yMax - p0.y, ref t0, ref t1)) // Top
 						{
-							p1.x = p0.x + t1 * dx;
-							p1.y = p0.y + t1 * dy;
+							clippedP0 = t0 > 0;
+							clippedP1 = t1 < 1;
 
-							clipped = (t1 < 1);
+							if (clippedP1)
+							{
+								p1.x = p0.x + t1 * dx;
+								p1.y = p0.y + t1 * dy;
+							}
 
-							p0.x = p0.x + t0 * dx;
-							p0.y = p0.y + t0 * dy;
+							if (clippedP0)
+							{
+								p0.x = p0.x + t0 * dx;
+								p0.y = p0.y + t0 * dy;
+							}
 
 							return true;
 						}
@@ -558,18 +595,17 @@ namespace NodeEditorFramework.Utilities
 				}
 			}
 
-			clipped = true;
-
+			clippedP1 = clippedP0 = true;
 			return false;
 		}
-		
+
 		/// <summary>
 		/// Liang-Barsky Line Clipping Test
 		/// </summary>
 		private static bool ClipTest(float p, float q, ref float t0, ref float t1)
 		{
 			float u = q / p;
- 
+
 			if (p < 0.0f)
 			{
 				if (u > t1)
@@ -586,7 +622,7 @@ namespace NodeEditorFramework.Utilities
 			}
 			else if (q < 0.0f)
 				return false;
- 
+
 			return true;
 		}
 
