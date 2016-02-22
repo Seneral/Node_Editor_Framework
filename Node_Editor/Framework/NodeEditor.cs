@@ -730,9 +730,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		private static void UpdateTransitions () 
 		{
-			for (int cnt = 0; cnt < transitioningNodeCanvases.Count; cnt++)
+			foreach (NodeCanvas nodeCanvas in transitioningNodeCanvases)
 			{
-				NodeCanvas nodeCanvas = transitioningNodeCanvases [cnt];
 				if (!nodeCanvas.currentNode.AcceptsTranstitions || nodeCanvas.currentNode.transitions.Count == 0) 
 				{ // Error - this node should not have any transitions, in or out
 					StopTransitioning (nodeCanvas);
