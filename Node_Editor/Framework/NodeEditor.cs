@@ -217,17 +217,16 @@ namespace NodeEditorFramework
 			}
 
 			// Draw the transitions and connections. Has to be drawn before nodes as transitions originate from node centers
-			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++)  
+
+			foreach (Node node in curNodeCanvas.nodes)  
 			{
-				Node node = curNodeCanvas.nodes [nodeCnt];
 				node.DrawTransitions ();
 				node.DrawConnections ();
 			}
 
 			// Draw the nodes
-			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++)
+			foreach (Node node in curNodeCanvas.nodes)  
 			{
-				Node node = curNodeCanvas.nodes [nodeCnt];
 				node.DrawNode ();
 				if (Event.current.type == EventType.Repaint)
 					node.DrawKnobs ();
@@ -268,9 +267,9 @@ namespace NodeEditorFramework
 				Node node = nodeCanvas.nodes [nodeCnt];
 				if (CanvasGUIToScreenRect (node.rect).Contains (pos)) // Node Body
 					return node;
-				for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++)
+				foreach (NodeKnob knob in node.nodeKnobs)
 				{ // Any edge control
-					if (node.nodeKnobs[knobCnt].GetScreenKnob ().Contains (pos))
+					if (knob.GetScreenKnob ().Contains (pos))
 						return node;
 				}
 			}
@@ -323,9 +322,9 @@ namespace NodeEditorFramework
 			// Mouse outside of canvas rect or inside an ignoreInput rect
 			if (!curEditorState.canvasRect.Contains (mousePos))
 				return true;
-			for (int ignoreCnt = 0; ignoreCnt < curEditorState.ignoreInput.Count; ignoreCnt++) 
+			foreach(Rect rect in curEditorState.ignoreInput) 
 			{
-				if (curEditorState.ignoreInput [ignoreCnt].Contains (mousePos)) 
+				if (rect.Contains (mousePos)) 
 					return true;
 			}
 			return false;
@@ -433,9 +432,9 @@ namespace NodeEditorFramework
 						{ // A connection is drawn, so provide a context menu with apropriate nodes to auto-connect
 							foreach (Node node in NodeTypes.nodes.Keys)
 							{ // Iterate through all nodes and check for compability
-								for (int inputCnt = 0; inputCnt < node.Inputs.Count; inputCnt++)
+								foreach (NodeInput input in node.Inputs)
 								{
-									if (node.Inputs[inputCnt].type == curEditorState.connectOutput.type)
+									if (input.type == curEditorState.connectOutput.type)
 									{
 										menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[node].adress), false, ContextCallback, new NodeEditorMenuCallback (node.GetID, curNodeCanvas, curEditorState));
 										break;
@@ -531,8 +530,8 @@ namespace NodeEditorFramework
 				if (curEditorState.panWindow) 
 				{ // Scroll everything with the current mouse delta
 					curEditorState.panOffset += e.delta * curEditorState.zoom;
-					for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
-						curNodeCanvas.nodes [nodeCnt].rect.position += e.delta * curEditorState.zoom;
+					foreach (Node node in curNodeCanvas.nodes) 
+						node.rect.position += e.delta * curEditorState.zoom;
 					e.delta = Vector2.zero;
 					RepaintClients ();
 				}
@@ -731,9 +730,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		private static void UpdateTransitions () 
 		{
-			for (int cnt = 0; cnt < transitioningNodeCanvases.Count; cnt++)
+			foreach (NodeCanvas nodeCanvas in transitioningNodeCanvases)
 			{
-				NodeCanvas nodeCanvas = transitioningNodeCanvases[cnt];
 				if (!nodeCanvas.currentNode.AcceptsTranstitions || nodeCanvas.currentNode.transitions.Count == 0) 
 				{ // Error - this node should not have any transitions, in or out
 					StopTransitioning (nodeCanvas);
@@ -787,9 +785,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		private static Transition GetNextTransition (Node node) 
 		{
-			for (int transCnt = 0; transCnt < node.transitions.Count; transCnt++) 
+			foreach (Transition trans in node.transitions) 
 			{
-				Transition trans = node.transitions[transCnt];
 				if (trans.startNode == node && trans.conditionsMet ()) 
 					return trans;
 			}
@@ -846,9 +843,9 @@ namespace NodeEditorFramework
 			for (int roundCnt = 0; !limitReached; roundCnt++)
 			{ // Runs until every node possible is calculated
 				limitReached = true;
-				for (int workCnt = 0; workCnt < workList.Count; workCnt++) 
+				foreach (Node node in workList) 
 				{
-					if (ContinueCalculation (workList [workCnt]))
+					if (ContinueCalculation (node))
 						limitReached = false;
 				}
 			}
@@ -870,11 +867,10 @@ namespace NodeEditorFramework
 				workList.Remove (node);
 				if (node.ContinueCalculation && calculationCount < 1000) 
 				{
-					for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
+					foreach (NodeOutput output in node.Outputs)
 					{
-						NodeOutput output = node.Outputs [outCnt];
-						for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-							ContinueCalculation (output.connections [conCnt].body);
+						foreach (NodeInput connection in output.connections)
+							ContinueCalculation(connection.body);
 					}
 				}
 				else if (calculationCount >= 1000)

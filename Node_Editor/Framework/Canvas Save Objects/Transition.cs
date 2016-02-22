@@ -87,9 +87,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		public bool conditionsMet () 
 		{
-			for (int condCnt = 0; condCnt < conditions.Count; condCnt++) 
+			foreach (TransitionCondition condition in conditions)
 			{
-				if (!conditions[condCnt].Invoke (this))
+				if (!condition.Invoke (this))
 					return false;
 			}
 			return true;
