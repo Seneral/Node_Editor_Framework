@@ -25,9 +25,6 @@ namespace NodeEditorFramework
 		[HideInInspector]
 		[NonSerialized]
 		internal bool calculated = true;
-		
-		// State graph
-		public List<Transition> transitions = new List<Transition> ();
 
 		#region General
 
@@ -54,26 +51,24 @@ namespace NodeEditorFramework
 				throw new UnityException ("The Node " + name + " does not exist on the Canvas " + NodeEditor.curNodeCanvas.name + "!");
 			NodeEditorCallbacks.IssueOnDeleteNode (this);
 			NodeEditor.curNodeCanvas.nodes.Remove (this);
-			foreach (NodeOutput output in Outputs) 
+			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 			{
+				NodeOutput output = Outputs [outCnt];
 				while (output.connections.Count != 0)
 					output.connections[0].RemoveConnection ();
 				DestroyImmediate (output, true);
 			}
-			foreach (NodeInput input in Inputs) 
+			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 			{
+				NodeInput input = Inputs [inCnt];
 				if (input.connection != null)
 					input.connection.connections.Remove (input);
 				DestroyImmediate (input, true);
 			}
-			foreach  (NodeKnob knob in nodeKnobs) 
+			for (int knobCnt = 0; knobCnt < nodeKnobs.Count; knobCnt++) 
 			{ // Inputs/Outputs need specific treatment, unfortunately
-				if (knob != null)
-					DestroyImmediate (knob, true);
-			}
-			foreach  (Transition transition in transitions) 
-			{
-				transition.Delete ();
+				if (nodeKnobs[knobCnt] != null)
+					DestroyImmediate (nodeKnobs[knobCnt], true);
 			}
 			DestroyImmediate (this, true);
 		}
@@ -121,6 +116,12 @@ namespace NodeEditorFramework
 		/// Draw the Node immediately
 		/// </summary>
 		protected internal abstract void NodeGUI ();
+
+		/// <summary>
+		/// Used to display a custom node property editor in the side window of the NodeEditorWindow
+		/// Optionally override this to implement
+		/// </summary>
+		public virtual void DrawNodePropertyEditor() { }
 		
 		/// <summary>
 		/// Calculate the outputs of this Node
@@ -167,23 +168,6 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal virtual void OnAddOutputConnection (NodeOutput output) {}
 
-		/// <summary>
-		/// Callback when the Transition was created
-		/// </summary>
-		protected internal virtual void OnAddTransition (Transition transition) {}
-
-
-		/// <summary>
-		/// Callback when the this Node is being transitioned to. 
-		/// OriginTransition is the transition from which was transitioned to this node OR null if the transitioning process was started on this Node
-		/// </summary>
-		protected internal virtual void OnEnter (Transition originTransition) {}
-
-		/// <summary>
-		/// Callback when the this Node is transitioning to another Node through the passed Transition
-		/// </summary>
-		protected internal virtual void OnLeave (Transition transition) {}
-
 		#endregion
 
 		#region Additional Serialization
@@ -215,10 +199,6 @@ namespace NodeEditorFramework
 			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust;
 			contentOffset = new Vector2 (0, 20);
 
-			// Mark the current transitioning node as such by outlining it
-			if (NodeEditor.curNodeCanvas.currentNode == this)
-				GUI.DrawTexture (new Rect (nodeRect.x-8, nodeRect.y-8, nodeRect.width+16, nodeRect.height+16), NodeEditorGUI.GUIBoxSelection);
-
 			// Create a headerRect out of the previous rect and draw it, marking the selected node as such by making the header bold
 			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, contentOffset.y);
 			GUI.Label (headerRect, name, NodeEditor.curEditorState.selectedNode == this? NodeEditorGUI.nodeBoxBold : NodeEditorGUI.nodeBox);
@@ -242,7 +222,7 @@ namespace NodeEditorFramework
 		protected internal virtual void DrawKnobs () 
 		{
 			CheckNodeKnobMigration ();
-			foreach  (NodeKnob knob in nodeKnobs)
+			foreach (NodeKnob knob in nodeKnobs)
 				knob.DrawKnob ();
 		}
 
@@ -254,7 +234,7 @@ namespace NodeEditorFramework
 			CheckNodeKnobMigration ();
 			if (Event.current.type != EventType.Repaint)
 				return;
-			foreach (NodeOutput output in Outputs) 
+			foreach (NodeOutput output in Outputs)
 			{
 				Vector2 startPos = output.GetGUIKnob ().center;
 				Vector2 startDir = output.GetDirection ();
@@ -262,31 +242,13 @@ namespace NodeEditorFramework
 				foreach (NodeInput input in output.connections) 
 				{
 					NodeEditorGUI.DrawConnection (startPos,
-					                           startDir,
-					                           input.GetGUIKnob ().center,
-					                           input.GetDirection (),
-					                           ConnectionTypes.GetTypeData (output.type).col);
+												startDir,
+												input.GetGUIKnob ().center,
+												input.GetDirection (),
+												ConnectionTypes.GetTypeData (output.type, true).Color);
 				}
 			}
 		}
-		
-		/// <summary>
-		/// Draws the node transitions starting from this node
-		/// </summary>
-		public void DrawTransitions () 
-		{
-			foreach (Transition transition in transitions)
-			{
-				if (transition.startNode == this)
-					transition.DrawFromStartNode ();
-			}
-		}
-
-        /// <summary>
-        /// Used to display a custom node property editor in the side window of the NodeEditorWindow
-        /// Optionally override this to implement
-        /// </summary>
-        public virtual void DrawNodePropertyEditor() { }
 
 		#endregion
 		
@@ -297,7 +259,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal bool allInputsReady ()
 		{
-			foreach (NodeInput input in Inputs) 
+			foreach (NodeInput input in Inputs)
 			{
 				if (input.connection == null || input.connection.IsValueNull)
 					return false;
@@ -309,9 +271,11 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal bool hasUnassignedInputs () 
 		{
-			foreach (NodeInput input in Inputs) 
+			foreach (NodeInput input in Inputs)
+			{
 				if (input.connection == null)
 					return true;
+			}
 			return false;
 		}
 		
@@ -320,7 +284,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal bool descendantsCalculated () 
 		{
-			foreach (NodeInput input in Inputs) 
+			foreach (NodeInput input in Inputs)
 			{
 				if (input.connection != null && !input.connection.body.calculated)
 					return false;
@@ -333,9 +297,11 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal bool isInput () 
 		{
-			foreach (NodeInput input in Inputs) 
+			foreach (NodeInput input in Inputs)
+			{
 				if (input.connection != null)
 					return false;
+			}
 			return true;
 		}
 
@@ -382,7 +348,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public NodeOutput GetOutputAtPos (Vector2 pos) 
 		{
-			foreach (NodeOutput output in Outputs) 
+			foreach (NodeOutput output in Outputs)
 			{ // Search for an output at the position
 				if (output.GetScreenKnob ().Contains (new Vector3 (pos.x, pos.y)))
 					return output;
@@ -430,7 +396,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public NodeInput GetInputAtPos (Vector2 pos) 
 		{
-			foreach (NodeInput input in Inputs) 
+			foreach (NodeInput input in Inputs)
 			{ // Search for an input at the position
 				if (input.GetScreenKnob ().Contains (new Vector3 (pos.x, pos.y)))
 					return input;
@@ -450,18 +416,15 @@ namespace NodeEditorFramework
 			if (otherNode == null || otherNode == this)
 				return false;
 			if (BeginRecursiveSearchLoop ()) return false;
-			foreach (NodeInput input in Inputs) 
+			foreach (NodeInput input in Inputs)
 			{
 				NodeOutput connection = input.connection;
-				if (connection != null) 
+				if (connection != null && connection.body != startRecursiveSearchNode)
 				{
-					if (connection.body != startRecursiveSearchNode)
+					if (connection.body == otherNode || connection.body.isChildOf (otherNode))
 					{
-						if (connection.body == otherNode || connection.body.isChildOf (otherNode))
-						{
-							StopRecursiveSearchLoop ();
-							return true;
-						}
+						StopRecursiveSearchLoop ();
+						return true;
 					}
 				}
 			}
@@ -475,16 +438,13 @@ namespace NodeEditorFramework
 		internal bool isInLoop ()
 		{
 			if (BeginRecursiveSearchLoop ()) return this == startRecursiveSearchNode;
-			foreach (NodeInput input in Inputs) 
+			foreach (NodeInput input in Inputs)
 			{
 				NodeOutput connection = input.connection;
-				if (connection != null) 
+				if (connection != null && connection.body.isInLoop ())
 				{
-					if (connection.body.isInLoop ())
-					{
-						StopRecursiveSearchLoop ();
-						return true;
-					}
+					StopRecursiveSearchLoop ();
+					return true;
 				}
 			}
 			EndRecursiveSearchLoop ();
@@ -506,15 +466,12 @@ namespace NodeEditorFramework
 			foreach (NodeInput input in Inputs)
 			{
 				NodeOutput connection = input.connection;
-				if (connection != null) 
+				if (connection != null && connection.body != startRecursiveSearchNode)
 				{
-					if (connection.body != startRecursiveSearchNode)
+					if (connection.body.allowsLoopRecursion (otherNode))
 					{
-						if (connection.body.allowsLoopRecursion (otherNode))
-						{
-							StopRecursiveSearchLoop ();
-							return true;
-						}
+						StopRecursiveSearchLoop ();
+						return true;
 					}
 				}
 			}
@@ -532,8 +489,8 @@ namespace NodeEditorFramework
 			calculated = false;
 			foreach (NodeOutput output in Outputs)
 			{
-				foreach (NodeInput connection in output.connections)
-					connection.body.ClearCalculation ();
+				foreach (NodeInput input in output.connections)
+					input.body.ClearCalculation ();
 			}
 			EndRecursiveSearchLoop ();
 		}
@@ -584,26 +541,5 @@ namespace NodeEditorFramework
 		#endregion
 
 		#endregion
-
-		#region Static Connection Utility
-
-		/// <summary>
-		/// Creates a transition from node to node
-		/// </summary>
-		public static void CreateTransition (Node fromNode, Node toNode) 
-		{
-			Transition trans = Transition.Create (fromNode, toNode);
-			if (trans != null)
-			{
-				fromNode.OnAddTransition (trans);
-				toNode.OnAddTransition (trans);
-				NodeEditorCallbacks.IssueOnAddTransition (trans);
-			}
-		}
-
-		#endregion
 	}
-
-
-
 }

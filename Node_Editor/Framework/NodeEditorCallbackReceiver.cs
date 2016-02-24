@@ -22,9 +22,6 @@ namespace NodeEditorFramework
 		// Connection
 		public virtual void OnAddConnection (NodeInput input) {}
 		public virtual void OnRemoveConnection (NodeInput input) {}
-		// Transition
-		public virtual void OnAddTransition (Transition transition) {}
-		public virtual void OnRemoveTransition (Transition transition) {}
 	}
 
 	public static class NodeEditorCallbacks
@@ -192,38 +189,6 @@ namespace NodeEditorFramework
 					callbackReceiver.RemoveAt (cnt--);
 				else
 					callbackReceiver [cnt].OnRemoveConnection (input);
-			}
-		}
-
-		#endregion
-
-		#region Transition (2)
-
-		public static Action<Transition> OnAddTransition;
-		public static void IssueOnAddTransition (Transition transition) 
-		{
-			if (OnAddTransition != null)
-				OnAddTransition.Invoke (transition);
-			for (int cnt = 0; cnt < receiverCount; cnt++) 
-			{
-				if (callbackReceiver [cnt] == null)
-					callbackReceiver.RemoveAt (cnt--);
-				else
-					callbackReceiver [cnt].OnAddTransition (transition);
-			}
-		}
-
-		public static Action<Transition> OnRemoveTransition;
-		public static void IssueOnRemoveTransition (Transition transition) 
-		{
-			if (OnRemoveTransition != null)
-				OnRemoveTransition.Invoke ( transition);
-			for (int cnt = 0; cnt < receiverCount; cnt++) 
-			{
-				if (callbackReceiver [cnt] == null)
-					callbackReceiver.RemoveAt (cnt--);
-				else
-					callbackReceiver [cnt].OnRemoveTransition ( transition);
 			}
 		}
 

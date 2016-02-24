@@ -3,7 +3,7 @@ using System.Collections;
 using NodeEditorFramework;
 
 [System.Serializable]
-[Node (false, "Float/Display")]
+[Node (false, "Standard/Float/Display")]
 public class DisplayNode : Node 
 {
 	public const string ID = "displayNode";

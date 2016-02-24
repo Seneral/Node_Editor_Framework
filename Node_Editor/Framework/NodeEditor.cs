@@ -188,8 +188,8 @@ namespace NodeEditorFramework
 			if (curEditorState.navigate) 
 			{ // Draw a curve to the origin/active node for orientation purposes
 				RTEditorGUI.DrawLine ((curEditorState.selectedNode != null? curEditorState.selectedNode.rect.center : curEditorState.panOffset) + curEditorState.zoomPanAdjust, 
-				                      ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
-				                      Color.black, null, 3); 
+										ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
+										Color.black, null, 3); 
 				RepaintClients ();
 			}
 			if (curEditorState.connectOutput != null)
@@ -198,14 +198,16 @@ namespace NodeEditorFramework
 				Vector2 startPos = output.GetGUIKnob ().center;
 				Vector2 endPos = ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom;
 				Vector2 endDir = output.GetDirection ();
-				NodeEditorGUI.DrawConnection (startPos, endDir, endPos, NodeEditorGUI.GetSecondConnectionVector (startPos, endPos, endDir), ConnectionTypes.GetTypeData (output.type).col);
+				NodeEditorGUI.DrawConnection (startPos, endDir, endPos, 
+												NodeEditorGUI.GetSecondConnectionVector (startPos, endPos, endDir), 
+												ConnectionTypes.GetTypeData (output.type, true).Color);
 				RepaintClients ();
 			}
 			if (curEditorState.makeTransition != null)
 			{ // Draw the currently made transition
 				RTEditorGUI.DrawLine (curEditorState.makeTransition.rect.center + curEditorState.zoomPanAdjust, 
-				                      ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom,
-				                      Color.grey, null, 3); 
+										ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom,
+										Color.grey, null, 3); 
 				RepaintClients ();
 			}
 
@@ -217,15 +219,11 @@ namespace NodeEditorFramework
 			}
 
 			// Draw the transitions and connections. Has to be drawn before nodes as transitions originate from node centers
-
-			foreach (Node node in curNodeCanvas.nodes)  
-			{
-				node.DrawTransitions ();
+			foreach (Node node in curNodeCanvas.nodes)
 				node.DrawConnections ();
-			}
 
 			// Draw the nodes
-			foreach (Node node in curNodeCanvas.nodes)  
+			foreach (Node node in curNodeCanvas.nodes)
 			{
 				node.DrawNode ();
 				if (Event.current.type == EventType.Repaint)
@@ -322,9 +320,9 @@ namespace NodeEditorFramework
 			// Mouse outside of canvas rect or inside an ignoreInput rect
 			if (!curEditorState.canvasRect.Contains (mousePos))
 				return true;
-			foreach(Rect rect in curEditorState.ignoreInput) 
+			foreach (Rect ignoreRect in curEditorState.ignoreInput) 
 			{
-				if (rect.Contains (mousePos)) 
+				if (ignoreRect.Contains (mousePos)) 
 					return true;
 			}
 			return false;
@@ -464,24 +462,17 @@ namespace NodeEditorFramework
 				
 			case EventType.MouseUp:
 
-				if (curEditorState.focusedNode != null) 
-				{ // Apply Drawn connections/transition on node
-					if (curEditorState.makeTransition != null)
-					{ // Apply a connection if theres a clicked input
-						Node.CreateTransition (curEditorState.makeTransition, curEditorState.focusedNode);
-					}
-					if (curEditorState.connectOutput != null) 
-					{ // Apply a connection if theres a clicked input
-						if (!curEditorState.focusedNode.Outputs.Contains (curEditorState.connectOutput)) 
-						{ // An input was clicked, it'll will now be connected
-							NodeInput clickedInput = curEditorState.focusedNode.GetInputAtPos (e.mousePosition);
-							if (clickedInput.CanApplyConnection (curEditorState.connectOutput)) 
-							{ // It can connect (type is equals, it does not cause recursion, ...)
-								clickedInput.ApplyConnection (curEditorState.connectOutput);
-							}
+				if (curEditorState.focusedNode != null && curEditorState.connectOutput != null) 
+				{ // Apply Drawn connections on node if theres a clicked input
+					if (!curEditorState.focusedNode.Outputs.Contains (curEditorState.connectOutput)) 
+					{ // An input was clicked, it'll will now be connected
+						NodeInput clickedInput = curEditorState.focusedNode.GetInputAtPos (e.mousePosition);
+						if (clickedInput.CanApplyConnection (curEditorState.connectOutput)) 
+						{ // It can connect (type is equals, it does not cause recursion, ...)
+							clickedInput.ApplyConnection (curEditorState.connectOutput);
 						}
-						e.Use ();
 					}
+					e.Use ();
 				}
 				
 				curEditorState.makeTransition = null;
@@ -530,7 +521,7 @@ namespace NodeEditorFramework
 				if (curEditorState.panWindow) 
 				{ // Scroll everything with the current mouse delta
 					curEditorState.panOffset += e.delta * curEditorState.zoom;
-					foreach (Node node in curNodeCanvas.nodes) 
+					foreach (Node node in curNodeCanvas.nodes)
 						node.rect.position += e.delta * curEditorState.zoom;
 					e.delta = Vector2.zero;
 					RepaintClients ();
@@ -640,10 +631,6 @@ namespace NodeEditorFramework
 						}
 					}
 				}
-				else if (node.AcceptsTranstitions && curEditorState.makeTransition != null) 
-				{
-					Node.CreateTransition (curEditorState.makeTransition, node);
-				}
 
 				curEditorState.makeTransition = null;
 				curEditorState.connectOutput = null;
@@ -674,126 +661,6 @@ namespace NodeEditorFramework
 		#endregion
 
 		#region Calculation
-
-		// STATE SYSTEM:
-
-		private static List<NodeCanvas> transitioningNodeCanvases = new List<NodeCanvas> ();
-
-		/// <summary>
-		/// Begins to transition the passed nodeCanvas from beginNode
-		/// </summary>
-		public static void BeginTransitioning (NodeCanvas nodeCanvas, Node beginNode) 
-		{
-			if (!nodeCanvas.nodes.Contains (beginNode)) 
-				throw new UnityException ("Node to begin transitioning from has to be associated with the passed NodeEditorState!");
-
-			nodeCanvas.currentNode = beginNode;
-			nodeCanvas.currentTransition = null;
-			if (!transitioningNodeCanvases.Contains (nodeCanvas))
-				transitioningNodeCanvases.Add (nodeCanvas);
-
-			RepaintClients ();
-
-//			Debug.Log ("Beginning transitioning " + nodeCanvas.name + " from Node " + beginNode.name);
-			nodeCanvas.currentNode.OnEnter (null);
-
-		#if UNITY_EDITOR
-			NEUpdate -= UpdateTransitions;
-			NEUpdate += UpdateTransitions;
-		#endif
-		}
-
-		/// <summary>
-		/// Stops the transitioning process of the passed nodeCanvas
-		/// </summary>
-		public static void StopTransitioning (NodeCanvas nodeCanvas) 
-		{
-			if (nodeCanvas == null)
-				return;
-			if (transitioningNodeCanvases.Contains (nodeCanvas))
-				transitioningNodeCanvases.Remove (nodeCanvas);
-		#if UNITY_EDITOR
-			if (transitioningNodeCanvases.Count == 0)
-				NEUpdate -= UpdateTransitions;
-		#endif	
-//			Debug.Log ("Stopped transitioning " + nodeCanvas.name + (nodeCanvas.currentNode != null? (" at Node " + nodeCanvas.currentNode.name) : ""));
-			if (nodeCanvas.currentTransition != null)
-			{
-				nodeCanvas.currentTransition.stopTransition ();
-				nodeCanvas.currentTransition = null;
-			}
-			RepaintClients ();
-		}
-
-		/// <summary>
-		/// Updates the transitions.
-		/// </summary>
-		private static void UpdateTransitions () 
-		{
-			foreach (NodeCanvas nodeCanvas in transitioningNodeCanvases)
-			{
-				if (!nodeCanvas.currentNode.AcceptsTranstitions || nodeCanvas.currentNode.transitions.Count == 0) 
-				{ // Error - this node should not have any transitions, in or out
-					StopTransitioning (nodeCanvas);
-					cnt--;
-//					Debug.Log ("Stopped transitioning because the current node has no transitions anymore!");
-					continue;
-				}
-
-				if (nodeCanvas.currentTransition != null) 
-				{ // We currently transition to another node, so we check the progress
-					RepaintClients (); // Keep Transition GUI Updated
-					if (nodeCanvas.currentTransition.finishedTransition ())
-					{
-//						Debug.Log ("Finished Transition from " + nodeCanvas.currentTransition.startNode.name + " to " + nodeCanvas.currentTransition.endNode.name + "!");
-						nodeCanvas.currentTransition.startNode.OnLeave (nodeCanvas.currentTransition);
-						nodeCanvas.currentTransition.endNode.OnEnter (nodeCanvas.currentTransition);
-
-						nodeCanvas.currentNode = nodeCanvas.currentTransition.endNode;
-						nodeCanvas.currentTransition = null;
-					}
-//					else
-//						Debug.Log ("Transitioning from " + nodeCanvas.currentTransition.startNode.name + " to " + nodeCanvas.currentTransition.endNode.name + "! Progress: " + nodeCanvas.currentTransition.transitionProgress ());
-					continue;
-				}
-
-				// Nothing is transitioning right now, so we check if we can transition any further
-				Transition nextTransition = GetNextTransition (nodeCanvas.currentNode);
-				if (nextTransition != null && nextTransition.startNode == nodeCanvas.currentNode) // Starting to transition to the next node through nextTransition
-				{
-//					Debug.Log ("Starting to stransition from " + nextTransition.startNode.name + " to " + nextTransition.endNode.name);
-					nodeCanvas.currentTransition = nextTransition;
-					nextTransition.startTransition ();
-					RepaintClients ();
-				}
-//				else
-//					Debug.Log ("No Transitions which conditions were met found on Node " + nodeCanvas.currentNode.name + "!");
-			}
-		}
-
-		/// <summary>
-		/// Returns whether the passed canvas is in the transitioning process
-		/// </summary>
-		public static bool isTransitioning (NodeCanvas nodeCanvas) 
-		{
-			return transitioningNodeCanvases.Contains (nodeCanvas);
-		}
-
-
-		/// <summary>
-		/// Returns the first transition of the node that has it's conditions met
-		/// </summary>
-		private static Transition GetNextTransition (Node node) 
-		{
-			foreach (Transition trans in node.transitions) 
-			{
-				if (trans.startNode == node && trans.conditionsMet ()) 
-					return trans;
-			}
-			return null;
-		}
-
-		// CALCULATION SYSTEM:
 		
 		// A list of Nodes from which calculation originates -> Call StartCalculation
 		public static List<Node> workList;
@@ -843,11 +710,13 @@ namespace NodeEditorFramework
 			for (int roundCnt = 0; !limitReached; roundCnt++)
 			{ // Runs until every node possible is calculated
 				limitReached = true;
-				foreach (Node node in workList) 
+				for (int workCnt = 0; workCnt < workList.Count; workCnt++)
 				{
-					if (ContinueCalculation (node))
+					if (ContinueCalculation (workList[workCnt]))
 						limitReached = false;
 				}
+				if (roundCnt > 1000)
+					limitReached = true;
 			}
 		}
 		
@@ -870,7 +739,7 @@ namespace NodeEditorFramework
 					foreach (NodeOutput output in node.Outputs)
 					{
 						foreach (NodeInput connection in output.connections)
-							ContinueCalculation(connection.body);
+							ContinueCalculation (connection.body);
 					}
 				}
 				else if (calculationCount >= 1000)

@@ -32,9 +32,9 @@ namespace NodeEditorFramework
 			if (nodeCanvas == null)
 				throw new UnityException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path " + path + " is null!");
 
-			foreach(NodeEditorState nodeEditorState in editorStates)
+			foreach (NodeEditorState state in editorStates) 
 			{
-				if (nodeEditorState == null)
+				if (state == null)
 					Debug.LogError ("A NodeEditorState that should be saved to path " + path + " is null!");
 			}
 
@@ -49,10 +49,10 @@ namespace NodeEditorFramework
 
 			// Write canvas and editorStates
 			UnityEditor.AssetDatabase.CreateAsset (nodeCanvas, path);
-			foreach(NodeEditorState nodeEditorState in editorStates)
+			foreach (NodeEditorState state in editorStates) 
 			{
-				if (nodeEditorState != null)
-					AddSubAsset (nodeEditorState, nodeCanvas);
+				if (state != null)
+					AddSubAsset (state, nodeCanvas);
 			}
 
 			// Write nodes + contents
@@ -62,17 +62,15 @@ namespace NodeEditorFramework
 				foreach (NodeKnob knob in node.nodeKnobs) 
 				{
 					AddSubAsset (knob, node);
+					// Add additional scriptableObjects
+					ScriptableObject[] additionalKnobSOs = knob.GetScriptableObjects ();
+					foreach (ScriptableObject so in additionalKnobSOs)
+						AddSubAsset (so, knob);
 				}
-				foreach (Transition transition in node.transitions) 
-				{
-					if (transition.startNode == node) 
-					{
-						AddSubAsset (transition, node);
-//						Debug.Log ("Did save Transition " + node.transitions [transCnt].name + " because its Node " + node.name + " is the start node!");
-					}
-//					else
-//						Debug.Log ("Did NOT save Transition " + node.transitions [transCnt].name + " because its Node " + node.name + " is NOT the start node (" + (node.transitions[transCnt].startNode != null? node.transitions[transCnt].startNode.name : "Null") + ")!");
-				}
+				// Add additional scriptableObjects
+				ScriptableObject[] additionalNodeSOs = node.GetScriptableObjects ();
+				foreach (ScriptableObject so in additionalNodeSOs)
+					AddSubAsset (so, node);
 			}
 
 			UnityEditor.AssetDatabase.SaveAssets ();
@@ -175,18 +173,19 @@ namespace NodeEditorFramework
 			if (createWorkingCopy) 
 			{
 				for (int cnt = 0; cnt < editorStates.Count; cnt++) 
-				{
+				{ // create working copies for editor states
 					NodeEditorState state = editorStates[cnt];
 					CreateWorkingCopy (ref state);
 					editorStates[cnt] = state;
-					if (state == null) throw new UnityException ("Failed to create a working copy for an NodeEditorState at path '" + path + "' during the loading process!");
+					if (state == null) 
+						throw new UnityException ("Failed to create a working copy for an NodeEditorState at path '" + path + "' during the loading process!");
 				}
 			}
 	#endif
 
 			// Perform Event and Database refresh
-			for (int cnt = 0; cnt < editorStates.Count; cnt++) 
-				NodeEditorCallbacks.IssueOnLoadEditorState (editorStates[cnt]);
+			foreach (NodeEditorState state in editorStates)
+				NodeEditorCallbacks.IssueOnLoadEditorState (state);
 	#if UNITY_EDITOR
 			UnityEditor.AssetDatabase.Refresh ();
 	#endif
@@ -234,34 +233,17 @@ namespace NodeEditorFramework
 			// This will only iterate over the 'source instances'
 			List<ScriptableObject> allSOs = new List<ScriptableObject> ();
 			List<ScriptableObject> clonedSOs = new List<ScriptableObject> ();
-			foreach (Node node in nodeCanvas.nodes) 
+			foreach (Node node in nodeCanvas.nodes)
 			{
 				node.CheckNodeKnobMigration ();
-				Node clonedNode = (Node)AddClonedSO (allSOs, clonedSOs, node);
+				Node clonedNode = AddClonedSO (allSOs, clonedSOs, node);
 				foreach (NodeKnob knob in clonedNode.nodeKnobs) 
 				{ // Clone NodeKnobs
-//					Debug.Log ("Cloned " + knobCnt + " " + (clonedNode.nodeKnobs[knobCnt] == null? "null" : clonedNode.nodeKnobs[knobCnt].name) + " on node " + node.name);
-					AddClonedSO (allSOs, clonedSOs, knob);
+					NodeKnob clonedKnob = AddClonedSO (allSOs, clonedSOs, knob);
 					// Clone additional scriptableObjects
-					ScriptableObject[] additionalKnobSOs = knob.GetScriptableObjects ();
+					ScriptableObject[] additionalKnobSOs = clonedKnob.GetScriptableObjects ();
 					foreach (ScriptableObject so in additionalKnobSOs)
 						AddClonedSO (allSOs, clonedSOs, so);
-				}
-
-				for (int transCnt = 0; transCnt < clonedNode.transitions.Count; transCnt++)
-				{ // Clone Transitions
-					Transition trans = clonedNode.transitions[transCnt];
-					if (trans.startNode == node)
-					{
-						AddClonedSO (allSOs, clonedSOs, trans);
-//						Debug.Log ("Did copy Transition " + trans.name + " because its Node " + clonedNode.name + " is the start node!");
-					}
-					else 
-					{
-//						Debug.Log ("Did NOT copy Transition " + trans.name + " because its Node " + clonedNode.name + " is NOT the start node (" + trans.startNode.name + ")!");
-						clonedNode.transitions.RemoveAt (transCnt);
-						transCnt--;
-					}
 				}
 				// Clone additional scriptableObjects
 				ScriptableObject[] additionalNodeSOs = clonedNode.GetScriptableObjects ();
@@ -271,77 +253,48 @@ namespace NodeEditorFramework
 
 			// Replace every reference to any of the initial SOs of the first list with the respective clones of the second list
 
-			nodeCanvas.currentNode = ReplaceSO (allSOs, clonedSOs, nodeCanvas.currentNode);
-			nodeCanvas.currentTransition = ReplaceSO (allSOs, clonedSOs, nodeCanvas.currentTransition);
-			for(int nodeIndex=0;nodeIndex < nodeCanvas.Count;nodeIndex++) 
+			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
 			{ // Clone Nodes, structural content and additional scriptableObjects
-				Node clonedNode = nodeCanvas[nodeIndex]= ReplaceSO (allSOs, clonedSOs, nodeCanvas[nodeIndex]);
+				Node clonedNode = nodeCanvas.nodes[nodeCnt] = ReplaceSO (allSOs, clonedSOs, nodeCanvas.nodes[nodeCnt]);
 				// We're going to restore these from NodeKnobs if desired (!compressed)
 				clonedNode.Inputs = new List<NodeInput> ();
 				clonedNode.Outputs = new List<NodeOutput> ();
-				for(int knobIndex=0;knobIndex < clonedNode.nodeKnobs.Count;knobIndex++) 
+				for (int knobCnt = 0; knobCnt < clonedNode.nodeKnobs.Count; knobCnt++) 
 				{ // Clone generic NodeKnobs
-					NodeKnob clonedknob = clonedNode.nodeKnobs[knobIndex] = ReplaceSO (allSOs, clonedSOs, clonedNode.nodeKnobs[knobIndex]);
-					clonedknob.body = clonedNode;
-					// Replace additional scriptableObjects in the NodeKnob
-					clonedknob.CopyScriptableObjects ((ScriptableObject so) => ReplaceSO (allSOs, clonedSOs, so));
+					NodeKnob clonedKnob = clonedNode.nodeKnobs[knobCnt] = ReplaceSO (allSOs, clonedSOs, clonedNode.nodeKnobs[knobCnt]);
+					clonedKnob.body = clonedNode;
 					if (!compressed) 
 					{ // Add NodeInputs and NodeOutputs to the apropriate lists in Node if desired (!compressed)
-						if (clonedknob is NodeInput)
-							clonedNode.Inputs.Add (clonedknob as NodeInput);
-						else if (clonedknob is NodeOutput)
-							clonedNode.Outputs.Add (clonedknob as NodeOutput);
+						if (clonedKnob is NodeInput)
+							clonedNode.Inputs.Add (clonedKnob as NodeInput);
+						else if (clonedKnob is NodeOutput)
+							clonedNode.Outputs.Add (clonedKnob as NodeOutput);
 					}
-				}
-				for(int transitionIndex=0;transitionIndex < clonedNode.transitions.Count ;transitionIndex++) 
-				{ // Clone transitions
-					if (clonedNode.transitions[transitionIndex].startNode != node)
-						continue;
-					Transition clonedTransition = clonedNode.transitions[transitionIndex] = ReplaceSO (allSOs, clonedSOs, clonedNode.transitions[transitionIndex]);
-					if (clonedTransition == null)
-					{
-						Debug.LogError ("Could not copy transition " + transitionIndex +" of Node " + clonedNode.name + "!");
-						continue;
-					}
-
-//					Debug.Log ("Did replace contents of Transition " + trans.name + " because its Node " + clonedNode.name + " is the start node!");
-					clonedTransition.startNode = ReplaceSO (allSOs, clonedSOs, clonedNode.transitions[transitionIndex].startNode);
-					clonedTransition.endNode = ReplaceSO (allSOs, clonedSOs, clonedNode.transitions[transitionIndex].endNode);
-
-					if (!compressed)
-						clonedTransition.endNode.transitions.Add (clonedTransition);
+					// Replace additional scriptableObjects in the NodeKnob
+					clonedKnob.CopyScriptableObjects ((ScriptableObject so) => ReplaceSO (allSOs, clonedSOs, so));
 				}
 				// Replace additional scriptableObjects in the Node
-				node.CopyScriptableObjects ((ScriptableObject so) => ReplaceSO (allSOs, clonedSOs, so));
+				clonedNode.CopyScriptableObjects ((ScriptableObject so) => ReplaceSO (allSOs, clonedSOs, so));
 			}
 
 			// Also create working copies for specified editorStates, if any
 			// Needs to be in the same function as the EditorState references nodes from the NodeCanvas
 			if (editorStates != null)
 			{
-				for (int nodeEditorStateIndex = 0; nodeEditorStateIndex < editorStates.Count; nodeEditorStateIndex++)
+				for (int stateCnt = 0; stateCnt < editorStates.Length; stateCnt++) 
 				{
-					if (editorStates[nodeEditorStateIndex] == null)
+					if (editorStates[stateCnt] == null)
 						continue;
 
-					NodeEditorState state = Clone (editorStates[nodeEditorStateIndex]);
-					state.canvas = nodeCanvas;
-					state.focusedNode = null;
-					state.selectedNode = state.selectedNode != null? ReplaceSO (allSOs, clonedSOs, state.selectedNode) : null;
-					state.makeTransition = null;
-					state.connectOutput = null;
+					NodeEditorState clonedState = editorStates[stateCnt] = Clone (editorStates[stateCnt]);
+					clonedState.canvas = nodeCanvas;
+					clonedState.focusedNode = null;
+					clonedState.selectedNode = clonedState.selectedNode != null? ReplaceSO (allSOs, clonedSOs, clonedState.selectedNode) : null;
+					clonedState.makeTransition = null;
+					clonedState.connectOutput = null;
 				}	
 			}
 		}
-
-// Returns all references to T in obj, using reflection
-//	private static List<System.Reflection.FieldInfo> GetAllDirectReferences<T> (object obj) 
-//	{
-//		return obj.GetType ()
-//			.GetFields (System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy)
-//			.Where ((System.Reflection.FieldInfo field) => field.FieldType == typeof(T) || field.FieldType.IsSubclassOf (typeof(T)))
-//			.ToList ();
-//	}
 
 		/// <summary>
 		/// Clones the specified SO, preserving it's name
@@ -357,12 +310,12 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Clones SO and writes both versions into the respective list
 		/// </summary>
-		private static ScriptableObject AddClonedSO<T> (List<ScriptableObject> scriptableObjects, List<ScriptableObject> clonedScriptableObjects, T initialSO) where T : ScriptableObject 
+		private static T AddClonedSO<T> (List<ScriptableObject> scriptableObjects, List<ScriptableObject> clonedScriptableObjects, T initialSO) where T : ScriptableObject 
 		{
 			if (initialSO == null)
 				return null;
 			scriptableObjects.Add (initialSO);
-			ScriptableObject clonedSO = Clone (initialSO);
+			T clonedSO = Clone (initialSO);
 			clonedScriptableObjects.Add (clonedSO);
 			return clonedSO;
 		}

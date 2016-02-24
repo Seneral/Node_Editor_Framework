@@ -64,20 +64,14 @@ namespace NodeEditorFramework
 		public void OnDestroy () 
 		{
 			NodeEditor.ClientRepaints -= _editor.Repaint;
-			//SaveCache ();
 
 	#if UNITY_EDITOR
 			// Remove callbacks
-			//EditorLoadingControl.beforeEnteringPlayMode -= SaveCache;
 			EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
-			//EditorLoadingControl.beforeLeavingPlayMode -= SaveCache;
 			EditorLoadingControl.justLeftPlayMode -= LoadCache;
 			EditorLoadingControl.justOpenedNewScene -= LoadCache;
 
 			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
-			NodeEditorCallbacks.OnAddTransition -= SaveNewTransition;
-
-			// TODO: BeforeOpenedScene to save Cache, aswell as assembly reloads... 
 	#endif
 		}
 
@@ -90,13 +84,9 @@ namespace NodeEditorFramework
 
 	#if UNITY_EDITOR
 			// This makes sure the Node Editor is reinitiated after the Playmode changed
-			//EditorLoadingControl.beforeEnteringPlayMode -= SaveCache;
-			//EditorLoadingControl.beforeEnteringPlayMode += SaveCache;
 			EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
 			EditorLoadingControl.lateEnteredPlayMode += LoadCache;
 
-			//EditorLoadingControl.beforeLeavingPlayMode -= SaveCache;
-			//EditorLoadingControl.beforeLeavingPlayMode += SaveCache;
 			EditorLoadingControl.justLeftPlayMode -= LoadCache;
 			EditorLoadingControl.justLeftPlayMode += LoadCache;
 
@@ -105,10 +95,6 @@ namespace NodeEditorFramework
 
 			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
 			NodeEditorCallbacks.OnAddNode += SaveNewNode;
-			NodeEditorCallbacks.OnAddTransition -= SaveNewTransition;
-			NodeEditorCallbacks.OnAddTransition += SaveNewTransition;
-
-			// TODO: BeforeOpenedScene to save Cache, aswell as assembly reloads... 
 	#endif
 		}
 
@@ -192,9 +178,6 @@ namespace NodeEditorFramework
 			if (GUILayout.Button ("Force Re-Init"))
 				NodeEditor.ReInit (true);
 
-			if (NodeEditor.isTransitioning (mainNodeCanvas) && GUILayout.Button ("Stop Transitioning"))
-				NodeEditor.StopTransitioning (mainNodeCanvas);
-
 			NodeEditorGUI.knobSize = EditorGUILayout.IntSlider (new GUIContent ("Handle Size", "The size of the Node Input/Output handles"), NodeEditorGUI.knobSize, 12, 20);
 			mainEditorState.zoom = EditorGUILayout.Slider (new GUIContent ("Zoom", "Use the Mousewheel. Seriously."), mainEditorState.zoom, 0.6f, 2);
 
@@ -215,26 +198,8 @@ namespace NodeEditorFramework
 			if (AssetDatabase.GetAssetPath (mainNodeCanvas) != path)
 				throw new UnityException ("Cache system error: Current Canvas is not saved as the temporary cache!");
 			NodeEditorSaveManager.AddSubAsset (node, path);
-			for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++)
-				NodeEditorSaveManager.AddSubAsset (node.nodeKnobs [knobCnt], path);
-			for (int transCnt = 0; transCnt < node.transitions.Count; transCnt++)
-			{
-				if (node.transitions[transCnt].startNode == node)
-					NodeEditorSaveManager.AddSubAsset (node.transitions [transCnt], path);
-			}
-
-			AssetDatabase.SaveAssets ();
-			AssetDatabase.Refresh ();
-		}
-
-		private void SaveNewTransition (Transition transition) 
-		{
-			if (!mainNodeCanvas.nodes.Contains (transition.startNode) || !mainNodeCanvas.nodes.Contains (transition.endNode))
-				throw new UnityException ("Cache system: Writing new Transition to save file failed as Node members are not part of the Cache!");
-			string path = tempSessionPath + "/LastSession.asset";
-			if (AssetDatabase.GetAssetPath (mainNodeCanvas) != path)
-				throw new UnityException ("Cache system error: Current Canvas is not saved as the temporary cache!");
-			NodeEditorSaveManager.AddSubAsset (transition, path);
+			foreach (NodeKnob knob in node.nodeKnobs)
+				NodeEditorSaveManager.AddSubAsset (knob, path);
 
 			AssetDatabase.SaveAssets ();
 			AssetDatabase.Refresh ();
@@ -242,7 +207,6 @@ namespace NodeEditorFramework
 
 		private void SaveCache () 
 		{
-			//DeleteCache (); // Delete old cache
 			string canvasName = mainNodeCanvas.name;
 			EditorPrefs.SetString ("NodeEditorLastSession", canvasName);
 			NodeEditorSaveManager.SaveNodeCanvas (tempSessionPath + "/LastSession.asset", false, mainNodeCanvas, mainEditorState);
@@ -296,7 +260,6 @@ namespace NodeEditorFramework
 		public void SaveNodeCanvas (string path) 
 		{
 			NodeEditorSaveManager.SaveNodeCanvas (path, true, mainNodeCanvas, mainEditorState);
-			//SaveCache ();
 			Repaint ();
 		}
 		
@@ -305,9 +268,6 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void LoadNodeCanvas (string path) 
 		{
-			// Else it will be stuck forever
-			NodeEditor.StopTransitioning (mainNodeCanvas);
-
 			// Load the NodeCanvas
 			mainNodeCanvas = NodeEditorSaveManager.LoadNodeCanvas (path, true);
 			if (mainNodeCanvas == null) 
@@ -342,9 +302,6 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void NewNodeCanvas () 
 		{
-			// Else it will be stuck forever
-			NodeEditor.StopTransitioning (mainNodeCanvas);
-
 			// New NodeCanvas
 			mainNodeCanvas = CreateInstance<NodeCanvas> ();
 			mainNodeCanvas.name = "New Canvas";
