@@ -1,0 +1,11 @@
+/*.meta
+
+/Docs/**/*.meta
+
+/Editor/**/*.meta
+
+/Node_Editor/*.meta
+
+/Node_Editor/Resources/*.meta
+
+/Node_Editor/Utilities/**/*.meta
