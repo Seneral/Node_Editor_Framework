@@ -2,7 +2,7 @@
 using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
-[Node (true, "Example Node")]
+[Node (false, "Example/Example Node")]
 public class ExampleNode : Node 
 {
 	public const string ID = "exampleNode";

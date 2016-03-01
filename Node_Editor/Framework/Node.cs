@@ -25,9 +25,6 @@ namespace NodeEditorFramework
 		[HideInInspector]
 		[NonSerialized]
 		internal bool calculated = true;
-		
-		// State graph
-		public List<Transition> transitions = new List<Transition> ();
 
 		#region General
 
@@ -36,7 +33,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal void InitBase () 
 		{
-			Calculate ();
+//			Calculate ();
 			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
 				NodeEditor.curNodeCanvas.nodes.Add (this);
 			#if UNITY_EDITOR
@@ -73,10 +70,6 @@ namespace NodeEditorFramework
 				if (nodeKnobs[knobCnt] != null)
 					DestroyImmediate (nodeKnobs[knobCnt], true);
 			}
-			for (int transCnt = 0; transCnt < transitions.Count; transCnt++) 
-			{
-				transitions [transCnt].Delete ();
-			}
 			DestroyImmediate (this, true);
 		}
 
@@ -106,6 +99,8 @@ namespace NodeEditorFramework
 		}
 
 		#endregion
+
+		#region Undeclared Members
 
 		#region Node Type methods (abstract)
 
@@ -145,11 +140,6 @@ namespace NodeEditorFramework
 		/// </summary>
 		public virtual bool ContinueCalculation { get { return true; } }
 
-		/// <summary>
-		/// Does this Node accepts Transitions?
-		/// </summary>
-		public virtual bool AcceptsTranstitions { get { return false; } }
-
         #endregion
 
 		#region Protected Callbacks
@@ -169,23 +159,6 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal virtual void OnAddOutputConnection (NodeOutput output) {}
 
-		/// <summary>
-		/// Callback when the Transition was created
-		/// </summary>
-		protected internal virtual void OnAddTransition (Transition transition) {}
-
-
-		/// <summary>
-		/// Callback when the this Node is being transitioned to. 
-		/// OriginTransition is the transition from which was transitioned to this node OR null if the transitioning process was started on this Node
-		/// </summary>
-		protected internal virtual void OnEnter (Transition originTransition) {}
-
-		/// <summary>
-		/// Callback when the this Node is transitioning to another Node through the passed Transition
-		/// </summary>
-		protected internal virtual void OnLeave (Transition transition) {}
-
 		#endregion
 
 		#region Additional Serialization
@@ -195,7 +168,7 @@ namespace NodeEditorFramework
 		/// That means only the actual SOURCES, simple REFERENCES will not be returned
 		/// This means all SciptableObjects returned here do not have it's source elsewhere
 		/// </summary>
-		protected internal virtual ScriptableObject[] GetScriptableObjects () { return new ScriptableObject[0]; }
+		public virtual ScriptableObject[] GetScriptableObjects () { return new ScriptableObject[0]; }
 
 		/// <summary>
 		/// Replaces all REFERENCES aswell as SOURCES of any ScriptableObjects this Node holds with the cloned versions in the serialization process.
@@ -204,7 +177,9 @@ namespace NodeEditorFramework
 
 		#endregion
 
-		#region Node and Knob Drawing
+		#endregion
+
+		#region Drawing
 
 		/// <summary>
 		/// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
@@ -216,10 +191,6 @@ namespace NodeEditorFramework
 			Rect nodeRect = rect;
 			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust;
 			contentOffset = new Vector2 (0, 20);
-
-			// Mark the current transitioning node as such by outlining it
-			if (NodeEditor.curNodeCanvas.currentNode == this)
-				GUI.DrawTexture (new Rect (nodeRect.x-8, nodeRect.y-8, nodeRect.width+16, nodeRect.height+16), NodeEditorGUI.GUIBoxSelection);
 
 			// Create a headerRect out of the previous rect and draw it, marking the selected node as such by making the header bold
 			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, contentOffset.y);
@@ -266,35 +237,23 @@ namespace NodeEditorFramework
 				{
 					NodeInput input = output.connections [conCnt];
 					NodeEditorGUI.DrawConnection (startPos,
-					                           startDir,
-					                           input.GetGUIKnob ().center,
-					                           input.GetDirection (),
-					                           ConnectionTypes.GetTypeData (output.type).col);
+													startDir,
+													input.GetGUIKnob ().center,
+													input.GetDirection (),
+													output.typeData.col);
 				}
 			}
 		}
-		
-		/// <summary>
-		/// Draws the node transitions starting from this node
-		/// </summary>
-		public void DrawTransitions () 
-		{
-			for (int cnt = 0; cnt < transitions.Count; cnt++)
-			{
-				if (transitions[cnt].startNode == this)
-					transitions[cnt].DrawFromStartNode ();
-			}
-		}
 
-        /// <summary>
-        /// Used to display a custom node property editor in the side window of the NodeEditorWindow
-        /// Optionally override this to implement
-        /// </summary>
-        public virtual void DrawNodePropertyEditor() { }
+		/// <summary>
+		/// Used to display a custom node property editor in the side window of the NodeEditorWindow
+		/// Optionally override this to implement
+		/// </summary>
+		public virtual void DrawNodePropertyEditor() { }
 
 		#endregion
 		
-		#region Node Calculation Utility
+		#region Calculation Utility
 		
 		/// <summary>
 		/// Checks if there are no unassigned and no null-value inputs.
@@ -345,30 +304,30 @@ namespace NodeEditorFramework
 
 		#endregion
 
-		#region Node Knob Utility
+		#region Knob Utility
 
 		// -- OUTPUTS --
 
 		/// <summary>
 		/// Creates and output on your Node of the given type.
 		/// </summary>
-		public void CreateOutput (string outputName, string outputType)
+		public NodeOutput CreateOutput (string outputName, string outputType)
 		{
-			NodeOutput.Create (this, outputName, outputType);
+			return NodeOutput.Create (this, outputName, outputType);
 		}
 		/// <summary>
 		/// Creates and output on this Node of the given type at the specified NodeSide.
 		/// </summary>
-		public void CreateOutput (string outputName, string outputType, NodeSide nodeSide)
+		public NodeOutput CreateOutput (string outputName, string outputType, NodeSide nodeSide)
 		{
-			NodeOutput.Create (this, outputName, outputType, nodeSide);
+			return NodeOutput.Create (this, outputName, outputType, nodeSide);
 		}
 		/// <summary>
 		/// Creates and output on this Node of the given type at the specified NodeSide and position.
 		/// </summary>
-		public void CreateOutput (string outputName, string outputType, NodeSide nodeSide, float sidePosition)
+		public NodeOutput CreateOutput (string outputName, string outputType, NodeSide nodeSide, float sidePosition)
 		{
-			NodeOutput.Create (this, outputName, outputType, nodeSide, sidePosition);
+			return NodeOutput.Create (this, outputName, outputType, nodeSide, sidePosition);
 		}
 
 		/// <summary>
@@ -400,23 +359,23 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Creates and input on your Node of the given type.
 		/// </summary>
-		public void CreateInput (string inputName, string inputType)
+		public NodeInput CreateInput (string inputName, string inputType)
 		{
-			NodeInput.Create (this, inputName, inputType);
+			return NodeInput.Create (this, inputName, inputType);
 		}
 		/// <summary>
 		/// Creates and input on this Node of the given type at the specified NodeSide.
 		/// </summary>
-		public void CreateInput (string inputName, string inputType, NodeSide nodeSide)
+		public NodeInput CreateInput (string inputName, string inputType, NodeSide nodeSide)
 		{
-			NodeInput.Create (this, inputName, inputType, nodeSide);
+			return NodeInput.Create (this, inputName, inputType, nodeSide);
 		}
 		/// <summary>
 		/// Creates and input on this Node of the given type at the specified NodeSide and position.
 		/// </summary>
-		public void CreateInput (string inputName, string inputType, NodeSide nodeSide, float sidePosition)
+		public NodeInput CreateInput (string inputName, string inputType, NodeSide nodeSide, float sidePosition)
 		{
-			NodeInput.Create (this, inputName, inputType, nodeSide, sidePosition);
+			return NodeInput.Create (this, inputName, inputType, nodeSide, sidePosition);
 		}
 
 		/// <summary>
@@ -442,9 +401,49 @@ namespace NodeEditorFramework
 			return null;
 		}
 
+		/// <summary>
+		/// Reassigns the type of the given output. This actually recreates it
+		/// </summary>
+		protected static void ReassignOutputType (ref NodeOutput output, Type newOutputType) 
+		{
+			Node body = output.body;
+			string outputName = output.name;
+			// Store all valid connections that are not affected by the type change
+			IEnumerable<NodeInput> validConnections = output.connections.Where ((NodeInput connection) => connection.typeData.Type.IsAssignableFrom (newOutputType));
+			// Delete the output of the old type
+			output.Delete ();
+			// Create Output with new type
+			NodeEditorCallbacks.IssueOnAddNodeKnob (NodeOutput.Create (body, outputName, newOutputType.AssemblyQualifiedName));
+			output = body.Outputs[body.Outputs.Count-1];
+			// Restore the valid connections
+			foreach (NodeInput input in validConnections)
+				input.ApplyConnection (output);
+		}
+
+		/// <summary>
+		/// Reassigns the type of the given output. This actually recreates it
+		/// </summary>
+		protected static void ReassignInputType (ref NodeInput input, Type newInputType) 
+		{
+			Node body = input.body;
+			string inputName = input.name;
+			// Store the valid connection if it's not affected by the type change
+			NodeOutput validConnection = null;
+			if (input.connection != null && newInputType.IsAssignableFrom (input.connection.typeData.Type))
+				validConnection = input.connection;
+			// Delete the input of the old type
+			input.Delete ();
+			// Create Output with new type
+			NodeEditorCallbacks.IssueOnAddNodeKnob (NodeInput.Create (body, inputName, newInputType.AssemblyQualifiedName));
+			input = body.Inputs[body.Inputs.Count-1];
+			// Restore the valid connections
+			if (validConnection != null)
+				input.ApplyConnection (validConnection);
+		}
+
 		#endregion
 
-		#region Recursive Search Utility
+		#region Node Utility
 
 		/// <summary>
 		/// Recursively checks whether this node is a child of the other node
@@ -587,24 +586,6 @@ namespace NodeEditorFramework
 		}
 
 		#endregion
-
-		#endregion
-
-		#region Static Connection Utility
-
-		/// <summary>
-		/// Creates a transition from node to node
-		/// </summary>
-		public static void CreateTransition (Node fromNode, Node toNode) 
-		{
-			Transition trans = Transition.Create (fromNode, toNode);
-			if (trans != null)
-			{
-				fromNode.OnAddTransition (trans);
-				toNode.OnAddTransition (trans);
-				NodeEditorCallbacks.IssueOnAddTransition (trans);
-			}
-		}
 
 		#endregion
 	}

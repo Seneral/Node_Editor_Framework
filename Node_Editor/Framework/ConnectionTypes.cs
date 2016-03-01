@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
@@ -38,13 +39,20 @@ namespace NodeEditorFramework
 			TypeData typeData;
 			if (!types.TryGetValue (typeName, out typeData))
 			{
-				Debug.LogError ("No TypeData defined for: " + typeName);
-				typeData = types.First ().Value;
-			}
-			if (typeData.declaration == null || typeData.InputKnob == null || typeData.OutputKnob == null)
-			{
-				NodeEditor.ReInit (false);
-				typeData = GetTypeData (typeName);
+				Type type = Type.GetType (typeName);
+				if (type == null)
+				{
+					typeData = types.First ().Value;
+					Debug.LogError ("No TypeData defined for: " + typeName + " and type could not be found either");
+				}
+				else 
+				{
+					List<TypeData> typeDatas = types.Values.ToList ();
+					//typeData = typeDatas.First ((TypeData data) => data.isValid () && data.Type == type);
+					typeData = typeDatas.Find ((TypeData data) => data.isValid () && data.Type == type);
+					if (typeData == null)
+						types.Add (typeName, typeData = new TypeData (type));
+				}
 			}
 			return typeData;
 		}
@@ -56,9 +64,7 @@ namespace NodeEditorFramework
 		{
 			types = new Dictionary<string, TypeData> ();
 
-			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where ((Assembly assembly) => assembly.FullName.Contains ("Assembly")).ToList ();
-			if (!scriptAssemblies.Contains (Assembly.GetExecutingAssembly ()))
-				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
+			IEnumerable<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where ((Assembly assembly) => assembly.FullName.Contains ("Assembly"));
 			foreach (Assembly assembly in scriptAssemblies) 
 			{
 				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.GetInterfaces ().Contains (typeof (ITypeDeclaration)))) 
@@ -72,7 +78,7 @@ namespace NodeEditorFramework
 		}
 	}
 
-	public struct TypeData 
+	public class TypeData 
 	{
 		public ITypeDeclaration declaration;
 		public Type Type;
@@ -88,6 +94,28 @@ namespace NodeEditorFramework
 
 			InputKnob = ResourceManager.GetTintedTexture (declaration.InputKnob_TexPath, col);
 			OutputKnob = ResourceManager.GetTintedTexture (declaration.OutputKnob_TexPath, col);
+		}
+
+		public TypeData (Type type) 
+		{
+			declaration = null;
+			Type = type;
+			col = Color.white;//(float)type.GetHashCode() / (int.MaxValue/3);
+
+			// int - 3x float
+			int srcInt = type.GetHashCode ();
+			byte[] bytes = BitConverter.GetBytes (srcInt);
+			//Debug.Log ("hash " + srcInt + " from type " + type.FullName + " has byte count of " + bytes.Length);
+			col = new Color (Mathf.Pow (((float)bytes[0])/255, 0.5f), Mathf.Pow (((float)bytes[1])/255, 0.5f), Mathf.Pow (((float)bytes[2])/255, 0.5f));
+			//Debug.Log ("Color " + col.ToString ());
+
+			InputKnob = ResourceManager.GetTintedTexture ("Textures/In_Knob.png", col);
+			OutputKnob = ResourceManager.GetTintedTexture ("Textures/Out_Knob.png", col);
+		}
+
+		public bool isValid () 
+		{
+			return Type != null && InputKnob != null && OutputKnob != null;
 		}
 	}
 
@@ -109,6 +137,4 @@ namespace NodeEditorFramework
 		public string OutputKnob_TexPath { get { return "Textures/Out_Knob.png"; } }
 		public Type Type { get { return typeof(float); } }
 	}
-
-
 }

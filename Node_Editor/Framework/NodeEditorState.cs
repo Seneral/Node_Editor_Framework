@@ -22,8 +22,6 @@ namespace NodeEditorFramework
 		[NonSerialized]
 		public bool dragNode = false;
 		[NonSerialized]
-		public Node makeTransition; // make transition from node
-		[NonSerialized]
 		public NodeOutput connectOutput; // connection this output
 
 		// Navigation State

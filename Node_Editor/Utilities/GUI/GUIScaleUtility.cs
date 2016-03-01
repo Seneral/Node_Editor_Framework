@@ -13,7 +13,11 @@ namespace NodeEditorFramework.Utilities
 		private static bool compabilityMode;
 		private static bool initiated;
 
-		// Fast.Reflection delegates
+		// cache the reflected methods
+		private static FieldInfo currentGUILayoutCache;
+		private static FieldInfo currentTopLevelGroup;
+
+		// Delegates to the reflected methods
 		private static Func<Rect> GetTopRectDelegate;
 		private static Func<Rect> topmostRectDelegate;
 
@@ -28,9 +32,6 @@ namespace NodeEditorFramework.Utilities
 		// Matrices stack
 		private static List<Matrix4x4> GUIMatrices;
 		private static List<bool> adjustedGUILayout;
-
-		private static FieldInfo currentGUILayoutCache;
-		private static FieldInfo currentTopLevelGroup;
 
 		#region Init
 
@@ -106,17 +107,17 @@ namespace NodeEditorFramework.Utilities
 
 		#region Scale Area
 
-//		public static Vector2 secondaryGroupOffset;
-//
-//		public static Vector2 primaryScale;
-//		public static Vector2 primaryZoomPanAdjust;
-//		public static Rect primaryInitialRect;
-//		public static Rect primaryScaledRect;
-//
-//		public static Vector2 secondaryScale;
-//		public static Vector2 secondaryZoomPanAdjust;
-//		public static Rect secondaryInitialRect;
-//		public static Rect secondaryScaledRect;
+		//		public static Vector2 secondaryGroupOffset;
+		//
+		//		public static Vector2 primaryScale;
+		//		public static Vector2 primaryZoomPanAdjust;
+		//		public static Rect primaryInitialRect;
+		//		public static Rect primaryScaledRect;
+		//
+		//		public static Vector2 secondaryScale;
+		//		public static Vector2 secondaryZoomPanAdjust;
+		//		public static Rect secondaryInitialRect;
+		//		public static Rect secondaryScaledRect;
 
 		public static Vector2 getCurrentScale { get { return new Vector2 (1/GUI.matrix.GetColumn (0).magnitude, 1/GUI.matrix.GetColumn (1).magnitude); } } 
 
@@ -132,46 +133,46 @@ namespace NodeEditorFramework.Utilities
 			{ // In compability mode, we will assume only one top group and do everything manually, not using reflected calls (-> practically blind)
 				GUI.EndGroup ();
 				screenRect = rect;
-			#if UNITY_EDITOR
+				#if UNITY_EDITOR
 				if (!Application.isPlaying)
 					screenRect.y += 23;
-			#endif
+				#endif
 			}
 			else
 			{ // If it's supported, we take the completely generic way using reflected calls
 				GUIScaleUtility.BeginNoClip ();
-				screenRect = GUIScaleUtility.InnerToScreenRect (rect);
+				screenRect = GUIScaleUtility.GUIToScaledSpace (rect);
 			}
 
-//			Vector2 GUIScale = getCurrentScale;
+			//			Vector2 GUIScale = getCurrentScale;
 
-			rect = ScaleRect (screenRect, screenRect.position + zoomPivot, new Vector2 (zoom, zoom));
+			rect = Scale (screenRect, screenRect.position + zoomPivot, new Vector2 (zoom, zoom));
 
-//			bool primary = adjustedGUILayout.Count == 0;
-//			if (!primary) 
-//			{
-//				rect.position += secondaryGroupOffset;
-//
-//				secondaryScale = new Vector2 (zoom, zoom);
-//				secondaryInitialRect = screenRect;
-//				secondaryScaledRect = rect;
-//			}
-//			else 
-//			{
-//				primaryScale = new Vector2 (zoom, zoom);
-//				primaryInitialRect = screenRect;
-//				primaryScaledRect = rect;
-//			}
+			//			bool primary = adjustedGUILayout.Count == 0;
+			//			if (!primary) 
+			//			{
+			//				rect.position += secondaryGroupOffset;
+			//
+			//				secondaryScale = new Vector2 (zoom, zoom);
+			//				secondaryInitialRect = screenRect;
+			//				secondaryScaledRect = rect;
+			//			}
+			//			else 
+			//			{
+			//				primaryScale = new Vector2 (zoom, zoom);
+			//				primaryInitialRect = screenRect;
+			//				primaryScaledRect = rect;
+			//			}
 
 			// Now continue drawing using the new clipping group
 			GUI.BeginGroup (rect);
 			rect.position = Vector2.zero; // Adjust because we entered the new group
-			
+
 			// Because I currently found no way to actually scale to a custom pivot rather than (0, 0),
 			// we'll make use of a cheat and just offset it accordingly to let it appear as if it would scroll to the center
 			// Note, due to that, controls not adjusted are still scaled to (0, 0)
 			Vector2 zoomPosAdjust = rect.center - screenRect.size/2 + zoomPivot;
-			
+
 			// For GUILayout, we can make this adjustment here if desired
 			adjustedGUILayout.Add (adjustGUILayout);
 			if (adjustGUILayout)
@@ -181,25 +182,25 @@ namespace NodeEditorFramework.Utilities
 				GUILayout.BeginVertical ();
 				GUILayout.Space (rect.center.y - screenRect.size.y + zoomPivot.y);
 			}
-			
+
 			// Take a matrix backup to restore back later on
 			GUIMatrices.Add (GUI.matrix);
-			
+
 			// Scale GUI.matrix. After that we have the correct clipping group again.
 			GUIUtility.ScaleAroundPivot (new Vector2 (1/zoom, 1/zoom), zoomPosAdjust);
 
-//			if (!primary) 
-//			{
-//				secondaryZoomPanAdjust = zoomPosAdjust;
-//			}
-//			else 
-//			{
-//				primaryZoomPanAdjust = zoomPosAdjust;
-//			}
+			//			if (!primary) 
+			//			{
+			//				secondaryZoomPanAdjust = zoomPosAdjust;
+			//			}
+			//			else 
+			//			{
+			//				primaryZoomPanAdjust = zoomPosAdjust;
+			//			}
 
 			return zoomPosAdjust;
 		}
-		
+
 		/// <summary>
 		/// Ends a scale region previously opened with BeginScale
 		/// </summary>
@@ -210,7 +211,7 @@ namespace NodeEditorFramework.Utilities
 				throw new UnityException ("GUIScaleUtility: You are ending more scale regions than you are beginning!");
 			GUI.matrix = GUIMatrices[GUIMatrices.Count-1];
 			GUIMatrices.RemoveAt (GUIMatrices.Count-1);
-			
+
 			// End GUILayout zoomPosAdjustment
 			if (adjustedGUILayout[adjustedGUILayout.Count-1])
 			{
@@ -234,7 +235,7 @@ namespace NodeEditorFramework.Utilities
 				GUIScaleUtility.RestoreClips ();
 			}
 		}
-		
+
 		#endregion
 
 		#region Clips Hierarchy
@@ -353,12 +354,12 @@ namespace NodeEditorFramework.Utilities
 
 		#endregion
 
-		#region Helpers
+		#region Transformation Helpers
 
 		/// <summary>
-		/// Scales the rect around the pivot with scale
+		/// Scales the position around the pivot with scale
 		/// </summary>
-		public static Vector2 ScalePosition (Vector2 pos, Vector2 pivot, Vector2 scale) 
+		public static Vector2 Scale (Vector2 pos, Vector2 pivot, Vector2 scale) 
 		{
 			return Vector2.Scale (pos - pivot, scale) + pivot;
 		}
@@ -366,7 +367,7 @@ namespace NodeEditorFramework.Utilities
 		/// <summary>
 		/// Scales the rect around the pivot with scale
 		/// </summary>
-		public static Rect ScaleRect (Rect rect, Vector2 pivot, Vector2 scale) 
+		public static Rect Scale (Rect rect, Vector2 pivot, Vector2 scale) 
 		{
 			rect.position = Vector2.Scale (rect.position - pivot, scale) + pivot;
 			rect.size = Vector2.Scale (rect.size, scale);
@@ -374,29 +375,82 @@ namespace NodeEditorFramework.Utilities
 		}
 
 		/// <summary>
-		/// Transforms the rect to the new space aquired with BeginNoClip or MoveClipsUp. 
-		/// It's way faster to call GUIToScreenRect before calling any of these functions though!
+		/// Transforms the position from the space aquired with BeginNoClip or MoveClipsUp to it's previous space
 		/// </summary>
-		public static Rect InnerToScreenRect (Rect innerRect) 
+		public static Vector2 ScaledToGUISpace (Vector2 scaledPosition) 
 		{
 			if (rectStackGroups == null || rectStackGroups.Count == 0)
-				return innerRect;
-
-			// Iterate through the clips and add positions ontop
+				return scaledPosition;
+			// Iterate through the clips and substract positions
 			List<Rect> rectStackGroup = rectStackGroups[rectStackGroups.Count-1];
 			for (int clipCnt = 0; clipCnt < rectStackGroup.Count; clipCnt++)
-				innerRect.position += rectStackGroup[clipCnt].position;
-			return innerRect;
+				scaledPosition -= rectStackGroup[clipCnt].position;
+			return scaledPosition;
+		}
+		/// <summary>
+		/// Transforms the rect from the space aquired with BeginNoClip or MoveClipsUp to it's previous space.
+		/// DOES NOT scale the rect, only offsets it!
+		/// </summary>
+		public static Rect ScaledToGUISpace (Rect scaledRect) 
+		{
+			if (rectStackGroups == null || rectStackGroups.Count == 0)
+				return scaledRect;
+			scaledRect.position = ScaledToGUISpace (scaledRect.position);
+			return scaledRect;
 		}
 
 		/// <summary>
-		/// Transforms the rect to screen space. 
-		/// Use InnerToScreenRect when you want to transform an old rect to the new space aquired with BeginNoClip or MoveClipsUp (slower, try to call this function before any of these two)!
-		/// ATTENTION: This does not work well when any of the top groups is negative, means extends to the top or left of the screen. You may consider to use InnerToScreenRect then, if possible!
+		/// Transforms the position to the new space aquired with BeginNoClip or MoveClipsUp
+		/// It's way faster to call GUIToScreenSpace before modifying the space though!
 		/// </summary>
-		public static Rect GUIToScreenRect (Rect guiRect) 
+		public static Vector2 GUIToScaledSpace (Vector2 guiPosition) 
+		{
+			if (rectStackGroups == null || rectStackGroups.Count == 0)
+				return guiPosition;
+			// Iterate through the clips and add positions ontop
+			List<Rect> rectStackGroup = rectStackGroups[rectStackGroups.Count-1];
+			for (int clipCnt = 0; clipCnt < rectStackGroup.Count; clipCnt++)
+				guiPosition += rectStackGroup[clipCnt].position;
+			return guiPosition;
+		}
+		/// <summary>
+		/// Transforms the rect to the new space aquired with BeginNoClip or MoveClipsUp.
+		/// DOES NOT scale the rect, only offsets it!
+		/// It's way faster to call GUIToScreenSpace before modifying the space though!
+		/// </summary>
+		public static Rect GUIToScaledSpace (Rect guiRect) 
+		{
+			if (rectStackGroups == null || rectStackGroups.Count == 0)
+				return guiRect;
+			guiRect.position = GUIToScaledSpace (guiRect.position);
+			return guiRect;
+		}
+
+		/// <summary>
+		/// Transforms the position to screen space.
+		/// You can use GUIToScaledSpace when you want to transform an old rect to the new space aquired with BeginNoClip or MoveClipsUp (slower, try to call this function before any of these two)!
+		/// ATTENTION: This does not work well when any of the top groups is negative, means extends to the top or left of the screen. You may consider to use GUIToScaledSpace then, if possible!
+		/// </summary>
+		public static Vector2 GUIToScreenSpace (Vector2 guiPosition) 
+		{
+			#if UNITY_EDITOR
+			if (!Application.isPlaying)
+				return guiPosition + getTopRectScreenSpace.position - new Vector2 (0, 22);
+			#endif
+			return guiPosition + getTopRectScreenSpace.position;
+		}
+		/// <summary>
+		/// Transforms the rect to screen space.
+		/// You can use GUIToScaledSpace when you want to transform an old rect to the new space aquired with BeginNoClip or MoveClipsUp (slower, try to call this function before any of these two)!
+		/// ATTENTION: This does not work well when any of the top groups is negative, means extends to the top or left of the screen. You may consider to use GUIToScaledSpace then, if possible!
+		/// </summary>
+		public static Rect GUIToScreenSpace (Rect guiRect) 
 		{
 			guiRect.position += getTopRectScreenSpace.position;
+			#if UNITY_EDITOR
+			if (!Application.isPlaying)
+				guiRect.y -= 22;
+			#endif
 			return guiRect;
 		}
 

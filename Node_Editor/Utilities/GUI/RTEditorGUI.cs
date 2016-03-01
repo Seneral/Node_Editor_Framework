@@ -15,10 +15,10 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static string TextField (GUIContent label, string text)
 		{
-		#if UNITY_EDITOR
+			#if UNITY_EDITOR
 			if (!Application.isPlaying)
 				return UnityEditor.EditorGUILayout.TextField (label, text);
-		#endif
+			#endif
 			GUILayout.BeginHorizontal ();
 			GUILayout.Label (label, label != GUIContent.none? GUILayout.ExpandWidth (true) : GUILayout.ExpandWidth (false));
 			text = GUILayout.TextField (text);
@@ -34,10 +34,10 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static float Slider (float value, float minValue, float maxValue, params GUILayoutOption[] sliderOptions) 
 		{
-		#if UNITY_EDITOR
+			#if UNITY_EDITOR
 			if (!Application.isPlaying)
 				return UnityEditor.EditorGUILayout.Slider (value, minValue, maxValue, sliderOptions);
-		#endif
+			#endif
 			return Slider (GUIContent.none, value, minValue, maxValue, sliderOptions);
 		}
 
@@ -47,10 +47,10 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static float Slider (GUIContent label, float value, float minValue, float maxValue, params GUILayoutOption[] sliderOptions) 
 		{
-		#if UNITY_EDITOR
+			#if UNITY_EDITOR
 			if (!Application.isPlaying)
 				return UnityEditor.EditorGUILayout.Slider (label, value, minValue, maxValue, sliderOptions);
-		#endif
+			#endif
 			GUILayout.BeginHorizontal ();
 			if (label != GUIContent.none)
 				GUILayout.Label (label, GUILayout.ExpandWidth (true));
@@ -216,31 +216,31 @@ namespace NodeEditorFramework.Utilities
 		public static T ObjectField<T> (GUIContent label, T obj, bool allowSceneObjects) where T : Object
 		{
 			#if UNITY_EDITOR
-			if (!Application.isPlaying)
-				return UnityEditor.EditorGUILayout.ObjectField (GUIContent.none, obj, typeof (T), allowSceneObjects) as T;
-			#endif	
-			throw new System.NotImplementedException ();
-//		if (Application.isPlaying)
-//		{
-//			bool open = false;
-//			if (typeof(T).Name == "UnityEngine.Texture2D") 
-//			{
-//				label.image = obj as Texture2D;
-//				GUIStyle style = new GUIStyle (GUI.skin.box);
-//				style.imagePosition = ImagePosition.ImageAbove;
-//				open = GUILayout.Button (label, style);
-//			}
-//			else
-//			{
-//				GUIStyle style = new GUIStyle (GUI.skin.box);
-//				open = GUILayout.Button (label, style);
-//			}
-//			if (open)
-//			{
-//				Debug.Log ("Selecting Object!");
-//			}
-//		}
-//		return obj;
+			//if (!Application.isPlaying)
+			return UnityEditor.EditorGUILayout.ObjectField (label, obj, typeof (T), allowSceneObjects) as T;
+			#else
+			if (Application.isPlaying)
+			{
+				bool open = false;
+				if (typeof(T) == typeof (Texture2D)) 
+				{
+					label.image = obj as Texture2D;
+					GUIStyle style = new GUIStyle (GUI.skin.box);
+					style.imagePosition = ImagePosition.ImageAbove;
+					open = GUILayout.Button (label, style);
+				}
+				else
+				{
+					GUIStyle style = new GUIStyle (GUI.skin.box);
+					open = GUILayout.Button (label, style);
+				}
+				if (open)
+				{
+					//Debug.Log ("Selecting Object!");
+				}
+			}
+			return obj;
+			#endif
 		}
 
 		#endregion
@@ -445,7 +445,7 @@ namespace NodeEditorFramework.Utilities
 
 					if (clippedP0)
 					{ // Just became visible, so enable GL again and draw the clipped line start point
-						GL.End();
+						GL.End ();
 						GL.Begin (GL.TRIANGLE_STRIP);
 						DrawLineSegment (curPoint, perpendicular * width/2);
 					}
@@ -475,9 +475,9 @@ namespace NodeEditorFramework.Utilities
 		private static int CalculateBezierSegmentCount (Vector2 startPos, Vector2 endPos, Vector2 startTan, Vector2 endTan) 
 		{
 			float straightFactor = Vector2.Angle (startTan-startPos, endPos-startPos) * Vector2.Angle (endTan-endPos, startPos-endPos) * (endTan.magnitude+startTan.magnitude);
-			straightFactor = 2 + Mathf.Pow (straightFactor / 400, 1.0f/8);
+			straightFactor = 2 + Mathf.Pow (straightFactor / 400, 0.125f); // 1/8
 			float distanceFactor = 1 + (startPos-endPos).magnitude;
-			distanceFactor = Mathf.Pow (distanceFactor, 1.0f/4);
+			distanceFactor = Mathf.Pow (distanceFactor, 0.25f); // 1/4
 			return 4 + (int)(straightFactor * distanceFactor);
 		}
 
@@ -506,9 +506,9 @@ namespace NodeEditorFramework.Utilities
 			float rtt = rt * t;
 
 			return startPos  * rt*rt*rt + 
-					startTan * 3 * rt * rtt + 
-					endTan   * 3 * rtt * t + 
-					endPos   * t*t*t;
+				startTan * 3 * rt * rtt + 
+				endTan   * 3 * rtt * t + 
+				endPos   * t*t*t;
 		}
 
 		/// <summary>
@@ -631,9 +631,9 @@ namespace NodeEditorFramework.Utilities
 		}
 
 		#endregion
-		
+
 		#region Texture Utilities
-		
+
 		/// <summary>
 		/// Create a 1x1 tex with color col
 		/// </summary>
@@ -646,7 +646,7 @@ namespace NodeEditorFramework.Utilities
 			tex.Apply ();
 			return tex;
 		}
-		
+
 		/// <summary>
 		/// Tint the texture with the color. It's advised to use ResourceManager.GetTintedTexture to account for doubles.
 		/// </summary>
@@ -659,7 +659,7 @@ namespace NodeEditorFramework.Utilities
 			tintedTex.Apply ();
 			return tintedTex;
 		}
-		
+
 		/// <summary>
 		/// Rotates the texture Counter-Clockwise, 'quarterSteps' specifying the times
 		/// </summary>
@@ -684,7 +684,7 @@ namespace NodeEditorFramework.Utilities
 			tex.Apply ();
 			return tex;
 		}
-		
+
 		#endregion
 	}
 }

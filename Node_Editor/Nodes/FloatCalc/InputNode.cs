@@ -13,7 +13,7 @@ public class InputNode : Node
 	public float value = 1f;
 
 	public override Node Create (Vector2 pos) 
-	{ // This function has to be registered in Node_Editor.ContextCallback
+	{
 		InputNode node = CreateInstance <InputNode> ();
 		
 		node.name = "Input Node";

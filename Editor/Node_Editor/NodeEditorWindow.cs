@@ -49,7 +49,7 @@ namespace NodeEditorFramework
 		/// Handle opening canvas when double-clicking asset
 		/// </summary>
 		[UnityEditor.Callbacks.OnOpenAsset(1)]
-		public static bool AutoOpenCanvas (int instanceID, int line) 
+		private static bool AutoOpenCanvas (int instanceID, int line) 
 		{
 			if (Selection.activeObject != null && Selection.activeObject.GetType () == typeof(NodeCanvas))
 			{
@@ -61,7 +61,7 @@ namespace NodeEditorFramework
 			return false;
 		}
 
-		public void OnDestroy () 
+		private void OnDestroy () 
 		{
 			NodeEditor.ClientRepaints -= _editor.Repaint;
 			//SaveCache ();
@@ -75,7 +75,7 @@ namespace NodeEditorFramework
 			EditorLoadingControl.justOpenedNewScene -= LoadCache;
 
 			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
-			NodeEditorCallbacks.OnAddTransition -= SaveNewTransition;
+			NodeEditorCallbacks.OnAddNodeKnob -= SaveNewNodeKnob;
 
 			// TODO: BeforeOpenedScene to save Cache, aswell as assembly reloads... 
 	#endif
@@ -105,8 +105,8 @@ namespace NodeEditorFramework
 
 			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
 			NodeEditorCallbacks.OnAddNode += SaveNewNode;
-			NodeEditorCallbacks.OnAddTransition -= SaveNewTransition;
-			NodeEditorCallbacks.OnAddTransition += SaveNewTransition;
+			NodeEditorCallbacks.OnAddNodeKnob -= SaveNewNodeKnob;
+			NodeEditorCallbacks.OnAddNodeKnob += SaveNewNodeKnob;
 
 			// TODO: BeforeOpenedScene to save Cache, aswell as assembly reloads... 
 	#endif
@@ -140,7 +140,7 @@ namespace NodeEditorFramework
 			{
 				NodeEditor.DrawCanvas (mainNodeCanvas, mainEditorState);
 			}
-			catch (Exception e)
+			catch (UnityException e)
 			{ // on exceptions in drawing flush the canvas to avoid locking the ui.
 				NewNodeCanvas ();
 				NodeEditor.ReInit (true);
@@ -191,14 +191,12 @@ namespace NodeEditorFramework
 
 			if (GUILayout.Button ("Force Re-Init"))
 				NodeEditor.ReInit (true);
-
-			if (NodeEditor.isTransitioning (mainNodeCanvas) && GUILayout.Button ("Stop Transitioning"))
-				NodeEditor.StopTransitioning (mainNodeCanvas);
-
+			
 			NodeEditorGUI.knobSize = EditorGUILayout.IntSlider (new GUIContent ("Handle Size", "The size of the Node Input/Output handles"), NodeEditorGUI.knobSize, 12, 20);
 			mainEditorState.zoom = EditorGUILayout.Slider (new GUIContent ("Zoom", "Use the Mousewheel. Seriously."), mainEditorState.zoom, 0.6f, 2);
 
-            if (mainEditorState.selectedNode != null && Event.current.type != EventType.Ignore)
+            if (mainEditorState.selectedNode != null)
+                if (Event.current.type != EventType.Ignore)
                     mainEditorState.selectedNode.DrawNodePropertyEditor();
         }
 
@@ -206,45 +204,41 @@ namespace NodeEditorFramework
 
 		#region Cache
 
+		private string lastSessionPath { get { return tempSessionPath + "/LastSession.asset"; } }
+
 		private void SaveNewNode (Node node) 
 		{
 			if (!mainNodeCanvas.nodes.Contains (node))
 				throw new UnityException ("Cache system: Writing new Node to save file failed as Node is not part of the Cache!");
-			string path = tempSessionPath + "/LastSession.asset";
-			if (AssetDatabase.GetAssetPath (mainNodeCanvas) != path)
-				throw new UnityException ("Cache system error: Current Canvas is not saved as the temporary cache!");
-			NodeEditorSaveManager.AddSubAsset (node, path);
-			for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++)
-				NodeEditorSaveManager.AddSubAsset (node.nodeKnobs [knobCnt], path);
-			for (int transCnt = 0; transCnt < node.transitions.Count; transCnt++)
+			
+			NodeEditorSaveManager.AddSubAsset (node, lastSessionPath);
+			foreach (ScriptableObject so in node.GetScriptableObjects ())
+				NodeEditorSaveManager.AddSubAsset (so, node);
+			
+			foreach (NodeKnob knob in node.nodeKnobs)
 			{
-				if (node.transitions[transCnt].startNode == node)
-					NodeEditorSaveManager.AddSubAsset (node.transitions [transCnt], path);
+				NodeEditorSaveManager.AddSubAsset (knob, node);
+				foreach (ScriptableObject so in knob.GetScriptableObjects ())
+					NodeEditorSaveManager.AddSubAsset (so, knob);
 			}
 
 			AssetDatabase.SaveAssets ();
 			AssetDatabase.Refresh ();
 		}
 
-		private void SaveNewTransition (Transition transition) 
+		private void SaveNewNodeKnob (NodeKnob knob) 
 		{
-			if (!mainNodeCanvas.nodes.Contains (transition.startNode) || !mainNodeCanvas.nodes.Contains (transition.endNode))
-				throw new UnityException ("Cache system: Writing new Transition to save file failed as Node members are not part of the Cache!");
-			string path = tempSessionPath + "/LastSession.asset";
-			if (AssetDatabase.GetAssetPath (mainNodeCanvas) != path)
-				throw new UnityException ("Cache system error: Current Canvas is not saved as the temporary cache!");
-			NodeEditorSaveManager.AddSubAsset (transition, path);
-
-			AssetDatabase.SaveAssets ();
-			AssetDatabase.Refresh ();
+			NodeEditorSaveManager.AddSubAsset (knob, knob.body);
+			foreach (ScriptableObject so in knob.GetScriptableObjects ())
+				NodeEditorSaveManager.AddSubAsset (so, knob);
 		}
 
 		private void SaveCache () 
 		{
-			//DeleteCache (); // Delete old cache
 			string canvasName = mainNodeCanvas.name;
 			EditorPrefs.SetString ("NodeEditorLastSession", canvasName);
-			NodeEditorSaveManager.SaveNodeCanvas (tempSessionPath + "/LastSession.asset", false, mainNodeCanvas, mainEditorState);
+
+			NodeEditorSaveManager.SaveNodeCanvas (lastSessionPath, false, mainNodeCanvas, mainEditorState);
 			mainNodeCanvas.name = canvasName;
 
 			AssetDatabase.SaveAssets ();
@@ -254,35 +248,40 @@ namespace NodeEditorFramework
 		private void LoadCache () 
 		{
 			string lastSessionName = EditorPrefs.GetString ("NodeEditorLastSession");
-			string path = tempSessionPath + "/LastSession.asset";
-			mainNodeCanvas = NodeEditorSaveManager.LoadNodeCanvas (path, false);
+			mainNodeCanvas = NodeEditorSaveManager.LoadNodeCanvas (lastSessionPath, false);
 			if (mainNodeCanvas == null)
 				NewNodeCanvas ();
 			else 
 			{
 				mainNodeCanvas.name = lastSessionName;
-				List<NodeEditorState> editorStates = NodeEditorSaveManager.LoadEditorStates (path, false);
+				List<NodeEditorState> editorStates = NodeEditorSaveManager.LoadEditorStates (lastSessionPath, false);
 				if (editorStates == null || editorStates.Count == 0 || (mainEditorState = editorStates.Find (x => x.name == "MainEditorState")) == null )
 				{ // New NodeEditorState
 					mainEditorState = CreateInstance<NodeEditorState> ();
 					mainEditorState.canvas = mainNodeCanvas;
 					mainEditorState.name = "MainEditorState";
-					NodeEditorSaveManager.AddSubAsset (mainEditorState, path);
+					NodeEditorSaveManager.AddSubAsset (mainEditorState, lastSessionPath);
 					AssetDatabase.SaveAssets ();
 					AssetDatabase.Refresh ();
 				}
 			}
 		}
 
-		private void DeleteCache () 
+//		private void DeleteCache () 
+//		{
+//			string lastSession = EditorPrefs.GetString ("NodeEditorLastSession");
+//			if (!String.IsNullOrEmpty (lastSession))
+//			{
+//				AssetDatabase.DeleteAsset (tempSessionPath + "/" + lastSession);
+//				AssetDatabase.Refresh ();
+//			}
+//			EditorPrefs.DeleteKey ("NodeEditorLastSession");
+//		}
+
+		private void CheckCurrentCache () 
 		{
-			string lastSession = EditorPrefs.GetString ("NodeEditorLastSession");
-			if (!String.IsNullOrEmpty (lastSession))
-			{
-				AssetDatabase.DeleteAsset (tempSessionPath + "/" + lastSession);
-				AssetDatabase.Refresh ();
-			}
-			EditorPrefs.DeleteKey ("NodeEditorLastSession");
+			if (AssetDatabase.GetAssetPath (mainNodeCanvas) != lastSessionPath)
+				throw new UnityException ("Cache system error: Current Canvas is not saved as the temporary cache!");
 		}
 
 		#endregion
@@ -295,7 +294,6 @@ namespace NodeEditorFramework
 		public void SaveNodeCanvas (string path) 
 		{
 			NodeEditorSaveManager.SaveNodeCanvas (path, true, mainNodeCanvas, mainEditorState);
-			//SaveCache ();
 			Repaint ();
 		}
 		
@@ -304,17 +302,19 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void LoadNodeCanvas (string path) 
 		{
-			// Else it will be stuck forever
-			NodeEditor.StopTransitioning (mainNodeCanvas);
-
 			// Load the NodeCanvas
 			mainNodeCanvas = NodeEditorSaveManager.LoadNodeCanvas (path, true);
 			if (mainNodeCanvas == null) 
 			{
-				Debug.Log ("Error loading NodeCanvas from '" + path + "'!");
+				Debug.Log ("Could not load NodeCanvas from '" + path + "'!");
 				NewNodeCanvas ();
 				return;
 			}
+			// Retore or save name
+			if (mainNodeCanvas.name != "lastSession")
+				EditorPrefs.SetString ("NodeEditorLastSession", mainNodeCanvas.name);
+			else
+				mainNodeCanvas.name = EditorPrefs.GetString ("NodeEditorLastSession");
 			
 			// Load the associated MainEditorState
 			List<NodeEditorState> editorStates = NodeEditorSaveManager.LoadEditorStates (path, true);
@@ -331,8 +331,8 @@ namespace NodeEditorFramework
 			mainEditorState.canvas = mainNodeCanvas;
 
 			openedCanvasPath = path;
-			NodeEditor.RecalculateAll (mainNodeCanvas);
 			SaveCache ();
+			NodeEditor.RecalculateAll (mainNodeCanvas);
 			Repaint ();
 		}
 
@@ -341,12 +341,10 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void NewNodeCanvas () 
 		{
-			// Else it will be stuck forever
-			NodeEditor.StopTransitioning (mainNodeCanvas);
-
 			// New NodeCanvas
 			mainNodeCanvas = CreateInstance<NodeCanvas> ();
 			mainNodeCanvas.name = "New Canvas";
+			EditorPrefs.SetString ("NodeEditorLastSession", "New Canvas");
 			// New NodeEditorState
 			mainEditorState = CreateInstance<NodeEditorState> ();
 			mainEditorState.canvas = mainNodeCanvas;

@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using NodeEditorFramework;
 
-[Node (false, "AllAround Node")]
+[Node (false, "Example/AllAround Node")]
 public class AllAroundNode : Node 
 {
 	public const string ID = "allaroundNode";

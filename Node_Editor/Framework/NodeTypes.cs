@@ -22,9 +22,7 @@ namespace NodeEditorFramework
 		{
 			nodes = new Dictionary<Node, NodeData> ();
 
-			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where ((Assembly assembly) => assembly.FullName.Contains ("Assembly")).ToList ();
-			if (!scriptAssemblies.Contains (Assembly.GetExecutingAssembly ()))
-				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
+			IEnumerable<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where ((Assembly assembly) => assembly.FullName.Contains ("Assembly"));
 			foreach (Assembly assembly in scriptAssemblies) 
 			{
 				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.IsSubclassOf (typeof (Node)))) 

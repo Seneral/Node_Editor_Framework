@@ -56,7 +56,7 @@ public class RuntimeNodeEditor : MonoBehaviour
 
 				if (!screenSize && specifiedRootRect.max != specifiedRootRect.min) GUI.EndGroup ();
 			}
-			catch (Exception e)
+			catch (UnityException e)
 			{ // on exceptions in drawing flush the canvas to avoid locking the ui.
 				NewNodeCanvas ();
 				NodeEditor.ReInit (true);
@@ -109,9 +109,6 @@ public class RuntimeNodeEditor : MonoBehaviour
 		if (GUILayout.Button ("Force Re-Init"))
 			NodeEditor.ReInit (true);
 
-		if (NodeEditor.isTransitioning (canvas) && GUILayout.Button ("Stop Transitioning"))
-			NodeEditor.StopTransitioning (canvas);
-
 		NodeEditorGUI.knobSize = RTEditorGUI.IntSlider (new GUIContent ("Handle Size", "The size of the Node Input/Output handles"), NodeEditorGUI.knobSize, 12, 20);
 		state.zoom = RTEditorGUI.Slider (new GUIContent ("Zoom", "Use the Mousewheel. Seriously."), state.zoom, 0.6f, 2);
 
@@ -120,9 +117,6 @@ public class RuntimeNodeEditor : MonoBehaviour
 
 	public void LoadNodeCanvas (string path) 
 	{
-		// Else it will be stuck forever
-		NodeEditor.StopTransitioning (canvas);
-
 		// Load the NodeCanvas
 		canvas = NodeEditorSaveManager.LoadNodeCanvas (path);
 		if (canvas == null)
@@ -147,9 +141,6 @@ public class RuntimeNodeEditor : MonoBehaviour
 
 	public void NewNodeCanvas () 
 	{
-		// Else it will be stuck forever
-		NodeEditor.StopTransitioning (canvas);
-
 		canvas = ScriptableObject.CreateInstance<NodeCanvas> ();
 		state = ScriptableObject.CreateInstance<NodeEditorState> ();
 		state.canvas = canvas;
