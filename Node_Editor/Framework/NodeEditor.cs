@@ -153,14 +153,14 @@ namespace NodeEditorFramework
 				GUI.BeginClip (curEditorState.canvasRect);
 
 				Vector2 offset = curEditorState.zoomPos + curEditorState.panOffset/curEditorState.zoom;
-				offset.x /= curEditorState.canvasRect.width;
-				offset.y /= curEditorState.canvasRect.height;
-				GUI.DrawTextureWithTexCoords(	curEditorState.canvasRect, 
-												NodeEditorGUI.Background,
-												new Rect( - offset.x,
-															offset.y,
-															curEditorState.zoom,
-															curEditorState.zoom));
+				Vector2 ratio = new Vector2 (curEditorState.zoom/NodeEditorGUI.Background.width,
+											 curEditorState.zoom/NodeEditorGUI.Background.height);
+				GUI.DrawTextureWithTexCoords(curEditorState.canvasRect, 
+											 NodeEditorGUI.Background,
+											 new Rect(  -offset.x*ratio.x,
+											        	offset.y*ratio.y,
+														ratio.x*curEditorState.canvasRect.width,
+														ratio.y*curEditorState.canvasRect.height));
 
 				GUI.EndClip ();
 			}
