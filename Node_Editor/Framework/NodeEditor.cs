@@ -151,24 +151,19 @@ namespace NodeEditorFramework
 			if (Event.current.type == EventType.Repaint) 
 			{ // Draw Background when Repainting
 				GUI.BeginClip (curEditorState.canvasRect);
-				
-				float width = NodeEditorGUI.Background.width / curEditorState.zoom;
-				float height = NodeEditorGUI.Background.height / curEditorState.zoom;
+
+				//Corresponds to how many texture width/height fits into the canvas
+				float width = curEditorState.zoom / NodeEditorGUI.Background.width;
+				float height = curEditorState.zoom / NodeEditorGUI.Background.height;
+				//Offset of the grid relative to the canvas
 				Vector2 offset = curEditorState.zoomPos + curEditorState.panOffset/curEditorState.zoom;
-				offset = new Vector2 (offset.x%width - width, offset.y%height - height);
-				int tileX = Mathf.CeilToInt ((curEditorState.canvasRect.width + (width - offset.x)) / width);
-				int tileY = Mathf.CeilToInt ((curEditorState.canvasRect.height + (height - offset.y)) / height);
-				
-				for (int x = 0; x < tileX; x++) 
-				{
-					for (int y = 0; y < tileY; y++) 
-					{
-						GUI.DrawTexture (new Rect (offset.x + x*width, 
-												   offset.y + y*height, 
-												   width, height), 
-										 NodeEditorGUI.Background);
-					}
-				}
+
+				GUI.DrawTextureWithTexCoords(curEditorState.canvasRect, 
+											 NodeEditorGUI.Background,
+								new Rect( 	-offset.x*width,
+											(offset.y-curEditorState.canvasRect.height)*height,//TexCoords are from bottom-left -_-
+											curEditorState.canvasRect.width*width,
+											curEditorState.canvasRect.height*height));
 				GUI.EndClip ();
 			}
 			

@@ -43,6 +43,9 @@ namespace NodeEditorFramework
 			if (!GUIFunction)
 				return true;
 
+			// Set Background wrap mode to repeat
+			Background.wrapMode = TextureWrapMode.Repeat;
+
 			// Skin & Styles
 			nodeSkin = Object.Instantiate<GUISkin> (GUI.skin);
 
