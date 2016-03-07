@@ -151,19 +151,17 @@ namespace NodeEditorFramework
 			if (Event.current.type == EventType.Repaint) 
 			{ // Draw Background when Repainting
 				GUI.BeginClip (curEditorState.canvasRect);
-
-				//Corresponds to how many texture width/height fits into the canvas
+				// Corresponds to how many texture width/height fits into the canvas
 				float width = curEditorState.zoom / NodeEditorGUI.Background.width;
 				float height = curEditorState.zoom / NodeEditorGUI.Background.height;
-				//Offset of the grid relative to the canvas
+				// Offset of the grid relative to the GUI origin
 				Vector2 offset = curEditorState.zoomPos + curEditorState.panOffset/curEditorState.zoom;
-
-				GUI.DrawTextureWithTexCoords(curEditorState.canvasRect, 
-											 NodeEditorGUI.Background,
-								new Rect( 	-offset.x*width,
-											(offset.y-curEditorState.canvasRect.height)*height,//TexCoords are from bottom-left -_-
+				// Rect in UV space that defines how to tile the background texture
+				Rect uvDrawRect = new Rect (-offset.x*width, 
+											(offset.y-curEditorState.canvasRect.height)*height, // TexCoords are from bottom-left -_-
 											curEditorState.canvasRect.width*width,
-											curEditorState.canvasRect.height*height));
+											curEditorState.canvasRect.height*height);
+				GUI.DrawTextureWithTexCoords (curEditorState.canvasRect, NodeEditorGUI.Background, uvDrawRect);
 				GUI.EndClip ();
 			}
 			

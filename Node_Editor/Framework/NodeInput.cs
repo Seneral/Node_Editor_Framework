@@ -91,6 +91,8 @@ namespace NodeEditorFramework
 
 		#region Value
 
+		public bool IsValueNull { get { return connection != null? connection.IsValueNull : true; } }
+
 		/// <summary>
 		/// Gets the value of the connection anonymously. Not advised as it may lead to unwanted behaviour!
 		/// </summary>

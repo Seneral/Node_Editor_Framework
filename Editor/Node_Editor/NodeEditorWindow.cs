@@ -14,7 +14,7 @@ namespace NodeEditorFramework
 		// Information about current instance
 		private static NodeEditorWindow _editor;
 		public static NodeEditorWindow editor { get { AssureEditor (); return _editor; } }
-		public static void AssureEditor () { if (_editor == null) CreateEditor (); }
+		public static void AssureEditor () { if (_editor == null) OpenNodeEditor (); }
 
 		// Opened Canvas
 		public NodeCanvas mainNodeCanvas;
@@ -23,7 +23,7 @@ namespace NodeEditorFramework
 		public static NodeEditorState MainEditorState { get { return editor.mainEditorState; } }
 		public void AssureCanvas () { if (mainNodeCanvas == null) NewNodeCanvas (); }
 		public static string openedCanvasPath;
-		public string tempSessionPath;
+		public static string tempSessionPath;
 
 		// GUI
 		public static int sideWindowWidth = 400;
@@ -33,16 +33,20 @@ namespace NodeEditorFramework
 
 		#region General 
 
+		/// <summary>
+		/// Opens the Node Editor window
+		/// </summary>
 		[MenuItem ("Window/Node Editor")]
-		public static void CreateEditor () 
+		public static void OpenNodeEditor () 
 		{
 			_editor = GetWindow<NodeEditorWindow> ();
 			_editor.minSize = new Vector2 (800, 600);
-			NodeEditor.ClientRepaints += _editor.Repaint;
 			NodeEditor.initiated = NodeEditor.InitiationError = false;
 
 			iconTexture = ResourceManager.LoadTexture (EditorGUIUtility.isProSkin? "Textures/Icon_Dark.png" : "Textures/Icon_Light.png");
 			_editor.titleContent = new GUIContent ("Node Editor", iconTexture);
+
+			_editor.OnEnable ();
 		}
 		
 		/// <summary>
@@ -54,62 +58,28 @@ namespace NodeEditorFramework
 			if (Selection.activeObject != null && Selection.activeObject.GetType () == typeof(NodeCanvas))
 			{
 				string NodeCanvasPath = AssetDatabase.GetAssetPath (instanceID);
-				NodeEditorWindow.CreateEditor ();
+				NodeEditorWindow.OpenNodeEditor ();
 				EditorWindow.GetWindow<NodeEditorWindow> ().LoadNodeCanvas (NodeCanvasPath);
 				return true;
 			}
 			return false;
 		}
 
-		private void OnDestroy () 
-		{
-			NodeEditor.ClientRepaints -= _editor.Repaint;
-			//SaveCache ();
-
-	#if UNITY_EDITOR
-			// Remove callbacks
-			//EditorLoadingControl.beforeEnteringPlayMode -= SaveCache;
-			EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
-			//EditorLoadingControl.beforeLeavingPlayMode -= SaveCache;
-			EditorLoadingControl.justLeftPlayMode -= LoadCache;
-			EditorLoadingControl.justOpenedNewScene -= LoadCache;
-
-			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
-			NodeEditorCallbacks.OnAddNodeKnob -= SaveNewNodeKnob;
-
-			// TODO: BeforeOpenedScene to save Cache, aswell as assembly reloads... 
-	#endif
-		}
-
-		// Following section is all about caching the last editor session
-
 		private void OnEnable () 
 		{
+			NodeEditor.ClientRepaints -= Repaint;
+			NodeEditor.ClientRepaints += Repaint;
+			// Setup Cache
 			tempSessionPath = Path.GetDirectoryName (AssetDatabase.GetAssetPath (MonoScript.FromScriptableObject (this)));
 			LoadCache ();
+			SetupCacheEvents ();
+		}
 
-	#if UNITY_EDITOR
-			// This makes sure the Node Editor is reinitiated after the Playmode changed
-			//EditorLoadingControl.beforeEnteringPlayMode -= SaveCache;
-			//EditorLoadingControl.beforeEnteringPlayMode += SaveCache;
-			EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
-			EditorLoadingControl.lateEnteredPlayMode += LoadCache;
-
-			//EditorLoadingControl.beforeLeavingPlayMode -= SaveCache;
-			//EditorLoadingControl.beforeLeavingPlayMode += SaveCache;
-			EditorLoadingControl.justLeftPlayMode -= LoadCache;
-			EditorLoadingControl.justLeftPlayMode += LoadCache;
-
-			EditorLoadingControl.justOpenedNewScene -= LoadCache;
-			EditorLoadingControl.justOpenedNewScene += LoadCache;
-
-			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
-			NodeEditorCallbacks.OnAddNode += SaveNewNode;
-			NodeEditorCallbacks.OnAddNodeKnob -= SaveNewNodeKnob;
-			NodeEditorCallbacks.OnAddNodeKnob += SaveNewNodeKnob;
-
-			// TODO: BeforeOpenedScene to save Cache, aswell as assembly reloads... 
-	#endif
+		private void OnDestroy () 
+		{
+			NodeEditor.ClientRepaints -= Repaint;
+			// Clear Cache
+			ClearCacheEvents ();
 		}
 
 		#endregion
@@ -204,12 +174,49 @@ namespace NodeEditorFramework
 
 		#region Cache
 
+		private void SetupCacheEvents () 
+		{
+			// Load the cache after the NodeEditor was cleared
+
+			EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
+			EditorLoadingControl.lateEnteredPlayMode += LoadCache;
+
+			EditorLoadingControl.justLeftPlayMode -= LoadCache;
+			EditorLoadingControl.justLeftPlayMode += LoadCache;
+
+			EditorLoadingControl.justOpenedNewScene -= LoadCache;
+			EditorLoadingControl.justOpenedNewScene += LoadCache;
+
+			// Add new objects to the cache save file
+
+			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
+			NodeEditorCallbacks.OnAddNode += SaveNewNode;
+
+			NodeEditorCallbacks.OnAddNodeKnob -= SaveNewNodeKnob;
+			NodeEditorCallbacks.OnAddNodeKnob += SaveNewNodeKnob;
+		}
+
+		private void ClearCacheEvents () 
+		{
+			// Remove callbacks
+
+			EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
+			EditorLoadingControl.justLeftPlayMode -= LoadCache;
+			EditorLoadingControl.justOpenedNewScene -= LoadCache;
+
+			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
+			NodeEditorCallbacks.OnAddNodeKnob -= SaveNewNodeKnob;
+		}
+
 		private string lastSessionPath { get { return tempSessionPath + "/LastSession.asset"; } }
 
+		/// <summary>
+		/// Adds the node to the cache save file it belongs to the opened canvas
+		/// </summary>
 		private void SaveNewNode (Node node) 
 		{
 			if (!mainNodeCanvas.nodes.Contains (node))
-				throw new UnityException ("Cache system: Writing new Node to save file failed as Node is not part of the Cache!");
+				return;
 			
 			NodeEditorSaveManager.AddSubAsset (node, lastSessionPath);
 			foreach (ScriptableObject so in node.GetScriptableObjects ())
@@ -226,13 +233,23 @@ namespace NodeEditorFramework
 			AssetDatabase.Refresh ();
 		}
 
+		/// <summary>
+		/// Adds the nodeKnob to the cache save file it belongs to the opened canvas
+		/// </summary>
 		private void SaveNewNodeKnob (NodeKnob knob) 
 		{
+			if (!mainNodeCanvas.nodes.Contains (knob.body))
+				return;
+			
 			NodeEditorSaveManager.AddSubAsset (knob, knob.body);
 			foreach (ScriptableObject so in knob.GetScriptableObjects ())
 				NodeEditorSaveManager.AddSubAsset (so, knob);
 		}
 
+		/// <summary>
+		/// Creates a new cache save file for the currently loaded canvas 
+		/// Only needs to be called when a new canvas is created or loaded
+		/// </summary>
 		private void SaveCache () 
 		{
 			string canvasName = mainNodeCanvas.name;
@@ -245,6 +262,10 @@ namespace NodeEditorFramework
 			AssetDatabase.Refresh ();
 		}
 
+		/// <summary>
+		/// Loads the canvas from the cache save file
+		/// Called whenever a reload was made
+		/// </summary>
 		private void LoadCache () 
 		{
 			string lastSessionName = EditorPrefs.GetString ("NodeEditorLastSession");
