@@ -35,7 +35,7 @@ namespace NodeEditorFramework
 		public static TypeData GetTypeData (string typeName)
 		{
 			if (types == null || types.Count == 0)
-				NodeEditor.ReInit (false);
+				FetchTypes ();
 			TypeData typeData;
 			if (!types.TryGetValue (typeName, out typeData))
 			{
