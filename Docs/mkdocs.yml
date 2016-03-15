@@ -1,0 +1,11 @@
+site_name: Node Editor
+pages:
+- Home: 'index.md'
+- Getting started: 'getting_started.md'
+- License: 'license.md'
+repo_url: https://github.com/Baste-RainGames/Node_Editor 
+site_description: "Node Editor for Unity3D documentation"
+site_favicon: "./img/favicon.png"
+theme: simplex
+
+use_directory_urls: false
