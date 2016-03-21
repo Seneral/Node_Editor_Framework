@@ -239,7 +239,7 @@ namespace NodeEditorFramework
 		{
 			Rect rect = GetGUIKnob ();
 			rect.position -= NodeEditor.curEditorState.zoomPanAdjust; // Remove zoomPanAdjust added in GetGUIKnob
-			return NodeEditor.CanvasGUIToScreenRect (rect);
+			return NodeEditor.CanvasGUIToScreenSpace (rect);
 		}
 
 		/// <summary>

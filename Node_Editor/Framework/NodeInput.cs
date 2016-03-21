@@ -83,8 +83,12 @@ namespace NodeEditorFramework
 
 		private void CheckType () 
 		{
-			if (_typeData == null || !_typeData.isValid ()) 
+			if (_typeData == null || !_typeData.isValid ())
+			{
 				_typeData = ConnectionTypes.GetTypeData (typeID);
+				if (_typeData == null || !_typeData.isValid ())
+					throw new UnityException ("Could not find type " + typeID + "!");
+			}
 		}
 
 		#endregion
@@ -138,6 +142,19 @@ namespace NodeEditorFramework
 		#endregion
 
 		#region Connecting Utility
+
+		/// <summary>
+		/// Try to connect the passed NodeOutput to this NodeInput. Returns success / failure
+		/// </summary>
+		public bool TryApplyConnection (NodeOutput output)
+		{
+			if (CanApplyConnection (output)) 
+			{ // It can connect (type is equals, it does not cause recursion, ...)
+				ApplyConnection (output);
+				return true;
+			}
+			return false;
+		}
 
 		/// <summary>
 		/// Check if the passed NodeOutput can be connected to this NodeInput

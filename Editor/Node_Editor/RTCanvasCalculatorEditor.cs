@@ -3,7 +3,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using NodeEditorFramework;
 
-namespace NodeEditorFramework 
+namespace NodeEditorFramework.Standard
 {
 	[CustomEditor (typeof(RTCanvasCalculator))]
 	public class RTCanvasCalculatorEditor : Editor

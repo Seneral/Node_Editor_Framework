@@ -33,13 +33,14 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal void InitBase () 
 		{
-//			Calculate ();
+			NodeEditor.RecalculateFrom (this);
 			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
 				NodeEditor.curNodeCanvas.nodes.Add (this);
 			#if UNITY_EDITOR
-			if (name == "")
+			if (String.IsNullOrEmpty (name))
 				name = UnityEditor.ObjectNames.NicifyVariableName (GetID);
 			#endif
+			NodeEditor.RepaintClients ();
 		}
 
 		/// <summary>
@@ -73,7 +74,19 @@ namespace NodeEditorFramework
 			DestroyImmediate (this, true);
 		}
 
+		/// <summary>
+		/// Create the a Node of the type specified by the nodeID at position
+		/// </summary>
 		public static Node Create (string nodeID, Vector2 position) 
+		{
+			return Create (nodeID, position, null);
+		}
+
+		/// <summary>
+		/// Create the a Node of the type specified by the nodeID at position
+		/// Auto-connects the passed connectingOutput if not null to the first compatible input
+		/// </summary>
+		public static Node Create (string nodeID, Vector2 position, NodeOutput connectingOutput) 
 		{
 			Node node = NodeTypes.getDefaultNode (nodeID);
 			if (node == null)
@@ -82,7 +95,17 @@ namespace NodeEditorFramework
 			node = node.Create (position);
 			node.InitBase ();
 
+			if (connectingOutput != null)
+			{ // Handle auto-connection and link the output to the first compatible input
+				foreach (NodeInput input in node.Inputs)
+				{
+					if (input.TryApplyConnection (connectingOutput))
+						break;
+				}
+			}
+
 			NodeEditorCallbacks.IssueOnAddNode (node);
+
 			return node;
 		}
 

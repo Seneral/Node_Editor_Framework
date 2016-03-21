@@ -23,10 +23,6 @@ namespace NodeEditorFramework
 		public static NodeCanvas curNodeCanvas;
 		public static NodeEditorState curEditorState;
 
-		// Temp GUI state variables
-		private static bool unfocusControls;
-		private static Vector2 mousePos;
-
 		// GUI callback control
 		internal static Action NEUpdate;
 		public static void Update () { if (NEUpdate != null) NEUpdate (); }
@@ -41,10 +37,10 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Initiates the Node Editor if it wasn't yet
 		/// </summary>
-		public static void checkInit () 
+		public static void checkInit (bool GUIFunction) 
 		{
 			if (!initiated && !InitiationError)
-				ReInit (true);
+				ReInit (GUIFunction);
 		}
 
 		/// <summary>
@@ -74,6 +70,9 @@ namespace NodeEditorFramework
 
 			// Init GUIScaleUtility. This fetches reflected calls and my throw a message notifying about incompability.
 			GUIScaleUtility.CheckInit ();
+
+			// Init input
+			NodeEditorInputSystem.SetupInput ();
 
 	#if UNITY_EDITOR
 			UnityEditor.EditorApplication.update -= Update;
@@ -124,7 +123,7 @@ namespace NodeEditorFramework
 		{
 			if (!editorState.drawing)
 				return;
-			checkInit ();
+			checkInit (true);
 
 			NodeEditorGUI.StartNodeGUI ();
 			OverlayGUI.StartOverlayGUI ();
@@ -166,7 +165,7 @@ namespace NodeEditorFramework
 			}
 			
 			// Check the inputs
-			InputEvents ();
+			NodeEditorInputSystem.HandleInputEvents (curEditorState);
 			if (Event.current.type != EventType.Layout)
 				curEditorState.ignoreInput = new List<Rect> ();
 
@@ -179,18 +178,20 @@ namespace NodeEditorFramework
 			// Some features which require drawing (zoomed)
 			if (curEditorState.navigate) 
 			{ // Draw a curve to the origin/active node for orientation purposes
-				RTEditorGUI.DrawLine ((curEditorState.selectedNode != null? curEditorState.selectedNode.rect.center : curEditorState.panOffset) + curEditorState.zoomPanAdjust, 
-				                      ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom, 
-				                      Color.black, null, 3); 
+				Vector2 startPos = (curEditorState.selectedNode != null? curEditorState.selectedNode.rect.center : curEditorState.panOffset) + curEditorState.zoomPanAdjust;
+				Vector2 endPos = ScreenToGUISpace (Event.current.mousePosition);
+				RTEditorGUI.DrawLine (startPos, endPos, Color.black, null, 3); 
 				RepaintClients ();
 			}
 			if (curEditorState.connectOutput != null)
 			{ // Draw the currently drawn connection
 				NodeOutput output = curEditorState.connectOutput;
 				Vector2 startPos = output.GetGUIKnob ().center;
-				Vector2 endPos = ScreenToGUIPos (mousePos) + curEditorState.zoomPos * curEditorState.zoom;
-				Vector2 endDir = output.GetDirection ();
-				NodeEditorGUI.DrawConnection (startPos, endDir, endPos, NodeEditorGUI.GetSecondConnectionVector (startPos, endPos, endDir), output.typeData.col);
+				Vector2 startDir = output.GetDirection ();
+				Vector2 endPos = ScreenToGUISpace (Event.current.mousePosition);
+				// There is no specific direction of the end knob so we pick the best according to the position
+				Vector2 endDir = NodeEditorGUI.GetSecondConnectionVector (startPos, endPos, startDir);
+				NodeEditorGUI.DrawConnection (startPos, startDir, endPos, endDir, output.typeData.col);
 				RepaintClients ();
 			}
 
@@ -223,7 +224,7 @@ namespace NodeEditorFramework
 			GUIScaleUtility.EndScale ();
 			
 			// Check events with less priority than node GUI controls
-			LateEvents ();
+			NodeEditorInputSystem.HandleLateInputEvents (curEditorState);
 			
 			curNodeCanvas = prevNodeCanvas;
 			curEditorState = prevEditorState;
@@ -238,387 +239,396 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static Node NodeAtPosition (Vector2 pos)
 		{
-			return NodeAtPosition (curEditorState, curNodeCanvas, pos);
+			NodeKnob focusedKnob;
+			return NodeAtPosition (curEditorState, curNodeCanvas, pos, out focusedKnob);
 		}
+
+		/// <summary>
+		/// Returns the node at the position in the current canvas spcae. Depends on curEditorState and curNodecanvas
+		/// </summary>
+		public static Node NodeAtPosition (Vector2 pos, out NodeKnob focusedKnob)
+		{
+			return NodeAtPosition (curEditorState, curNodeCanvas, pos, out focusedKnob);
+		}
+
 		/// <summary>
 		/// Returns the node at the position in specified canvas space.
 		/// </summary>
-		public static Node NodeAtPosition (NodeEditorState editorState, NodeCanvas nodeCanvas, Vector2 pos)
-		{	
+		public static Node NodeAtPosition (NodeEditorState editorState, NodeCanvas nodeCanvas, Vector2 pos, out NodeKnob focusedKnob)
+		{
+			focusedKnob = null;
 			if (!editorState.canvasRect.Contains (pos))
 				return null;
 			for (int nodeCnt = nodeCanvas.nodes.Count-1; nodeCnt >= 0; nodeCnt--) 
 			{ // Check from top to bottom because of the render order
 				Node node = nodeCanvas.nodes [nodeCnt];
-				if (CanvasGUIToScreenRect (node.rect).Contains (pos)) // Node Body
+				if (CanvasGUIToScreenSpace (node.rect).Contains (pos)) // Node Body
 					return node;
 				for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++)
-				{ // Any edge control
-					if (node.nodeKnobs[knobCnt].GetScreenKnob ().Contains (pos))
+				{ // Check if any nodeKnob is focused instead
+					if (node.nodeKnobs[knobCnt].GetScreenKnob ().Contains (pos)) 
+					{
+						focusedKnob = node.nodeKnobs[knobCnt];
 						return node;
+					}
 				}
 			}
 			return null;
 		}
 
 		/// <summary>
-		/// Transforms the Rect in GUI space into Screen space. Depends on curEditorState
+		/// Transforms the Rect in GUI space (curEditorState) into Screen space
 		/// </summary>
-		public static Rect CanvasGUIToScreenRect (Rect rect) 
+		public static Rect CanvasGUIToScreenSpace (Rect rect) 
 		{
-			return CanvasGUIToScreenRect (curEditorState, rect);
+			return CanvasGUIToScreenSpace (curEditorState, rect);
 		}
 		/// <summary>
-		/// Transforms the Rect in GUI space into Screen space
+		/// Transforms the Rect in GUI space (curEditorState) into Screen space
 		/// </summary>
-		public static Rect CanvasGUIToScreenRect (NodeEditorState editorState, Rect rect) 
+		public static Rect CanvasGUIToScreenSpace (NodeEditorState editorState, Rect rect) 
 		{
 			rect.position += editorState.zoomPos;
-			rect = GUIScaleUtility.Scale (rect, editorState.zoomPos, 
-					editorState.parentEditor != null? new Vector2 (1/(editorState.parentEditor.zoom*editorState.zoom), 1/(editorState.parentEditor.zoom*editorState.zoom)) : 
-														new Vector2 (1/editorState.zoom, 1/editorState.zoom));
+			float zoom = editorState.parentEditor != null? editorState.parentEditor.zoom*editorState.zoom : editorState.zoom;
+			rect = GUIScaleUtility.Scale (rect, editorState.zoomPos, new Vector2 (1/zoom, 1/zoom));
 			rect.position += editorState.canvasRect.position;
 			return rect;
 		}
 
 		/// <summary>
-		/// Transforms screen position pos (like mouse pos) to a point in current GUI space
+		/// Transforms screen space elements into GUI space (curEditorState), accounting for zoom
 		/// </summary>
-		public static Vector2 ScreenToGUIPos (Vector2 pos) 
+		public static Vector2 ScreenToGUISpace (Vector2 pos) 
 		{
-			return ScreenToGUIPos (curEditorState, pos);
+			return ScreenToGUISpace (curEditorState, pos);
 		}
 		/// <summary>
-		/// Transforms screen position pos (like mouse pos) to a point in specified GUI space
+		/// Transforms screen space elements into GUI space (editorState), accounting for zoom
 		/// </summary>
-		public static Vector2 ScreenToGUIPos (NodeEditorState editorState, Vector2 pos) 
+		public static Vector2 ScreenToGUISpace (NodeEditorState editorState, Vector2 pos) 
 		{
-			return Vector2.Scale (pos - editorState.zoomPos - editorState.canvasRect.position, new Vector2 (editorState.zoom, editorState.zoom));
+			return Vector2.Scale (pos - editorState.zoomPos - editorState.canvasRect.position, new Vector2 (editorState.zoom, editorState.zoom)) + editorState.zoomPos * editorState.zoom;
 		}
 
 		/// <summary>
-		/// Returns whether to account for input in curEditorState
+		/// Transforms screen space elements into curEditorStates' canvas space, NOT accounting for zoom
 		/// </summary>
-		private static bool ignoreInput (Vector2 mousePos) 
+		public static Vector2 ScreenToCanvasSpace (Vector2 pos) 
 		{
-			// Account for any opened popups
-			if (OverlayGUI.HasPopupControl ())
-				return true;
-			// Mouse outside of canvas rect or inside an ignoreInput rect
-			if (!curEditorState.canvasRect.Contains (mousePos))
-				return true;
-			for (int ignoreCnt = 0; ignoreCnt < curEditorState.ignoreInput.Count; ignoreCnt++) 
-			{
-				if (curEditorState.ignoreInput [ignoreCnt].Contains (mousePos)) 
-					return true;
-			}
-			return false;
+			return ScreenToCanvasSpace (curEditorState, pos);
+		}
+		/// <summary>
+		/// Transforms screen space elements into the specified canvas' space, NOT accounting for zoom
+		/// </summary>
+		public static Vector2 ScreenToCanvasSpace (NodeEditorState editorState, Vector2 pos) 
+		{
+			return Vector2.Scale (pos - editorState.zoomPos - editorState.canvasRect.position, new Vector2 (editorState.zoom, editorState.zoom));
 		}
 		
 		#endregion
 		
 		#region Input Events
-
-		/// <summary>
-		/// Processes input events
-		/// </summary>
-		public static void InputEvents ()
-		{
-			Event e = Event.current;
-			mousePos = e.mousePosition;
-
-			bool leftClick = e.button == 0, rightClick = e.button == 1,
-				mouseDown = e.type == EventType.MouseDown, mousUp = e.type == EventType.MouseUp;
-
-			if (ignoreInput (mousePos))
-				return;
-
-			#region Change Node selection and focus
-			// Choose focused and selected Node, accounting for focus changes
-			curEditorState.focusedNode = null;
-			if (mouseDown || mousUp)
-			{
-				curEditorState.focusedNode = NodeEditor.NodeAtPosition (mousePos);
-				if (curEditorState.focusedNode != curEditorState.selectedNode)
-					unfocusControls = true;
-				if (mouseDown && leftClick) 
-				{
-					curEditorState.selectedNode = curEditorState.focusedNode;
-					RepaintClients ();
-				}
-			}
-			// Perform above mentioned focus changes in Repaint, which is the only suitable time to do this
-			if (unfocusControls && Event.current.type == EventType.Repaint) 
-			{
-				GUIUtility.hotControl = 0;
-				GUIUtility.keyboardControl = 0;
-				unfocusControls = false;
-			}
-		#if UNITY_EDITOR
-			if (curEditorState.focusedNode != null)
-				UnityEditor.Selection.activeObject = curEditorState.focusedNode;
-		#endif
-			#endregion
-
-			switch (e.type) 
-			{
-			case EventType.MouseDown:
-
-				curEditorState.dragNode = false;
-				curEditorState.panWindow = false;
-				
-				if (curEditorState.focusedNode != null) 
-				{ // Clicked a Node
-					if (rightClick)
-					{ // Node Context Click
-						GenericMenu menu = new GenericMenu ();
-						menu.AddItem (new GUIContent ("Delete Node"), false, ContextCallback, new NodeEditorMenuCallback ("deleteNode", curNodeCanvas, curEditorState));
-						menu.AddItem (new GUIContent ("Duplicate Node"), false, ContextCallback, new NodeEditorMenuCallback ("duplicateNode", curNodeCanvas, curEditorState));
-						menu.ShowAsContext ();
-						e.Use ();
-					}
-					else if (leftClick)
-					{ // Detect click on a connection knob
-						if (!CanvasGUIToScreenRect (curEditorState.focusedNode.rect).Contains (mousePos))
-						{ // Clicked NodeEdge, check Node Inputs and Outputs
-							NodeOutput nodeOutput = curEditorState.focusedNode.GetOutputAtPos (e.mousePosition);
-							if (nodeOutput != null)
-							{ // Output clicked -> New Connection drawn from this
-								curEditorState.connectOutput = nodeOutput;
-								e.Use();
-								return;
-							}
-
-							NodeInput nodeInput = curEditorState.focusedNode.GetInputAtPos (e.mousePosition);
-							if (nodeInput != null && nodeInput.connection != null)
-							{ // Input clicked -> Loose and edit Connection
-								curEditorState.connectOutput = nodeInput.connection;
-								nodeInput.RemoveConnection ();
-								e.Use();
-							}
-						}
-					}
-				}
-				else
-				{ // Clicked on canvas
-					
-					// NOTE: Panning is not done here but in LateEvents, so buttons on the canvas won't be blocked when clicking
-
-					if (rightClick) 
-					{ // Editor Context Click
-						GenericMenu menu = new GenericMenu ();
-						if (curEditorState.connectOutput != null) 
-						{ // A connection is drawn, so provide a context menu with apropriate nodes to auto-connect
-							foreach (Node node in NodeTypes.nodes.Keys)
-							{ // Iterate through all nodes and check for compability
-								for (int inputCnt = 0; inputCnt < node.Inputs.Count; inputCnt++)
-								{
-									if (node.Inputs[inputCnt].CanApplyConnection (curEditorState.connectOutput))
-									{
-										menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[node].adress), false, ContextCallback, new NodeEditorMenuCallback (node.GetID, curNodeCanvas, curEditorState));
-										break;
-									}
-								}
-							}
-						}
-						else 
-						{ // Ordinary context click, add all nodes to add
-							foreach (Node node in NodeTypes.nodes.Keys)
-								menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes [node].adress), false, ContextCallback, new NodeEditorMenuCallback (node.GetID, curNodeCanvas, curEditorState));
-						}
-						menu.ShowAsContext ();
-						e.Use ();
-					}
-				}
-				
-				break;
-				
-			case EventType.MouseUp:
-
-				if (curEditorState.focusedNode != null) 
-				{ // Apply Drawn connections on node
-					if (curEditorState.connectOutput != null) 
-					{ // Apply a connection if theres a clicked input
-						if (!curEditorState.focusedNode.Outputs.Contains (curEditorState.connectOutput)) 
-						{ // An input was clicked, it'll will now be connected
-							NodeInput clickedInput = curEditorState.focusedNode.GetInputAtPos (e.mousePosition);
-							if (clickedInput.CanApplyConnection (curEditorState.connectOutput)) 
-							{ // It can connect (type is equals, it does not cause recursion, ...)
-								clickedInput.ApplyConnection (curEditorState.connectOutput);
-							}
-						}
-						e.Use ();
-					}
-				}
-
-				curEditorState.connectOutput = null;
-				curEditorState.dragNode = false;
-				curEditorState.panWindow = false;
-				
-				break;
-				
-			case EventType.ScrollWheel:
-
-				// Apply Zoom
-				curEditorState.zoom = (float)Math.Round (Math.Min (2.0f, Math.Max (0.6f, curEditorState.zoom + e.delta.y / 15)), 2);
-
-				RepaintClients ();
-				break;
-				
-			case EventType.KeyDown:
-
-				// TODO: Node Editor: Shortcuts
-
-				if (e.keyCode == KeyCode.N) // Start Navigating (curve to origin / active Node)
-					curEditorState.navigate = true;
-				
-				if (e.keyCode == KeyCode.LeftControl && curEditorState.selectedNode != null)
-				{ // Snap selected Node's position to multiples of 10
-					Vector2 pos = curEditorState.selectedNode.rect.position;
-					pos = (pos - curEditorState.panOffset) / 10;
-					pos = new Vector2 (Mathf.RoundToInt (pos.x), Mathf.RoundToInt (pos.y));
-					curEditorState.selectedNode.rect.position = pos * 10 + curEditorState.panOffset;
-				}
-
-				RepaintClients ();
-				break;
-				
-			case EventType.KeyUp:
-				
-				if (e.keyCode == KeyCode.N) // Stop Navigating
-					curEditorState.navigate = false;
-				
-				RepaintClients ();
-				break;
-			
-			case EventType.MouseDrag:
-
-				if (curEditorState.panWindow) 
-				{ // Scroll everything with the current mouse delta
-					curEditorState.panOffset += e.delta * curEditorState.zoom;
-					for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
-						curNodeCanvas.nodes [nodeCnt].rect.position += e.delta * curEditorState.zoom;
-					e.delta = Vector2.zero;
-					RepaintClients ();
-				}
-				
-				if (curEditorState.dragNode && curEditorState.selectedNode != null && GUIUtility.hotControl == 0) 
-				{ // Drag the active node with the current mouse delta
-					curEditorState.selectedNode.rect.position += e.delta * curEditorState.zoom;
-					NodeEditorCallbacks.IssueOnMoveNode (curEditorState.selectedNode);
-					e.delta = Vector2.zero;
-					RepaintClients ();
-				} 
-				else
-					curEditorState.dragNode = false;
-
-				break;
-			}
-		}
-		
-		/// <summary>
-		/// Proccesses late events. Called after GUI Functions, when they have higher priority in focus
-		/// </summary>
-		public static void LateEvents () 
-		{
-			Event e = Event.current;
-
-			if (ignoreInput (mousePos))
-				return;
-
-			if (e.type == EventType.MouseDown && e.button == 0)
-			{ // Left click
-				if (GUIUtility.hotControl <= 0)
-				{ // Did not click on a GUI Element
-					if (curEditorState.selectedNode != null && CanvasGUIToScreenRect (curEditorState.selectedNode.rect).Contains (e.mousePosition)) 
-					{ // Clicked inside the selected Node, so start dragging it
-						curEditorState.dragNode = true;
-						e.delta = Vector2.zero;
-						RepaintClients ();
-					}
-					else if (curEditorState.focusedNode == null) 
-					{ // Clicked on the empty canvas
-						if (e.button == 0 || e.button == 2)
-						{ // Start panning
-							curEditorState.panWindow = true;
-							e.delta = Vector2.zero;
-						}
-					}
-				}
-			}
-		}
-
-		/// <summary>
-		/// Evaluates context callbacks previously registered
-		/// </summary>
-		public static void ContextCallback (object obj)
-		{
-			NodeEditorMenuCallback callback = obj as NodeEditorMenuCallback;
-			if (callback == null)
-				throw new UnityException ("Callback Object passed by context is not of type NodeEditorMenuCallback!");
-			curNodeCanvas = callback.canvas;
-			curEditorState = callback.editor;
-
-			switch (callback.message)
-			{
-			case "deleteNode": // Delete request
-				if (curEditorState.focusedNode != null) 
-					curEditorState.focusedNode.Delete ();
-				break;
-				
-			case "duplicateNode": // Duplicate request
-				if (curEditorState.focusedNode != null) 
-				{
-					ContextCallback (new NodeEditorMenuCallback (curEditorState.focusedNode.GetID, curNodeCanvas, curEditorState));
-					Node duplicatedNode = curNodeCanvas.nodes [curNodeCanvas.nodes.Count-1];
-
-					curEditorState.focusedNode = duplicatedNode;
-					curEditorState.dragNode = true;
-					curEditorState.connectOutput = null;
-					curEditorState.panWindow = false;
-				}
-				break;
-			
-			default: // Node creation request
-				Node node = Node.Create (callback.message, ScreenToGUIPos (callback.contextClickPos));
-
-				// Handle auto-connection
-				if (curEditorState.connectOutput != null)
-				{ // If nodeOutput is defined, link it to the first input of the same type
-					foreach (NodeInput input in node.Inputs)
-					{
-						if (input.CanApplyConnection (curEditorState.connectOutput))
-						{ // If it can connect (type is equals, it does not cause recursion, ...)
-							input.ApplyConnection (curEditorState.connectOutput);
-							break;
-						}
-					}
-				}
-
-				curEditorState.connectOutput = null;
-				curEditorState.dragNode = false;
-				curEditorState.panWindow = false;
-
-				break;
-			}
-			RepaintClients ();
-		}
-
-		public class NodeEditorMenuCallback
-		{
-			public string message;
-			public NodeCanvas canvas;
-			public NodeEditorState editor;
-			public Vector2 contextClickPos;
-
-			public NodeEditorMenuCallback (string Message, NodeCanvas nodecanvas, NodeEditorState editorState) 
-			{
-				message = Message;
-				canvas = nodecanvas;
-				editor = editorState;
-				contextClickPos = Event.current.mousePosition;
-			}
-		}
+//
+//		/// <summary>
+//		/// Processes input events
+//		/// </summary>
+//		public static void InputEvents ()
+//		{
+//			Event e = Event.current;
+//			mousePos = e.mousePosition;
+//
+//			bool leftClick = e.button == 0, rightClick = e.button == 1,
+//				mouseDown = e.type == EventType.MouseDown, mousUp = e.type == EventType.MouseUp;
+//
+//			if (ignoreInput (mousePos))
+//				return;
+//
+//			#region Change Node selection and focus
+//			// Choose focused and selected Node, accounting for focus changes
+//			curEditorState.focusedNode = null;
+//			if (mouseDown || mousUp)
+//			{
+//				curEditorState.focusedNode = NodeEditor.NodeAtPosition (mousePos);
+//				if (curEditorState.focusedNode != curEditorState.selectedNode)
+//					unfocusControls = true;
+//				if (mouseDown && leftClick) 
+//				{
+//					curEditorState.selectedNode = curEditorState.focusedNode;
+//					RepaintClients ();
+//				}
+//			}
+//			// Perform above mentioned focus changes in Repaint, which is the only suitable time to do this
+//			if (unfocusControls && Event.current.type == EventType.Repaint) 
+//			{
+//				GUIUtility.hotControl = 0;
+//				GUIUtility.keyboardControl = 0;
+//				unfocusControls = false;
+//			}
+//		#if UNITY_EDITOR
+//			if (curEditorState.focusedNode != null)
+//				UnityEditor.Selection.activeObject = curEditorState.focusedNode;
+//		#endif
+//			#endregion
+//
+//			switch (e.type) 
+//			{
+//			case EventType.MouseDown:
+//
+//				curEditorState.dragNode = false;
+//				curEditorState.panWindow = false;
+//				
+//				if (curEditorState.focusedNode != null) 
+//				{ // Clicked a Node
+//					if (rightClick)
+//					{ // Node Context Click
+//						GenericMenu menu = new GenericMenu ();
+//						menu.AddItem (new GUIContent ("Delete Node"), false, ContextCallback, new NodeEditorMenuCallback ("deleteNode", curNodeCanvas, curEditorState));
+//						menu.AddItem (new GUIContent ("Duplicate Node"), false, ContextCallback, new NodeEditorMenuCallback ("duplicateNode", curNodeCanvas, curEditorState));
+//						menu.ShowAsContext ();
+//						e.Use ();
+//					}
+//					else if (leftClick)
+//					{ // Detect click on a connection knob
+//						if (!CanvasGUIToScreenRect (curEditorState.focusedNode.rect).Contains (mousePos))
+//						{ // Clicked NodeEdge, check Node Inputs and Outputs
+//							NodeOutput nodeOutput = curEditorState.focusedNode.GetOutputAtPos (e.mousePosition);
+//							if (nodeOutput != null)
+//							{ // Output clicked -> New Connection drawn from this
+//								curEditorState.connectOutput = nodeOutput;
+//								e.Use();
+//								return;
+//							}
+//
+//							NodeInput nodeInput = curEditorState.focusedNode.GetInputAtPos (e.mousePosition);
+//							if (nodeInput != null && nodeInput.connection != null)
+//							{ // Input clicked -> Loose and edit Connection
+//								curEditorState.connectOutput = nodeInput.connection;
+//								nodeInput.RemoveConnection ();
+//								e.Use();
+//							}
+//						}
+//					}
+//				}
+//				else
+//				{ // Clicked on canvas
+//					
+//					// NOTE: Panning is not done here but in LateEvents, so buttons on the canvas won't be blocked when clicking
+//
+//					if (rightClick) 
+//					{ // Editor Context Click
+//						GenericMenu menu = new GenericMenu ();
+//						if (curEditorState.connectOutput != null) 
+//						{ // A connection is drawn, so provide a context menu with apropriate nodes to auto-connect
+//							foreach (Node node in NodeTypes.nodes.Keys)
+//							{ // Iterate through all nodes and check for compability
+//								for (int inputCnt = 0; inputCnt < node.Inputs.Count; inputCnt++)
+//								{
+//									if (node.Inputs[inputCnt].CanApplyConnection (curEditorState.connectOutput))
+//									{
+//										menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[node].adress), false, ContextCallback, new NodeEditorMenuCallback (node.GetID, curNodeCanvas, curEditorState));
+//										break;
+//									}
+//								}
+//							}
+//						}
+//						else 
+//						{ // Ordinary context click, add all nodes to add
+//							foreach (Node node in NodeTypes.nodes.Keys)
+//								menu.AddItem (new GUIContent ("Add " + NodeTypes.nodes [node].adress), false, ContextCallback, new NodeEditorMenuCallback (node.GetID, curNodeCanvas, curEditorState));
+//						}
+//						menu.ShowAsContext ();
+//						e.Use ();
+//					}
+//				}
+//				
+//				break;
+//				
+//			case EventType.MouseUp:
+//
+//				if (curEditorState.focusedNode != null) 
+//				{ // Apply Drawn connections on node
+//					if (curEditorState.connectOutput != null) 
+//					{ // Apply a connection if theres a clicked input
+//						if (!curEditorState.focusedNode.Outputs.Contains (curEditorState.connectOutput)) 
+//						{ // An input was clicked, it'll will now be connected
+//							NodeInput clickedInput = curEditorState.focusedNode.GetInputAtPos (e.mousePosition);
+//							if (clickedInput.CanApplyConnection (curEditorState.connectOutput)) 
+//							{ // It can connect (type is equals, it does not cause recursion, ...)
+//								clickedInput.ApplyConnection (curEditorState.connectOutput);
+//							}
+//						}
+//						e.Use ();
+//					}
+//				}
+//
+//				curEditorState.connectOutput = null;
+//				curEditorState.dragNode = false;
+//				curEditorState.panWindow = false;
+//				
+//				break;
+//				
+//			case EventType.ScrollWheel:
+//
+//				// Apply Zoom
+//				curEditorState.zoom = (float)Math.Round (Math.Min (2.0f, Math.Max (0.6f, curEditorState.zoom + e.delta.y / 15)), 2);
+//
+//				RepaintClients ();
+//				break;
+//				
+//			case EventType.KeyDown:
+//
+//				// TODO: Node Editor: Shortcuts
+//
+//				if (e.keyCode == KeyCode.N) // Start Navigating (curve to origin / active Node)
+//					curEditorState.navigate = true;
+//				
+//				if (e.keyCode == KeyCode.LeftControl && curEditorState.selectedNode != null)
+//				{ // Snap selected Node's position to multiples of 10
+//					Vector2 pos = curEditorState.selectedNode.rect.position;
+//					pos = (pos - curEditorState.panOffset) / 10;
+//					pos = new Vector2 (Mathf.RoundToInt (pos.x), Mathf.RoundToInt (pos.y));
+//					curEditorState.selectedNode.rect.position = pos * 10 + curEditorState.panOffset;
+//				}
+//
+//				RepaintClients ();
+//				break;
+//				
+//			case EventType.KeyUp:
+//				
+//				if (e.keyCode == KeyCode.N) // Stop Navigating
+//					curEditorState.navigate = false;
+//				
+//				RepaintClients ();
+//				break;
+//			
+//			case EventType.MouseDrag:
+//
+//				if (curEditorState.panWindow) 
+//				{ // Scroll everything with the current mouse delta
+//					curEditorState.panOffset += e.delta * curEditorState.zoom;
+//					for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++) 
+//						curNodeCanvas.nodes [nodeCnt].rect.position += e.delta * curEditorState.zoom;
+//					e.delta = Vector2.zero;
+//					RepaintClients ();
+//				}
+//				
+//				if (curEditorState.dragNode && curEditorState.selectedNode != null && GUIUtility.hotControl == 0) 
+//				{ // Drag the active node with the current mouse delta
+//					curEditorState.selectedNode.rect.position += e.delta * curEditorState.zoom;
+//					NodeEditorCallbacks.IssueOnMoveNode (curEditorState.selectedNode);
+//					e.delta = Vector2.zero;
+//					RepaintClients ();
+//				} 
+//				else
+//					curEditorState.dragNode = false;
+//
+//				break;
+//			}
+//		}
+//		
+//		/// <summary>
+//		/// Proccesses late events. Called after GUI Functions, when they have higher priority in focus
+//		/// </summary>
+//		public static void LateEvents () 
+//		{
+//			Event e = Event.current;
+//
+//			if (ignoreInput (mousePos))
+//				return;
+//
+//			if (e.type == EventType.MouseDown && e.button == 0)
+//			{ // Left click
+//				if (GUIUtility.hotControl <= 0)
+//				{ // Did not click on a GUI Element
+//					if (curEditorState.selectedNode != null && CanvasGUIToScreenRect (curEditorState.selectedNode.rect).Contains (e.mousePosition)) 
+//					{ // Clicked inside the selected Node, so start dragging it
+//						curEditorState.dragNode = true;
+//						e.delta = Vector2.zero;
+//						RepaintClients ();
+//					}
+//					else if (curEditorState.focusedNode == null) 
+//					{ // Clicked on the empty canvas
+//						if (e.button == 0 || e.button == 2)
+//						{ // Start panning
+//							curEditorState.panWindow = true;
+//							e.delta = Vector2.zero;
+//						}
+//					}
+//				}
+//			}
+//		}
+//
+//		/// <summary>
+//		/// Evaluates context callbacks previously registered
+//		/// </summary>
+//		public static void ContextCallback (object obj)
+//		{
+//			NodeEditorMenuCallback callback = obj as NodeEditorMenuCallback;
+//			if (callback == null)
+//				throw new UnityException ("Callback Object passed by context is not of type NodeEditorMenuCallback!");
+//			curNodeCanvas = callback.canvas;
+//			curEditorState = callback.editor;
+//
+//			switch (callback.message)
+//			{
+//			case "deleteNode": // Delete request
+//				if (curEditorState.focusedNode != null) 
+//					curEditorState.focusedNode.Delete ();
+//				break;
+//				
+//			case "duplicateNode": // Duplicate request
+//				if (curEditorState.focusedNode != null) 
+//				{
+//					ContextCallback (new NodeEditorMenuCallback (curEditorState.focusedNode.GetID, curNodeCanvas, curEditorState));
+//					Node duplicatedNode = curNodeCanvas.nodes [curNodeCanvas.nodes.Count-1];
+//
+//					curEditorState.focusedNode = duplicatedNode;
+//					curEditorState.dragNode = true;
+//					curEditorState.connectOutput = null;
+//					curEditorState.panWindow = false;
+//				}
+//				break;
+//			
+//			default: // Node creation request
+//				Node node = Node.Create (callback.message, ScreenToGUIPos (callback.contextClickPos));
+//
+//				// Handle auto-connection
+//				if (curEditorState.connectOutput != null)
+//				{ // If nodeOutput is defined, link it to the first input of the same type
+//					foreach (NodeInput input in node.Inputs)
+//					{
+//						if (input.CanApplyConnection (curEditorState.connectOutput))
+//						{ // If it can connect (type is equals, it does not cause recursion, ...)
+//							input.ApplyConnection (curEditorState.connectOutput);
+//							break;
+//						}
+//					}
+//				}
+//
+//				curEditorState.connectOutput = null;
+//				curEditorState.dragNode = false;
+//				curEditorState.panWindow = false;
+//
+//				break;
+//			}
+//			RepaintClients ();
+//		}
+//
+//		public class NodeEditorMenuCallback
+//		{
+//			public string message;
+//			public NodeCanvas canvas;
+//			public NodeEditorState editor;
+//			public Vector2 contextClickPos;
+//
+//			public NodeEditorMenuCallback (string Message, NodeCanvas nodecanvas, NodeEditorState editorState) 
+//			{
+//				message = Message;
+//				canvas = nodecanvas;
+//				editor = editorState;
+//				contextClickPos = Event.current.mousePosition;
+//			}
+//		}
 		
 		#endregion
 
@@ -662,6 +672,10 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void StartCalculation () 
 		{
+			checkInit (false);
+			if (InitiationError)
+				return;
+			
 			if (workList == null || workList.Count == 0)
 				return;
 			// this blocks iterates through the worklist and starts calculating
@@ -682,10 +696,9 @@ namespace NodeEditorFramework
 		
 		/// <summary>
 		/// Recursive function which continues calculation on this node and all the child nodes
-		/// Usually does not need to be called manually
 		/// Returns success/failure of this node only
 		/// </summary>
-		public static bool ContinueCalculation (Node node) 
+		private static bool ContinueCalculation (Node node) 
 		{
 			if (node.calculated)
 				return false;

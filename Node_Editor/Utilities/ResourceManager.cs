@@ -50,7 +50,7 @@ namespace NodeEditorFramework.Utilities
 				return UnityEngine.Resources.LoadAll<T> (path);
 		#if UNITY_EDITOR
 			// In the editor
-			return UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path).Cast<T> ().ToArray ();
+			return UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path).OfType<T> ().ToArray ();
 		#else
 			return null;
 		#endif

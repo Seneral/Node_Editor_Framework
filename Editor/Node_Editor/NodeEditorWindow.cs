@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
-namespace NodeEditorFramework
+namespace NodeEditorFramework.Standard
 {
 	public class NodeEditorWindow : EditorWindow 
 	{
@@ -45,8 +45,6 @@ namespace NodeEditorFramework
 
 			iconTexture = ResourceManager.LoadTexture (EditorGUIUtility.isProSkin? "Textures/Icon_Dark.png" : "Textures/Icon_Light.png");
 			_editor.titleContent = new GUIContent ("Node Editor", iconTexture);
-
-			_editor.OnEnable ();
 		}
 		
 		/// <summary>
@@ -67,6 +65,9 @@ namespace NodeEditorFramework
 
 		private void OnEnable () 
 		{
+			_editor = this; // Have to set this after reload
+			NodeEditor.checkInit (false);
+
 			NodeEditor.ClientRepaints -= Repaint;
 			NodeEditor.ClientRepaints += Repaint;
 			// Setup Cache
@@ -89,7 +90,7 @@ namespace NodeEditorFramework
 		private void OnGUI () 
 		{
 			// Initiation
-			NodeEditor.checkInit ();
+			NodeEditor.checkInit (true);
 			if (NodeEditor.InitiationError) 
 			{
 				GUILayout.Label ("Node Editor Initiation failed! Check console for more information!");
@@ -165,10 +166,9 @@ namespace NodeEditorFramework
 			NodeEditorGUI.knobSize = EditorGUILayout.IntSlider (new GUIContent ("Handle Size", "The size of the Node Input/Output handles"), NodeEditorGUI.knobSize, 12, 20);
 			mainEditorState.zoom = EditorGUILayout.Slider (new GUIContent ("Zoom", "Use the Mousewheel. Seriously."), mainEditorState.zoom, 0.6f, 2);
 
-            if (mainEditorState.selectedNode != null)
-                if (Event.current.type != EventType.Ignore)
-                    mainEditorState.selectedNode.DrawNodePropertyEditor();
-        }
+			if (mainEditorState.selectedNode != null && Event.current.type != EventType.Ignore)
+				mainEditorState.selectedNode.DrawNodePropertyEditor();
+		}
 
 		#endregion
 
@@ -285,6 +285,8 @@ namespace NodeEditorFramework
 					AssetDatabase.SaveAssets ();
 					AssetDatabase.Refresh ();
 				}
+
+				NodeEditor.RecalculateAll (mainNodeCanvas);
 			}
 		}
 
@@ -338,7 +340,7 @@ namespace NodeEditorFramework
 				mainNodeCanvas.name = EditorPrefs.GetString ("NodeEditorLastSession");
 			
 			// Load the associated MainEditorState
-			List<NodeEditorState> editorStates = NodeEditorSaveManager.LoadEditorStates (path, true);
+			List<NodeEditorState> editorStates = NodeEditorSaveManager.LoadEditorStates (path, false);
 			if (editorStates.Count == 0) 
 			{
 				mainEditorState = ScriptableObject.CreateInstance<NodeEditorState> ();
@@ -349,6 +351,7 @@ namespace NodeEditorFramework
 				mainEditorState = editorStates.Find (x => x.name == "MainEditorState");
 				if (mainEditorState == null) mainEditorState = editorStates[0];
 			}
+			NodeEditorSaveManager.CreateWorkingCopy (ref mainEditorState);
 			mainEditorState.canvas = mainNodeCanvas;
 
 			openedCanvasPath = path;

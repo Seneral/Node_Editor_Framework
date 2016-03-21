@@ -138,10 +138,12 @@ namespace NodeEditorFramework
 				CreateWorkingCopy (ref nodeCanvas, false);
 				if (nodeCanvas == null)
 					throw new UnityException ("Cannot Load NodeCanvas: Failed to create a working copy for the NodeCanvas at path '" + path + "' during the loading process!");
+				if (nodeCanvas.nodes == null || nodeCanvas.nodes.Any ((Node node) => node == null))
+					throw new UnityException ("Cannot Load NodeCanvas: NodeCanvas " + nodeCanvas.name + " was saved incorrectly!");
 			}
 	#if UNITY_EDITOR
 			UnityEditor.AssetDatabase.Refresh ();
-	#endif	
+	#endif
 			NodeEditorCallbacks.IssueOnLoadCanvas (nodeCanvas);
 			return nodeCanvas;
 		}
@@ -155,6 +157,7 @@ namespace NodeEditorFramework
 		}
 		/// <summary>
 		/// Loads the editorStates found in the nodeCanvas asset file at path and optionally creates a working copy of it before returning
+		/// When creating the working copy, you need to account for the accompanying canvas stored in the states
 		/// </summary>
 		public static List<NodeEditorState> LoadEditorStates (string path, bool createWorkingCopy) 
 		{
@@ -196,7 +199,7 @@ namespace NodeEditorFramework
 
 		// <summary>
 		/// Gets a working copy of the editor state. This will break the link to the asset and thus all changes made to the working copy have to be explicitly saved.
-		/// NOTE: If possible, create the working copy with the associated editor state. Else, you have to manually assign the working copy canvas!
+		/// NOTE: If possible, create the working copy with the associated canvas. Else, you have to manually assign the working copy canvas!
 		/// </summary>
 		public static void CreateWorkingCopy (ref NodeEditorState editorState) 
 		{

@@ -17,24 +17,30 @@ namespace NodeEditorFramework
 		public Node selectedNode; // selected Node
 		[NonSerialized]
 		public Node focusedNode; // Node under mouse
-
-		// Current Action
 		[NonSerialized]
-		public bool dragNode = false;
-		[NonSerialized]
-		public NodeOutput connectOutput; // connection this output
+		public NodeKnob focusedNodeKnob; // NodeKnob under mouse
 
 		// Navigation State
 		public Vector2 panOffset = new Vector2 (); // pan offset
 		public float zoom = 1; // zoom; Ranges in 0.2er-steps from 0.6-2.0; applied 1/zoom;
 
-		// Temporary Navigation State
+		// Current Action
 		[NonSerialized]
-		public bool navigate = false; // navigation ('N')
+		public NodeOutput connectOutput; // connection this output
 		[NonSerialized]
-		public bool panWindow = false; // window panning
+		public bool dragNode; // node dragging
+		[NonSerialized]
+		public bool panWindow; // window panning
+		[NonSerialized]
+		public Vector2 dragStart; // start mouse position for both node dragging and window panning
+		[NonSerialized]
+		public Vector2 dragPos; // start object position for both node dragging and window panning
+		[NonSerialized]
+		public Vector2 dragOffset; // offset for both node dragging and window panning
+		[NonSerialized]
+		public bool navigate; // navigation ('N')
 
-		// Temporary State
+		// Temporary variables
 		[NonSerialized]
 		public Rect canvasRect; // canvas Rect
 		public Vector2 zoomPos { get { return canvasRect.size/2; } } // zoom center in canvas space

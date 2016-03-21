@@ -64,6 +64,31 @@ namespace NodeEditorFramework
 		{
 			return nodes.Keys.Single<Node> ((Node node) => node.GetType () == typeof (T)) as T;
 		}
+
+		/// <summary>
+		/// Gets the compatible nodes that have atleast one NodeInput that can connect to the given nodeOutput
+		/// </summary>
+		public static List<Node> getCompatibleNodes (NodeOutput nodeOutput)
+		{
+			if (nodeOutput == null)
+				throw new ArgumentNullException ("nodeOutput");
+			List<Node> compatibleNodes = new List<Node> ();
+			foreach (Node node in NodeTypes.nodes.Keys)
+			{ // Check if any of the NodeInputs is able to connect to the given NodeOutput
+				for (int inputCnt = 0; inputCnt < node.Inputs.Count; inputCnt++)
+				{ // Checking for compability, not using CanApplyConnection to leave out unnessecary dependancy checks
+					NodeInput input = node.Inputs[inputCnt];
+					if (input == null)
+						throw new UnityException ("Input " + inputCnt + " is null!");
+					if (input.typeData.Type.IsAssignableFrom (nodeOutput.typeData.Type))
+					{
+						compatibleNodes.Add (node);
+						break;
+					}
+				}
+			}
+			return compatibleNodes;
+		}
 	}
 
 	/// <summary>

@@ -4,7 +4,7 @@ using System.Linq;
 
 using NodeEditorFramework;
 
-namespace NodeEditorFramework 
+namespace NodeEditorFramework.Standard
 {
 	public class RTCanvasCalculator : MonoBehaviour 
 	{

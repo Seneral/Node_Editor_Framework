@@ -3,7 +3,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using NodeEditorFramework;
 
-namespace NodeEditorFramework 
+namespace NodeEditorFramework.Standard
 {
 	[CustomEditor (typeof(RuntimeNodeEditor))]
 	public class RTNE_InspectorGUI : Editor
