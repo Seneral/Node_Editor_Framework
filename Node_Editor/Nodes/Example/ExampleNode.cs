@@ -2,49 +2,52 @@
 using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
-[Node (false, "Example/Example Node")]
-public class ExampleNode : Node 
+namespace NodeEditorFramework.Standard
 {
-	public const string ID = "exampleNode";
-	public override string GetID { get { return ID; } }
-	
-	public override Node Create (Vector2 pos) 
+	[Node (false, "Example/Example Node")]
+	public class ExampleNode : Node 
 	{
-		ExampleNode node = CreateInstance<ExampleNode> ();
+		public const string ID = "exampleNode";
+		public override string GetID { get { return ID; } }
 		
-		node.rect = new Rect (pos.x, pos.y, 150, 60);
-		node.name = "Example Node";
+		public override Node Create (Vector2 pos) 
+		{
+			ExampleNode node = CreateInstance<ExampleNode> ();
+			
+			node.rect = new Rect (pos.x, pos.y, 150, 60);
+			node.name = "Example Node";
+			
+			node.CreateInput ("Value", "Float");
+			node.CreateOutput ("Output val", "Float");
+			
+			return node;
+		}
 		
-		node.CreateInput ("Value", "Float");
-		node.CreateOutput ("Output val", "Float");
-		
-		return node;
-	}
-	
-	protected internal override void NodeGUI () 
-	{
-		GUILayout.Label ("This is a custom Node!");
+		protected internal override void NodeGUI () 
+		{
+			GUILayout.Label ("This is a custom Node!");
 
-		GUILayout.BeginHorizontal ();
-		GUILayout.BeginVertical ();
+			GUILayout.BeginHorizontal ();
+			GUILayout.BeginVertical ();
 
-		Inputs [0].DisplayLayout ();
+			Inputs [0].DisplayLayout ();
 
-		GUILayout.EndVertical ();
-		GUILayout.BeginVertical ();
+			GUILayout.EndVertical ();
+			GUILayout.BeginVertical ();
+			
+			Outputs [0].DisplayLayout ();
+			
+			GUILayout.EndVertical ();
+			GUILayout.EndHorizontal ();
+			
+		}
 		
-		Outputs [0].DisplayLayout ();
-		
-		GUILayout.EndVertical ();
-		GUILayout.EndHorizontal ();
-		
-	}
-	
-	public override bool Calculate () 
-	{
-		if (!allInputsReady ())
-			return false;
-		Outputs[0].SetValue<float> (Inputs[0].GetValue<float> () * 5);
-		return true;
+		public override bool Calculate () 
+		{
+			if (!allInputsReady ())
+				return false;
+			Outputs[0].SetValue<float> (Inputs[0].GetValue<float> () * 5);
+			return true;
+		}
 	}
 }
