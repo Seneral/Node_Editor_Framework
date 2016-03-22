@@ -1,6 +1,5 @@
 site_name: Node Editor Framework
 pages:
-- Home: 'index.md'
 - Adding Functionality: 'CustomFunctionality.md'
 - Building an Editor: 'BuildingAnEditor.md'
 - Framework Overview: 'FrameworkOverview.md'
