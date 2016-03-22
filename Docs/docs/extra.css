@@ -1,0 +1,3 @@
+ul.nav.navbar-nav li:first-child {
+	display: none;
+}
