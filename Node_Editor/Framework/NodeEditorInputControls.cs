@@ -12,6 +12,8 @@ namespace NodeEditorFramework
 	/// </summary>
 	public static class NodeEditorInputControls
 	{
+        public static List<Node> pinnedNodes = new List<Node>();
+
 		#region Canvas Context Entries
 
 		[ContextFillerAttribute (ContextType.Canvas)]
@@ -77,6 +79,36 @@ namespace NodeEditorFramework
 			NodeEditorState state = inputInfo.editorState;
 			if (inputInfo.inputEvent.button == 0 && state.focusedNode != null && state.focusedNode == state.selectedNode && state.focusedNodeKnob == null) 
 			{ // Clicked inside the selected Node, so start dragging it
+                if (state.selectedNode.GetID.Equals("groupNode"))
+                {
+                    Rect groupRect = state.selectedNode.rect;
+                    // Get all pinned nodes
+                    pinnedNodes.Clear();
+
+                    //Debug.Log("adding to pinned List");
+                    //Debug.Log("groupRect : " + groupRect);
+                    for (int nodeCnt = NodeEditor.curNodeCanvas.nodes.Count - 1; nodeCnt >= 0; nodeCnt--)
+                    { // Check from top to bottom because of the render order
+                        Node node = NodeEditor.curNodeCanvas.nodes[nodeCnt];
+                        //Debug.Log("node.rect : " + node.rect);
+                        
+                        if (groupRect.Contains(node.rect)) // Node Body
+                            pinnedNodes.Add(node);
+                    }
+
+                    for (int groupCnt = NodeEditor.curNodeCanvas.groups.Count - 1; groupCnt >= 0; groupCnt--)
+                    { // Check from top to bottom because of the render order
+                        Node g = NodeEditor.curNodeCanvas.groups[groupCnt];
+                        // Ignore self
+                        if (g == state.selectedNode)
+                            continue;
+
+                        if (groupRect.Contains(g.rect)) // Node Body
+                            pinnedNodes.Add(g);
+                    }
+                    //Debug.Log("pinned List Count = " + pinnedNodes.Count);
+                }
+
 				state.dragNode = true;
 				state.dragStart = inputInfo.inputPos;
 				state.dragPos = state.focusedNode.rect.position; // Need this here because of snapping
@@ -85,24 +117,25 @@ namespace NodeEditorFramework
 			}
 		}
 
-		[EventHandlerAttribute (EventType.MouseDrag)]
-		private static void HandleNodeDragging (NodeEditorInputInfo inputInfo) 
-		{
-			NodeEditorState state = inputInfo.editorState;
-			if (state.dragNode) 
-			{ // If conditions apply, drag the selected node, else disable dragging
-				if (state.selectedNode != null && GUIUtility.hotControl == 0)
-				{ // Calculate new position for the dragged object
-					state.dragOffset = inputInfo.inputPos-state.dragStart;
-					state.selectedNode.rect.position = state.dragPos + state.dragOffset*state.zoom;
-					NodeEditorCallbacks.IssueOnMoveNode (state.selectedNode);
-					NodeEditor.RepaintClients ();
-				} 
-				else
-					state.dragNode = false;
-			}
-		}
-
+        [EventHandlerAttribute(EventType.MouseDrag)]
+        private static void HandleNodeDragging(NodeEditorInputInfo inputInfo)
+        {
+            NodeEditorState state = inputInfo.editorState;
+            if (state.dragNode)
+            { // If conditions apply, drag the selected node, else disable dragging
+                if (state.selectedNode != null && GUIUtility.hotControl == 0)
+                { // Calculate new position for the dragged object
+                    state.dragOffset = inputInfo.inputPos - state.dragStart;
+                    state.selectedNode.rect.position = state.dragPos + state.dragOffset * state.zoom;
+                    NodeEditorCallbacks.IssueOnMoveNode(state.selectedNode);
+                    state.selectedNode.OnMove(); 
+                    NodeEditor.RepaintClients();
+                }
+                else
+                    state.dragNode = false;
+            }
+        }
+        
 		[EventHandlerAttribute (EventType.MouseDown)]
 		[EventHandlerAttribute (EventType.MouseUp)]
 		private static void HandleNodeDraggingEnd (NodeEditorInputInfo inputInfo) 
@@ -140,7 +173,9 @@ namespace NodeEditorFramework
 				panOffsetChange = (state.dragOffset - panOffsetChange) * state.zoom;
 				// Apply it to every element on the canvas
 				state.panOffset += panOffsetChange;
-				for (int nodeCnt = 0; nodeCnt < state.canvas.nodes.Count; nodeCnt++) 
+                for (int groupCnt = 0; groupCnt < state.canvas.groups.Count; groupCnt++)
+                    state.canvas.groups[groupCnt].rect.position += panOffsetChange;
+                for (int nodeCnt = 0; nodeCnt < state.canvas.nodes.Count; nodeCnt++) 
 					state.canvas.nodes [nodeCnt].rect.position += panOffsetChange;
 				NodeEditor.RepaintClients ();
 			}
