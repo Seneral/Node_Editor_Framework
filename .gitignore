@@ -9,3 +9,5 @@
 /Node_Editor/Resources/*.meta
 
 /Node_Editor/Utilities/**/*.meta
+
+/Docs/site

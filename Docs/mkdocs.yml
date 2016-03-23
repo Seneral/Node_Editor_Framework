@@ -1,0 +1,16 @@
+site_name: Node Editor Framework
+pages:
+- "index.md"
+- Adding Functionality: 'CustomFunctionality.md'
+- Building an Editor: 'BuildingAnEditor.md'
+- Framework Overview: 'FrameworkOverview.md'
+- Events: 'Events.md'
+- License: 'license.md'
+repo_url: https://github.com/Baste-RainGames/Node_Editor 
+site_description: "Node Editor Framework for Unity3D Documentation"
+site_favicon: "./img/favicon.png"
+theme: simplex 
+
+extra_css: ['extra.css']
+
+use_directory_urls: true
