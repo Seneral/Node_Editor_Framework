@@ -68,7 +68,7 @@ namespace NodeEditorFramework
 
 		#region Node Dragging
 
-		[EventHandlerAttribute (EventType.MouseDown, priority = 100)] // Priority over hundred to make it call after the GUI
+		[EventHandlerAttribute (EventType.MouseDown, priority = 110)] // Priority over hundred to make it call after the GUI
 		private static void HandleNodeDraggingStart (NodeEditorInputInfo inputInfo) 
 		{
 			if (GUIUtility.hotControl > 0)
@@ -119,7 +119,7 @@ namespace NodeEditorFramework
 		{
 			if (GUIUtility.hotControl > 0)
 				return; // GUI has control
-
+			
 			NodeEditorState state = inputInfo.editorState;
 			if ((inputInfo.inputEvent.button == 0 || inputInfo.inputEvent.button == 2) && state.focusedNode == null) 
 			{ // Left- or Middle clicked on the empty canvas -> Start panning
@@ -134,14 +134,12 @@ namespace NodeEditorFramework
 		{
 			NodeEditorState state = inputInfo.editorState;
 			if (state.panWindow) 
-			{ // Calculate change in pan offset
+			{ // Calculate change in panOffset
 				Vector2 panOffsetChange = state.dragOffset;
-				state.dragOffset = inputInfo.inputPos-state.dragStart;
+				state.dragOffset = inputInfo.inputPos - state.dragStart;
 				panOffsetChange = (state.dragOffset - panOffsetChange) * state.zoom;
-				// Apply it to every element on the canvas
+				// Apply panOffsetChange to panOffset
 				state.panOffset += panOffsetChange;
-				for (int nodeCnt = 0; nodeCnt < state.canvas.nodes.Count; nodeCnt++) 
-					state.canvas.nodes [nodeCnt].rect.position += panOffsetChange;
 				NodeEditor.RepaintClients ();
 			}
 		}
@@ -171,11 +169,12 @@ namespace NodeEditorFramework
 				else if (state.focusedNodeKnob is NodeInput)
 				{ // Input clicked -> Loose and edit connection from it
 					NodeInput clickedInput = (NodeInput)state.focusedNodeKnob;
-					if (clickedInput.connection == null)
-						throw new UnityException ("Failed to get NodeInput when loosing it's connection!");
-					state.connectOutput = clickedInput.connection;
-					clickedInput.RemoveConnection ();
-					inputInfo.inputEvent.Use ();
+					if (clickedInput.connection != null)
+					{
+						state.connectOutput = clickedInput.connection;
+						clickedInput.RemoveConnection ();
+						inputInfo.inputEvent.Use ();
+					}
 				}
 			}
 		}
@@ -184,7 +183,7 @@ namespace NodeEditorFramework
 		private static void HandleApplyConnection (NodeEditorInputInfo inputInfo) 
 		{
 			NodeEditorState state = inputInfo.editorState;
-			if (state.connectOutput != null && state.focusedNode != null && state.focusedNodeKnob != null && state.focusedNodeKnob is NodeInput) 
+			if (inputInfo.inputEvent.button == 0 && state.connectOutput != null && state.focusedNode != null && state.focusedNodeKnob != null && state.focusedNodeKnob is NodeInput) 
 			{ // An input was clicked, it'll will now be connected
 				NodeInput clickedInput = state.focusedNodeKnob as NodeInput;
 				clickedInput.TryApplyConnection (state.connectOutput);
@@ -231,9 +230,9 @@ namespace NodeEditorFramework
 			NodeEditorState state = inputInfo.editorState;
 			if (state.selectedNode != null)
 			{ // Snap selected Node's position to multiples of 10
-				Vector2 pos = state.selectedNode.rect.position - state.panOffset;
+				Vector2 pos = state.selectedNode.rect.position;
 				pos = new Vector2 (Mathf.RoundToInt (pos.x/10) * 10, Mathf.RoundToInt (pos.y/10) * 10);
-				state.selectedNode.rect.position = pos + state.panOffset;
+				state.selectedNode.rect.position = pos;
 				inputInfo.inputEvent.Use ();
 			}
 			NodeEditor.RepaintClients ();

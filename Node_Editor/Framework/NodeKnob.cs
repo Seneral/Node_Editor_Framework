@@ -210,42 +210,41 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Gets the Knob rect in GUI space, NOT ZOOMED
 		/// </summary>
-		internal Rect GetGUIKnob () 
+		public Rect GetGUIKnob () 
 		{
-			Check ();
-			Vector2 knobSize = new Vector2 ((knobTexture.width/knobTexture.height) * NodeEditorGUI.knobSize,
-											(knobTexture.height/knobTexture.width) * NodeEditorGUI.knobSize);
-			Vector2 knobCenter = new Vector2 (body.rect.x + (side == NodeSide.Bottom || side == NodeSide.Top? 
-						/* Top | Bottom */	sidePosition :
-									(side == NodeSide.Left? 
-						/* Left */			-sideOffset-knobSize.x/2 : 
-						/* Right */			body.rect.width+sideOffset+knobSize.x/2
-									)),
-									body.rect.y + (side == NodeSide.Left || side == NodeSide.Right? 
-						/* Left | Right */	sidePosition :
-									(side == NodeSide.Top? 
-						/* Top */			-sideOffset-knobSize.y/2 : 
-						/* Bottom */		body.rect.height+sideOffset+knobSize.y/2
-									)));
-			return new Rect (knobCenter.x - knobSize.x/2 + NodeEditor.curEditorState.zoomPanAdjust.x, 
-							knobCenter.y - knobSize.y/2 + NodeEditor.curEditorState.zoomPanAdjust.y, 
-							knobSize.x, knobSize.y);
+			Rect rect = GetCanvasSpaceKnob ();
+			rect.position += NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
+			return rect;
 		}
 		
 		/// <summary>
 		/// Get the Knob rect in screen space, ZOOMED, for Input detection purposes
 		/// </summary>
-		internal Rect GetScreenKnob () 
+		public Rect GetCanvasSpaceKnob () 
 		{
-			Rect rect = GetGUIKnob ();
-			rect.position -= NodeEditor.curEditorState.zoomPanAdjust; // Remove zoomPanAdjust added in GetGUIKnob
-			return NodeEditor.CanvasGUIToScreenSpace (rect);
+			Check ();
+			Vector2 knobSize = new Vector2 ((knobTexture.width/knobTexture.height) * NodeEditorGUI.knobSize,
+											(knobTexture.height/knobTexture.width) * NodeEditorGUI.knobSize);
+			Vector2 knobCenter = GetKnobCenter (knobSize);
+			return new Rect (knobCenter.x - knobSize.x/2, knobCenter.y - knobSize.y/2, knobSize.x, knobSize.y);
+		}
+
+		private Vector2 GetKnobCenter (Vector2 knobSize) 
+		{
+			if (side == NodeSide.Left)
+				return body.rect.position + new Vector2 (-sideOffset-knobSize.x/2, sidePosition);
+			else if (side == NodeSide.Right)
+				return body.rect.position + new Vector2 ( sideOffset+knobSize.x/2 + body.rect.width, sidePosition);
+			else if (side == NodeSide.Bottom)
+				return body.rect.position + new Vector2 (sidePosition,  sideOffset+knobSize.y/2 + body.rect.height);
+			else // Top
+				return body.rect.position + new Vector2 (sidePosition, -sideOffset-knobSize.y/2);
 		}
 
 		/// <summary>
 		/// Gets the direction of the knob (vertical inverted) for connection drawing purposes
 		/// </summary>
-		internal Vector2 GetDirection () 
+		public Vector2 GetDirection () 
 		{
 			return side == NodeSide.Right? 	Vector2.right : 
 					(side == NodeSide.Bottom? Vector2.up : 

@@ -39,7 +39,9 @@ namespace NodeEditorFramework
 		public Vector2 dragOffset; // offset for both node dragging and window panning
 		[NonSerialized]
 		public bool navigate; // navigation ('N')
-
+		[NonSerialized]
+		public NodeGroup draggedGroup; // The group that is currently dragged
+ 
 		// Temporary variables
 		[NonSerialized]
 		public Rect canvasRect; // canvas Rect

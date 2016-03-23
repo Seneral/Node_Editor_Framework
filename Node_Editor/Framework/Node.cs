@@ -212,7 +212,7 @@ namespace NodeEditorFramework
 			// TODO: Node Editor Feature: Custom Windowing System
 			// Create a rect that is adjusted to the editor zoom
 			Rect nodeRect = rect;
-			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust;
+			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
 			contentOffset = new Vector2 (0, 20);
 
 			// Create a headerRect out of the previous rect and draw it, marking the selected node as such by making the header bold
@@ -363,19 +363,6 @@ namespace NodeEditorFramework
 				Outputs[outputIdx].SetPosition ();
 		}
 
-		/// <summary>
-		/// Returns the output knob that is at the position on this node or null
-		/// </summary>
-		public NodeOutput GetOutputAtPos (Vector2 pos) 
-		{
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-			{ // Search for an output at the position
-				if (Outputs [outCnt].GetScreenKnob ().Contains (new Vector3 (pos.x, pos.y)))
-					return Outputs [outCnt];
-			}
-			return null;
-		}
-
 
 		// -- INPUTS --
 
@@ -409,19 +396,6 @@ namespace NodeEditorFramework
 		{
 			if (Event.current.type == EventType.Repaint)
 				Inputs[inputIdx].SetPosition ();
-		}
-
-		/// <summary>
-		/// Returns the input knob that is at the position on this node or null
-		/// </summary>
-		public NodeInput GetInputAtPos (Vector2 pos) 
-		{
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-			{ // Search for an input at the position
-				if (Inputs [inCnt].GetScreenKnob ().Contains (new Vector3 (pos.x, pos.y)))
-					return Inputs [inCnt];
-			}
-			return null;
 		}
 
 		/// <summary>

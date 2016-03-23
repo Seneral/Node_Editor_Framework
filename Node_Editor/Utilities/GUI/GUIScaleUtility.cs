@@ -144,25 +144,25 @@ namespace NodeEditorFramework.Utilities
 				screenRect = GUIScaleUtility.GUIToScaledSpace (rect);
 			}
 
-			//			Vector2 GUIScale = getCurrentScale;
+//			Vector2 GUIScale = getCurrentScale;
 
 			rect = Scale (screenRect, screenRect.position + zoomPivot, new Vector2 (zoom, zoom));
 
-			//			bool primary = adjustedGUILayout.Count == 0;
-			//			if (!primary) 
-			//			{
-			//				rect.position += secondaryGroupOffset;
-			//
-			//				secondaryScale = new Vector2 (zoom, zoom);
-			//				secondaryInitialRect = screenRect;
-			//				secondaryScaledRect = rect;
-			//			}
-			//			else 
-			//			{
-			//				primaryScale = new Vector2 (zoom, zoom);
-			//				primaryInitialRect = screenRect;
-			//				primaryScaledRect = rect;
-			//			}
+//			bool primary = adjustedGUILayout.Count == 0;
+//			if (!primary) 
+//			{
+//				rect.position += secondaryGroupOffset;
+//
+//				secondaryScale = new Vector2 (zoom, zoom);
+//				secondaryInitialRect = screenRect;
+//				secondaryScaledRect = rect;
+//			}
+//			else 
+//			{
+//				primaryScale = new Vector2 (zoom, zoom);
+//				primaryInitialRect = screenRect;
+//				primaryScaledRect = rect;
+//			}
 
 			// Now continue drawing using the new clipping group
 			GUI.BeginGroup (rect);
@@ -189,14 +189,14 @@ namespace NodeEditorFramework.Utilities
 			// Scale GUI.matrix. After that we have the correct clipping group again.
 			GUIUtility.ScaleAroundPivot (new Vector2 (1/zoom, 1/zoom), zoomPosAdjust);
 
-			//			if (!primary) 
-			//			{
-			//				secondaryZoomPanAdjust = zoomPosAdjust;
-			//			}
-			//			else 
-			//			{
-			//				primaryZoomPanAdjust = zoomPosAdjust;
-			//			}
+//			if (!primary) 
+//			{
+//				secondaryZoomPanAdjust = zoomPosAdjust;
+//			}
+//			else 
+//			{
+//				primaryZoomPanAdjust = zoomPosAdjust;
+//			}
 
 			return zoomPosAdjust;
 		}
@@ -354,7 +354,7 @@ namespace NodeEditorFramework.Utilities
 
 		#endregion
 
-		#region Transformation Helpers
+		#region Space Transformations
 
 		/// <summary>
 		/// Scales the position around the pivot with scale

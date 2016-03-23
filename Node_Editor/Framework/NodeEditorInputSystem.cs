@@ -115,6 +115,8 @@ namespace NodeEditorFramework
 					(late? eventHandler.Key.priority >= 100 : eventHandler.Key.priority < 100))
 				{ // Event is happening and specified priority is ok with the late-state
 					eventHandler.Value.DynamicInvoke (parameter);
+					if (inputInfo.inputEvent.type == EventType.Used)
+						return;
 				}
 			}
 		}
@@ -132,6 +134,8 @@ namespace NodeEditorFramework
 					(hotKey.Key.limitingEventType == null || hotKey.Key.limitingEventType == inputInfo.inputEvent.type))
 				{
 					hotKey.Value.DynamicInvoke (parameter);
+					if (inputInfo.inputEvent.type == EventType.Used)
+						return;
 				}
 			}
 		}
@@ -190,7 +194,7 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Returns whether to account for input in the given state using the mousePosition
 		/// </summary>
-		private static bool shouldIgnoreInput (NodeEditorState state) 
+		internal static bool shouldIgnoreInput (NodeEditorState state) 
 		{
 			// Account for any opened popups
 			if (OverlayGUI.HasPopupControl ())
@@ -216,12 +220,12 @@ namespace NodeEditorFramework
 
 		private static NodeEditorState unfocusControlsForState;
 
-		[EventHandlerAttribute (priority = -2)] // Absolute first to call!
+		[EventHandlerAttribute (priority = -4)] // Absolute first to call!
 		private static void HandleFocussing (NodeEditorInputInfo inputInfo) 
 		{
 			NodeEditorState state = inputInfo.editorState;
 			// Choose focused Node
-			state.focusedNode = NodeEditor.NodeAtPosition (inputInfo.inputPos, out state.focusedNodeKnob);
+			state.focusedNode = NodeEditor.NodeAtPosition (NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos), out state.focusedNodeKnob);
 			// Perform focus changes in Repaint, which is the only suitable time to do this
 			if (unfocusControlsForState == state && Event.current.type == EventType.Repaint) 
 			{
@@ -231,7 +235,7 @@ namespace NodeEditorFramework
 			}
 		}
 
-		[EventHandlerAttribute (EventType.MouseDown, priority = -1)] // Absolute second to call!
+		[EventHandlerAttribute (EventType.MouseDown, priority = -2)] // Absolute second to call!
 		private static void HandleSelecting (NodeEditorInputInfo inputInfo) 
 		{
 			NodeEditorState state = inputInfo.editorState;
@@ -259,7 +263,7 @@ namespace NodeEditorFramework
 					FillContextMenu (inputInfo, contextMenu, ContextType.Node);
 				else // Editor Context Click
 					FillContextMenu (inputInfo, contextMenu, ContextType.Canvas);
-				contextMenu.ShowAsContext ();
+				contextMenu.Show (inputInfo.inputPos);
 				Event.current.Use ();
 			}
 		}
