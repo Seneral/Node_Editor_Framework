@@ -35,7 +35,7 @@ namespace NodeEditorFramework.Standard
 		protected internal override void DrawNode () 
 		{
 			Rect nodeRect = rect;
-			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust;
+			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
 			
 			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, nodeRect.height);
 			

@@ -343,24 +343,8 @@ namespace NodeEditorFramework.Utilities
 		public void ShowAsContext ()
 		{
 			Vector2 mousePos = Event.current.mousePosition;
-//			Debug.Log ("ShowAsContext! MousePos: " + mousePos.ToString ());
-//
-//			Vector2 guiMousePos = GUIScaleUtility.ScaledToGUISpace (mousePos);
-//			Debug.Log ("ShowAsContext! MousePos->ScaledToGUISpace: " + guiMousePos.ToString ());
-//
-			Vector2 screenMousePos = GUIScaleUtility.GUIToScreenSpace (mousePos);
-//			Debug.Log ("ShowAsContext! MousePos->GUIToScreenSpace: " + screenMousePos.ToString ());
-//
-//			Vector2 scaledMousePos = GUIScaleUtility.GUIToScaledSpace (mousePos);
-//			Debug.Log ("ShowAsContext! MousePos->GUIToScaledSpace: " + scaledMousePos.ToString ());
-//
-//			Vector2 screenGuiMousePos = GUIScaleUtility.ScaledToGUISpace (screenMousePos);
-//			Debug.Log ("ShowAsContext! MousePos->GUIToScreenSpace->ScaledToGUISpace: " + screenGuiMousePos.ToString ());
-//
-//			Vector2 guiScreenMousePos = GUIScaleUtility.GUIToScreenSpace (guiMousePos);
-//			Debug.Log ("ShowAsContext! MousePos->ScaledToGUISpace->GUIToScreenSpace: " + guiScreenMousePos.ToString ());
-
-			popup.Show (screenMousePos);
+			//Vector2 screenMousePos = GUIScaleUtility.GUIToScreenSpace (mousePos);
+			popup.Show (mousePos);
 		}
 
 		public void Show (Vector2 pos)
