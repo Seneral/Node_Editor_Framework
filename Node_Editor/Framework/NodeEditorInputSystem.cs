@@ -222,8 +222,16 @@ namespace NodeEditorFramework
 			NodeEditorState state = inputInfo.editorState;
 			// Choose focused Node
 			state.focusedNode = NodeEditor.NodeAtPosition (inputInfo.inputPos, out state.focusedNodeKnob);
-			// Perform focus changes in Repaint, which is the only suitable time to do this
-			if (unfocusControlsForState == state && Event.current.type == EventType.Repaint) 
+
+            // Node has higher priority, so if the focused node is null then check for groups on focus
+            // Dont worry, there won't be an instance where both node and group are selected.
+            if (state.focusedNode == null)
+            {
+                state.focusedNode = NodeEditor.GroupAtPosition(inputInfo.inputPos);
+            }
+
+            // Perform focus changes in Repaint, which is the only suitable time to do this
+            if (unfocusControlsForState == state && Event.current.type == EventType.Repaint) 
 			{
 				GUIUtility.hotControl = 0;
 				GUIUtility.keyboardControl = 0;
@@ -234,8 +242,9 @@ namespace NodeEditorFramework
 		[EventHandlerAttribute (EventType.MouseDown, priority = -1)] // Absolute second to call!
 		private static void HandleSelecting (NodeEditorInputInfo inputInfo) 
 		{
-			NodeEditorState state = inputInfo.editorState;
-			if (inputInfo.inputEvent.button == 0 && state.focusedNode != state.selectedNode)
+            NodeEditorState state = inputInfo.editorState;
+            
+            if (inputInfo.inputEvent.button == 0 && state.focusedNode != state.selectedNode)
 			{ // Select focussed Node
 				unfocusControlsForState = state;
 				state.selectedNode = state.focusedNode;

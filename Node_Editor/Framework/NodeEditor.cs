@@ -198,12 +198,26 @@ namespace NodeEditorFramework
 			// Push the active node at the bottom of the draw order.
 			if (Event.current.type == EventType.Layout && curEditorState.selectedNode != null)
 			{
-				curNodeCanvas.nodes.Remove (curEditorState.selectedNode);
-				curNodeCanvas.nodes.Add (curEditorState.selectedNode);
+                if (curEditorState.selectedNode.GetID.Equals("groupNode"))
+                {
+                    curNodeCanvas.groups.Remove(curEditorState.selectedNode);
+                    curNodeCanvas.groups.Add(curEditorState.selectedNode);
+                }
+                else
+                {
+                    curNodeCanvas.nodes.Remove(curEditorState.selectedNode);
+                    curNodeCanvas.nodes.Add(curEditorState.selectedNode);
+                }
 			}
 
-			// Draw the transitions and connections. Has to be drawn before nodes as transitions originate from node centers
-			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++)  
+            //Draw the groups
+            for (int groupCnt = 0; groupCnt < curNodeCanvas.groups.Count; groupCnt++)
+            {
+                curNodeCanvas.groups[groupCnt].DrawNode();
+            }
+
+            // Draw the transitions and connections. Has to be drawn before nodes as transitions originate from node centers
+            for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++)  
 			{
 				Node node = curNodeCanvas.nodes [nodeCnt];
 				node.DrawConnections ();
@@ -276,10 +290,25 @@ namespace NodeEditorFramework
 			return null;
 		}
 
-		/// <summary>
-		/// Transforms the Rect in GUI space (curEditorState) into Screen space
-		/// </summary>
-		public static Rect CanvasGUIToScreenSpace (Rect rect) 
+        public static Node GroupAtPosition(Vector2 pos)
+        {
+            if (!curEditorState.canvasRect.Contains(pos))
+                return null;
+
+            // Check from top to bottom order
+            for (int groupCnt = curNodeCanvas.groups.Count - 1; groupCnt >= 0; groupCnt--)
+            {
+                Node g = curNodeCanvas.groups[groupCnt];
+                if (CanvasGUIToScreenSpace(g.rect).Contains(pos)) // Node Body
+                    return g;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Transforms the Rect in GUI space (curEditorState) into Screen space
+        /// </summary>
+        public static Rect CanvasGUIToScreenSpace (Rect rect) 
 		{
 			return CanvasGUIToScreenSpace (curEditorState, rect);
 		}

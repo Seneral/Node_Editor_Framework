@@ -31,7 +31,7 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Init the Node Base after the Node has been created. This includes adding to canvas, and to calculate for the first time
 		/// </summary>
-		protected internal void InitBase () 
+		protected internal virtual void InitBase () 
 		{
 			NodeEditor.RecalculateFrom (this);
 			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
@@ -46,7 +46,7 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Deletes this Node from curNodeCanvas and the save file
 		/// </summary>
-		public void Delete () 
+		public virtual void Delete () 
 		{
 			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
 				throw new UnityException ("The Node " + name + " does not exist on the Canvas " + NodeEditor.curNodeCanvas.name + "!");
@@ -608,8 +608,13 @@ namespace NodeEditorFramework
 			startRecursiveSearchNode = null;
 		}
 
-		#endregion
+        #endregion
 
-		#endregion
-	}
+        #endregion
+
+        /// <summary>
+        /// Callback when the Node has been moved
+        /// </summary>
+        protected internal virtual void OnMove() { }
+    }
 }
