@@ -18,7 +18,7 @@ namespace NodeEditorFramework
 		// Node
 		public virtual void OnAddNode (Node node) {}
 		public virtual void OnDeleteNode (Node node) {}
-		public virtual void OnMoveNode (Node node) {}
+		public virtual void OnMoveNode (Node node, Vector2 offset) {}
 		public virtual void OnAddNodeKnob (NodeKnob knob) {}
 		// Connection
 		public virtual void OnAddConnection (NodeInput input) {}
@@ -147,17 +147,17 @@ namespace NodeEditorFramework
 			}
 		}
 
-		public static Action<Node> OnMoveNode;
-		public static void IssueOnMoveNode (Node node) 
+		public static Action<Node, Vector2> OnMoveNode;
+		public static void IssueOnMoveNode (Node node, Vector2 offset) 
 		{
 			if (OnMoveNode != null)
-				OnMoveNode.Invoke (node);
+				OnMoveNode.Invoke (node, offset);
 			for (int cnt = 0; cnt < receiverCount; cnt++) 
 			{
 				if (callbackReceiver [cnt] == null)
 					callbackReceiver.RemoveAt (cnt--);
 				else
-					callbackReceiver [cnt].OnMoveNode (node);
+					callbackReceiver [cnt].OnMoveNode (node, offset);
 			}
 		}
 

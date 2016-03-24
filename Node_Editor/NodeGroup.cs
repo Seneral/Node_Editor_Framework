@@ -8,32 +8,44 @@ using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
 {
-    [Serializable]
+	[Serializable]
 	public class NodeGroup
 	{
 		public string title;
+		public Rect rect;
 
-		public Rect groupRect;
+		private bool edit;
 
-        private bool edit;
-        public bool resizing; //flag to tell if its being resized or not. if it is, then turn on its highlight
-
-        //flag to show which direction the resize is being handled
-        enum BorderSelection { None, Left, Right, Top, Bottom, TopLeft, TopRight, BottomLeft, BottomRight };
-
-        // Appearance
-        public Color color { get { return _color; } set { _color = value; } }
+		// Appearance
+		public Color color { get { return _color; } set { _color = value; } }
+		[SerializeField]
 		private Color _color = Color.blue;
-		private GUIStyle headerStyle;
-        private GUIStyle borderHighlightStyle;
-        private GUIStyle bodyStyle;
+		private GUIStyle backgroundStyle;
+		private GUIStyle altBackgroundStyle;
+		private GUIStyle opBackgroundStyle;
 		private GUIStyle headerTitleStyle;
 		private GUIStyle headerTitleEditStyle;
 
-        private static BorderSelection resizeDir;
+		// Only important for active Node
+		private static BorderSelection resizeDir;
+		private static List<Node> pinnedNodes = new List<Node> ();
 
-        // Functionality
-        private List<Node> pinnedNodes = new List<Node> ();
+		// Settings
+		private const int dragAreaWidth = 10;
+		private const int minGroupSize = 200;
+		private const int headerHeight = 30;
+
+		/// <summary>
+		/// Defines which border was selected, including corners by flagging two neighboured sides
+		/// </summary>
+		[Flags]
+		enum BorderSelection { 
+			None = 0, 
+			Left = 1, 
+			Right = 2, 
+			Top = 4, 
+			Bottom = 8
+		};
 
 		[ContextEntryAttribute (ContextType.Canvas, "Create Group")]
 		public static void CreateGroup (NodeEditorInputInfo info) 
@@ -47,12 +59,9 @@ namespace NodeEditorFramework
 		private NodeGroup (string groupTitle, Vector2 pos)
 		{
 			title = groupTitle;
-			groupRect = new Rect (pos.x, pos.y, 400, 400);
+			rect = new Rect (pos.x, pos.y, 400, 400);
 
 			GenerateStyles ();
-			UpdatePinnedNodes ();
-
-			NodeEditorCallbacks.OnMoveNode += (Node node) => UpdatePinnedNodes ();
 		}
 
 		public void Delete () 
@@ -60,26 +69,41 @@ namespace NodeEditorFramework
 			NodeEditor.curNodeCanvas.groups.Remove (this);
 		}
 
+		public void UpdatePinnedNodes ()
+		{
+			pinnedNodes = new List<Node> ();
+			foreach (Node node in NodeEditor.curNodeCanvas.nodes) 
+			{ // Get all pinned nodes -> all nodes atleast half in the group
+				if (rect.Contains (node.rect.center))
+					pinnedNodes.Add (node);
+			}
+		}
+
+		#region GUI
+
 		private void GenerateStyles ()
 		{
 			// Transparent background
-			Texture2D background = RTEditorGUI.ColorToTex (8, _color * new Color (1, 1, 1, 0.5f));
+			Texture2D background = RTEditorGUI.ColorToTex (8, _color * new Color (1, 1, 1, 0.4f));
 			// ligher, less transparent background
-			Texture2D altBackground = RTEditorGUI.ColorToTex (8, _color * new Color (2, 2, 2, 0.8f));
+			Texture2D altBackground = RTEditorGUI.ColorToTex (8, _color * new Color (1, 1, 1, 0.6f));
+			// ligher, less transparent background
+			Texture2D opBackground = RTEditorGUI.ColorToTex (8, _color * new Color (1, 1, 1, 1));
 
-            // Dunno why cant set own color 
-            borderHighlightStyle = new GUIStyle();
-            borderHighlightStyle.normal.background = background;
+			backgroundStyle = new GUIStyle ();
+			backgroundStyle.normal.background = background;
+			backgroundStyle.padding = new RectOffset (10, 10, 5, 5);
 
-            bodyStyle = new GUIStyle ();
-			bodyStyle.normal.background = background;
+			altBackgroundStyle = new GUIStyle ();
+			altBackgroundStyle.normal.background = altBackground;
+			altBackgroundStyle.padding = new RectOffset (10, 10, 5, 5);
 
-			headerStyle = new GUIStyle ();
-			headerStyle.normal.background = altBackground;
+			opBackgroundStyle = new GUIStyle();
+			opBackgroundStyle.normal.background = opBackground;
+			opBackgroundStyle.padding = new RectOffset (10, 10, 5, 5);
 
 			headerTitleStyle = new GUIStyle ();
-			headerTitleStyle.fontSize = 22;
-			headerTitleStyle.alignment = TextAnchor.MiddleLeft;
+			headerTitleStyle.fontSize = 20;
 
 			headerTitleEditStyle = new GUIStyle (headerTitleStyle);
 			headerTitleEditStyle.normal.background = background;
@@ -88,20 +112,36 @@ namespace NodeEditorFramework
 
 		public void DrawGroup ()
 		{
-            // Create a rect that is adjusted to the editor zoom
-            Rect rect = groupRect;
-			rect.position += NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
-			int headerHeight = 30;
+			if (backgroundStyle == null)
+				GenerateStyles ();
+			NodeEditorState state = NodeEditor.curEditorState;
+			// Create a rect that is adjusted to the editor zoom
+			Rect groupRect = rect;
+			groupRect.position += state.zoomPanAdjust + state.panOffset;
 
-            // Resize handle
-            if (resizing)
-            {
-                Rect resizeRect = new Rect(rect.x - 10, rect.y - 10, rect.width + 20, rect.height + 20);
-                GUI.Box(resizeRect, GUIContent.none, bodyStyle);
-            }
+			if (state.activeGroup == this && state.resizeGroup)
+			{ // TODO: Only show resize handle according to which side is dragged
+				Rect handleRect = groupRect;
+				if ((NodeGroup.resizeDir&BorderSelection.Left) != 0)
+					handleRect.xMax = handleRect.xMin + dragAreaWidth;
+				else if ((NodeGroup.resizeDir&BorderSelection.Right) != 0)
+					handleRect.xMin = handleRect.xMax - dragAreaWidth;
 
-            Rect headerRect = new Rect (rect.x, rect.y, rect.width, headerHeight);
-			GUILayout.BeginArea (headerRect, headerStyle);
+				if ((NodeGroup.resizeDir&BorderSelection.Top) != 0)
+					handleRect.yMax = handleRect.yMin + dragAreaWidth;
+				else if ((NodeGroup.resizeDir&BorderSelection.Bottom) != 0)
+					handleRect.yMin = handleRect.yMax - dragAreaWidth;
+				
+				GUI.Box (handleRect, GUIContent.none, opBackgroundStyle);
+			}
+
+			// Body
+			Rect bodyRect = new Rect (groupRect.x, groupRect.y + headerHeight, groupRect.width, groupRect.height - headerHeight);
+			GUI.Box (bodyRect, GUIContent.none, backgroundStyle);
+
+			// Header
+			Rect headerRect = new Rect (groupRect.x, groupRect.y, groupRect.width, headerHeight);
+			GUILayout.BeginArea (headerRect, altBackgroundStyle);
 			GUILayout.BeginHorizontal ();
 
 			GUILayout.Space (8);
@@ -111,11 +151,13 @@ namespace NodeEditorFramework
 				title = GUILayout.TextField (title, headerTitleEditStyle);
 			else
 				GUILayout.Label (title, headerTitleStyle);
-			
+
 			// Header Color Edit
 			#if UNITY_EDITOR
 			if (edit)
 			{
+				GUILayout.Space (10);
+
 				Color col = UnityEditor.EditorGUILayout.ColorField (_color);
 				if (col != _color)
 				{
@@ -126,129 +168,84 @@ namespace NodeEditorFramework
 			#endif
 
 			GUILayout.FlexibleSpace ();
+
+			// Edit Button
 			if (GUILayout.Button ("E", new GUILayoutOption [] { GUILayout.ExpandWidth (false), GUILayout.ExpandHeight (false) }))
 				edit = !edit;
-			
+
 			GUILayout.EndHorizontal ();
 			GUILayout.EndArea ();
-
-			// Begin the body frame around the NodeGUI
-			Rect bodyRect = new Rect (rect.x, rect.y + headerHeight, rect.width, rect.height - headerHeight);
-			GUI.Box (bodyRect, GUIContent.none, bodyStyle);
 		}
 
-		public void UpdatePinnedNodes ()
+		#endregion
+
+		#region Hit tests
+
+		private static NodeGroup HeaderAtPosition(NodeEditorState state, Vector2 canvasPos)
 		{
-			pinnedNodes = new List<Node> ();
-			foreach (Node node in NodeEditor.curNodeCanvas.nodes) 
-			{
-				if (groupRect.Overlaps (node.rect))
-					pinnedNodes.Add (node);
+			if (NodeEditorInputSystem.shouldIgnoreInput(state))
+				return null;
+			NodeCanvas canvas = state.canvas;
+			for (int groupCnt = canvas.groups.Count - 1; groupCnt >= 0; groupCnt--)
+			{ // Check from top to bottom because of the render order
+				NodeGroup group = canvas.groups[groupCnt];
+				if (new Rect (group.rect.x, group.rect.y, group.rect.width, 30).Contains(canvasPos))
+					return group;
 			}
+			return null;
 		}
 
-		public void Drag (Vector2 moveOffset)
-		{
-			groupRect.position += moveOffset;
-			foreach (Node pinnedNode in pinnedNodes)
-				pinnedNode.rect.position += moveOffset;
-		}
-
-        #region Input
-
-        //private static NodeGroup HeaderAtPosition(NodeEditorState state, Vector2 canvasPos)
-        //{
-        //    if (NodeEditorInputSystem.shouldIgnoreInput(state))
-        //        return null;
-        //    NodeCanvas canvas = state.canvas;
-        //    for (int groupCnt = canvas.groups.Count - 1; groupCnt >= 0; groupCnt--)
-        //    { // Check from top to bottom because of the render order
-        //        if (canvas.groups[groupCnt].headerRect.Contains(canvasPos)) // Node Body
-        //            return canvas.groups[groupCnt];
-        //    }
-        //    return null;
-        //}
-
-        private static NodeGroup GroupAtPosition (NodeEditorState state, Vector2 canvasPos)
+		private static NodeGroup GroupAtPosition (NodeEditorState state, Vector2 canvasPos)
 		{
 			if (NodeEditorInputSystem.shouldIgnoreInput (state))
 				return null;
 			NodeCanvas canvas = state.canvas;
 			for (int groupCnt = canvas.groups.Count-1; groupCnt >= 0; groupCnt--) 
 			{ // Check from top to bottom because of the render order
-				if (canvas.groups [groupCnt].groupRect.Contains (canvasPos)) // Node Body
+				if (canvas.groups [groupCnt].rect.Contains (canvasPos))
 					return canvas.groups [groupCnt];
 			}
 			return null;
 		}
 
-        /// <summary>
-        /// Returns true if the mouse position is on the border of the focused node
-        /// </summary>
-        /// <param name="state"></param>
-        /// <param name="focused"></param>
-        /// <param name="canvasPos"></param>
-        /// <returns></returns>
-        private static bool CheckIfBorderSelected(NodeEditorState state, NodeGroup focused, Vector2 canvasPos)
-        {
-            if (focused != null)
-            {
-                Vector2 min = new Vector2(focused.groupRect.xMin + 10, focused.groupRect.yMax - 10);
-                Vector2 max = new Vector2(focused.groupRect.xMax - 10, focused.groupRect.yMin + 10);
+		/// <summary>
+		/// Returns true if the mouse position is on the border of the focused node
+		/// </summary>
+		private static bool CheckBorderSelection(NodeEditorState state, Rect rect, Vector2 canvasPos, out BorderSelection selection)
+		{
+			selection = 0;
+			if (!rect.Contains (canvasPos))
+				return false;
 
-                resizeDir = BorderSelection.None;
-                
-                // Check for exclusion
-                if (canvasPos.x < min.x)
-                {
-                    // Left border
-                    resizeDir = BorderSelection.Left;
-                }
-                else if (canvasPos.x > max.x)
-                {
-                    // Right border
-                    resizeDir = BorderSelection.Right;
-                }
+			Vector2 min = new Vector2(rect.xMin + 10, rect.yMax - 10);
+			Vector2 max = new Vector2(rect.xMax - 10, rect.yMin + 10);
 
-                if (canvasPos.y < max.y)
-                {
-                    // Top border
-                    if (resizeDir == BorderSelection.Left)
-                        resizeDir = BorderSelection.TopLeft;
-                    else if (resizeDir == BorderSelection.Right)
-                        resizeDir = BorderSelection.TopRight;
-                    else
-                        resizeDir = BorderSelection.Top;
-                }
-                else if (canvasPos.y > min.y)
-                {
-                    // Bottom border
-                    if (resizeDir == BorderSelection.Left)
-                        resizeDir = BorderSelection.BottomLeft;
-                    else if (resizeDir == BorderSelection.Right)
-                        resizeDir = BorderSelection.BottomRight;
-                    else
-                        resizeDir = BorderSelection.Bottom;
-                }
+			// Check bordes and mark flags accordingly
+			// Horizontal
+			if (canvasPos.x < min.x)
+				selection = BorderSelection.Left;
+			else if (canvasPos.x > max.x)
+				selection = BorderSelection.Right;
+			// Vertical
+			if (canvasPos.y < max.y)
+				selection |= BorderSelection.Top;
+			else if (canvasPos.y > min.y)
+				selection |= BorderSelection.Bottom;
 
-                if (resizeDir != BorderSelection.None)
-                {
-                    focused.resizing = true;
-                    //Debug.Log(resizeDir);
-                    return true;
-                }
-            }
+			return selection != BorderSelection.None;
+		}
 
-            return false;
-        }
+		#endregion
 
-        [EventHandlerAttribute (EventType.MouseDown, priority = -1)] // Before the other context clicks because they won't account for groups
+		#region Input
+
+		[EventHandlerAttribute (EventType.MouseDown, priority = -1)] // Before the other context clicks because they won't account for groups
 		private static void HandleGroupContextClick (NodeEditorInputInfo inputInfo) 
 		{
 			NodeEditorState state = inputInfo.editorState;
 			if (inputInfo.inputEvent.button == 1 && state.focusedNode == null)
 			{ // Right-click NOT on a node
-				NodeGroup focusedGroup = GroupAtPosition (state, NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos)); 
+				NodeGroup focusedGroup = HeaderAtPosition (state, NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos)); 
 				if (focusedGroup != null)
 				{ // Context click for the group. This is static, not dynamic, because it would be useless
 					GenericMenu context = new GenericMenu ();
@@ -261,7 +258,7 @@ namespace NodeEditorFramework
 
 		// No need for selecting or anything other controls nodes need, group simply needs dragging
 
-		[EventHandlerAttribute (EventType.MouseDown, priority = 115)] // Priority over hundred to make it call after the GUI, and after Node dragging
+		[EventHandlerAttribute (EventType.MouseDown, priority = 104)] // Priority over hundred to make it call after the GUI, and before Node dragging (110) and window panning (105)
 		private static void HandleGroupDraggingStart (NodeEditorInputInfo inputInfo) 
 		{
 			if (GUIUtility.hotControl > 0)
@@ -271,21 +268,21 @@ namespace NodeEditorFramework
 			if (inputInfo.inputEvent.button == 0 && state.focusedNode == null && state.dragNode == false) 
 			{ // Do not interfere with other dragging stuff
 				NodeGroup focusedGroup = GroupAtPosition (state, NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos));
-
-                if (CheckIfBorderSelected(state, focusedGroup, NodeEditor.ScreenToCanvasSpace(inputInfo.inputPos)))
-                {
-                    focusedGroup.resizing = true;
-                    state.resizing = true;
-                }
-
-                if (focusedGroup != null)
+				if (focusedGroup != null)
 				{ // Start dragging the focused group
-					state.draggedGroup = focusedGroup;
-					state.dragStart = inputInfo.inputPos;
-					state.dragPos = focusedGroup.groupRect.position; // Need this here because of snapping
-					state.dragOffset = Vector2.zero;
-					inputInfo.inputEvent.delta = Vector2.zero;
-					inputInfo.inputEvent.Use ();
+					Vector2 canvasInputPos = NodeEditor.ScreenToCanvasSpace(inputInfo.inputPos);
+					bool resizing = CheckBorderSelection (state, focusedGroup.rect, canvasInputPos, out NodeGroup.resizeDir);
+					bool dragging = new Rect (focusedGroup.rect.x, focusedGroup.rect.y, focusedGroup.rect.width, headerHeight).Contains (canvasInputPos);
+					if (resizing || dragging)
+					{ // Apply either resize or drag
+						state.activeGroup = focusedGroup;
+						state.StartDrag ("group", inputInfo.inputPos, inputInfo.inputPos);
+						if (resizing)
+							state.resizeGroup = true;
+						else if (dragging)
+							state.activeGroup.UpdatePinnedNodes ();
+						inputInfo.inputEvent.Use ();
+					}
 				}
 			}
 		}
@@ -294,63 +291,37 @@ namespace NodeEditorFramework
 		private static void HandleGroupDragging (NodeEditorInputInfo inputInfo) 
 		{
 			NodeEditorState state = inputInfo.editorState;
-			if (state.draggedGroup != null) 
-			{ // We currently drag a node
-				if (state.focusedNode != null || state.dragNode != false)
+			NodeGroup active = state.activeGroup;
+			if (active != null) 
+			{ // Handle dragging and resizing of active group
+				if (state.dragUserID != "group")
 				{
-					state.draggedGroup = null;
+					state.activeGroup = null;
+					state.resizeGroup = false;
 					return;
 				}
+				// Calculate drag change
+				Vector2 drag = state.UpdateDrag ("group", inputInfo.inputPos);
+				if (state.resizeGroup)
+				{ // Resizing -> Apply drag to selected borders while keeping a minimum size
+					// Note: Binary operator and !=0 checks of the flag is enabled, but not necessarily the only flag (in which case you would use ==)
+					Rect r = active.rect;
+					if ((NodeGroup.resizeDir&BorderSelection.Left) != 0)
+						active.rect.xMin = r.xMax - Math.Max (minGroupSize, r.xMax - (r.xMin + drag.x));
+					else if ((NodeGroup.resizeDir&BorderSelection.Right) != 0)
+						active.rect.xMax = r.xMin + Math.Max (minGroupSize, (r.xMax + drag.x) - r.xMin);
 
-                // Calculate new position for the dragged object
-                Vector2 dragOffsetChange = state.dragOffset;
-                state.dragOffset = inputInfo.inputPos - state.dragStart;
-                dragOffsetChange = (state.dragOffset - dragOffsetChange) * state.zoom;
-
-                // Currently is resizing
-                if (state.resizing)
-                {
-                    Rect rect = state.draggedGroup.groupRect;
-
-                    switch (resizeDir)
-                    {
-                        case BorderSelection.Left:
-                            rect.xMin += dragOffsetChange.x;
-                            break;
-                        case BorderSelection.Right:
-                            rect.xMax += dragOffsetChange.x;
-                            break;
-                        case BorderSelection.Top:
-                            rect.yMin += dragOffsetChange.y;
-                            break;
-                        case BorderSelection.Bottom:
-                            rect.yMax += dragOffsetChange.y;
-                            break;
-                        case BorderSelection.TopLeft:
-                            rect.yMin += dragOffsetChange.y;
-                            rect.xMin += dragOffsetChange.x;
-                            break;
-                        case BorderSelection.TopRight:
-                            rect.yMin += dragOffsetChange.y;
-                            rect.xMax += dragOffsetChange.x;
-                            break;
-                        case BorderSelection.BottomLeft:
-                            rect.yMax += dragOffsetChange.y;
-                            rect.xMin += dragOffsetChange.x;
-                            break;
-                        case BorderSelection.BottomRight:
-                            rect.yMax += dragOffsetChange.y;
-                            rect.xMax += dragOffsetChange.x;
-                            break;
-                    }
-
-                    state.draggedGroup.groupRect = rect;
-                    state.draggedGroup.UpdatePinnedNodes();
-                    NodeEditor.RepaintClients();
-                    return;
-                }
-                
-				state.draggedGroup.Drag (dragOffsetChange);
+					if ((NodeGroup.resizeDir&BorderSelection.Top) != 0)
+						active.rect.yMin = r.yMax - Math.Max (minGroupSize, r.yMax - (r.yMin + drag.y));
+					else if ((NodeGroup.resizeDir&BorderSelection.Bottom) != 0)
+						active.rect.yMax = r.yMin + Math.Max (minGroupSize, (r.yMax + drag.y) - r.yMin);
+				}
+				else 
+				{ // Dragging -> Apply drag to body and pinned nodes
+					active.rect.position += drag;
+					foreach (Node pinnedNode in pinnedNodes)
+						pinnedNode.rect.position += drag;
+				}
 				inputInfo.inputEvent.Use ();
 				NodeEditor.RepaintClients ();
 			}
@@ -358,16 +329,19 @@ namespace NodeEditorFramework
 
 		[EventHandlerAttribute (EventType.MouseDown)]
 		[EventHandlerAttribute (EventType.MouseUp)]
-		private static void HandleNodeDraggingEnd (NodeEditorInputInfo inputInfo) 
+		private static void HandleDraggingEnd (NodeEditorInputInfo inputInfo) 
 		{
-            if (inputInfo.editorState.draggedGroup != null)
-                inputInfo.editorState.draggedGroup.resizing = false;
+			if (inputInfo.editorState.activeGroup != null || inputInfo.editorState.dragUserID == "group")
+			{
+				if (inputInfo.editorState.activeGroup != null )
+					inputInfo.editorState.activeGroup.UpdatePinnedNodes ();
+				inputInfo.editorState.activeGroup = null;
+				inputInfo.editorState.resizeGroup = false;
+				inputInfo.editorState.dragUserID = "";
+			}
 
-            inputInfo.editorState.resizing = false;
-
-            inputInfo.editorState.draggedGroup = null;
-            NodeEditor.RepaintClients();
-        }
+			NodeEditor.RepaintClients();
+		}
 
 		#endregion
 	}
