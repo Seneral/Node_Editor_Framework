@@ -119,8 +119,12 @@ namespace NodeEditorFramework
 		{
 			if (GUIUtility.hotControl > 0)
 				return; // GUI has control
-			
+            
 			NodeEditorState state = inputInfo.editorState;
+
+            if (state.resizing)
+                return;
+
 			if ((inputInfo.inputEvent.button == 0 || inputInfo.inputEvent.button == 2) && state.focusedNode == null) 
 			{ // Left- or Middle clicked on the empty canvas -> Start panning
 				state.panWindow = true;
@@ -133,7 +137,11 @@ namespace NodeEditorFramework
 		private static void HandleWindowPanning (NodeEditorInputInfo inputInfo) 
 		{
 			NodeEditorState state = inputInfo.editorState;
-			if (state.panWindow) 
+
+            if (state.resizing)
+                return;
+
+            if (state.panWindow) 
 			{ // Calculate change in panOffset
 				Vector2 panOffsetChange = state.dragOffset;
 				state.dragOffset = inputInfo.inputPos - state.dragStart;

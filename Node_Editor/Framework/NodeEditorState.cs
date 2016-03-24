@@ -20,6 +20,8 @@ namespace NodeEditorFramework
 		[NonSerialized]
 		public NodeKnob focusedNodeKnob; // NodeKnob under mouse
 
+        public bool resizing = false; // Flag to determine if the action is a resize or normal [drag / pan].
+
 		// Navigation State
 		public Vector2 panOffset = new Vector2 (); // pan offset
 		public float zoom = 1; // zoom; Ranges in 0.2er-steps from 0.6-2.0; applied 1/zoom;
