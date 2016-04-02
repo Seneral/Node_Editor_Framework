@@ -79,7 +79,7 @@ namespace NodeEditorFramework
 
 		private void OnEnable () 
 		{
-			tempSessionPath = Path.GetDirectoryName (AssetDatabase.GetAssetPath (MonoScript.FromScriptableObject (this)));
+			tempSessionPath = Path.GetDirectoryName (AssetDatabase.GetAssetPath (MonoScript.FromScriptableObject (this))) + "/Resources";
 			LoadCache ();
 
 	#if UNITY_EDITOR
