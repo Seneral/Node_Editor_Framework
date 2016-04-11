@@ -58,6 +58,10 @@ namespace NodeEditorFramework
 		[NonSerialized]
 		public Vector2 dragOffset; // offset for both node dragging and window panning
 
+		/// <summary>
+		/// Starts a drag operation with the given userID and initial mouse and object position
+		/// Returns false when a different user already claims this drag operation
+		/// </summary>
 		public bool StartDrag (string userID, Vector2 mousePos, Vector2 objectPos) 
 		{
 			if (!String.IsNullOrEmpty (dragUserID) && dragUserID != userID)
@@ -73,13 +77,13 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Updates the current drag with the passed new mouse position and returns the drag offset change since the last update 
 		/// </summary>
-		public Vector2 UpdateDrag (string id, Vector2 newDragPos)
+		public Vector2 UpdateDrag (string userID, Vector2 newDragPos)
 		{
-			if (id != dragUserID)
-				throw new UnityException (id + " tries to interrupt drag from " + dragUserID);
+			if (userID != dragUserID)
+				throw new UnityException ("User ID " + userID + " tries to interrupt drag from " + dragUserID);
 			Vector2 prevOffset = dragOffset;
-			dragOffset = newDragPos - dragMouseStart;
-			return (dragOffset - prevOffset) * zoom;
+			dragOffset = (newDragPos - dragMouseStart) * zoom;
+			return dragOffset - prevOffset;
 		}
 
 		#endregion
