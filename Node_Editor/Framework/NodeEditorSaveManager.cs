@@ -164,16 +164,12 @@ namespace NodeEditorFramework
 			if (string.IsNullOrEmpty (path))
 				throw new UnityException ("Cannot load NodeEditorStates: No path specified to load the EditorStates from!");
 			
-			// Fetch all objects in the save file
-			ScriptableObject[] objects = ResourceManager.LoadResources<ScriptableObject> (path);
-			if (objects == null || objects.Length == 0) 
-				throw new UnityException ("Cannot load NodeEditorStates: The specified path '" + path + "' does not point to a save file!");
+			// Fetch all editorStates in the save file
+			List<NodeEditorState> editorStates = ResourceManager.LoadResources<NodeEditorState> (path).ToList ();
 
-			// Obtain the editorStates in that asset file and create a working copy of them
-			List<NodeEditorState> editorStates = objects.OfType<NodeEditorState> ().ToList ();
 	#if UNITY_EDITOR
 			if (createWorkingCopy) 
-			{
+			{ // Create a working copy of the editorStates
 				for (int cnt = 0; cnt < editorStates.Count; cnt++) 
 				{
 					NodeEditorState state = editorStates[cnt];

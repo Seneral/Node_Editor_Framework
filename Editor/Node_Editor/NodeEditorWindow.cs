@@ -70,10 +70,23 @@ namespace NodeEditorFramework.Standard
 
 			NodeEditor.ClientRepaints -= Repaint;
 			NodeEditor.ClientRepaints += Repaint;
+
+			EditorLoadingControl.justLeftPlayMode -= NormalReInit;
+			EditorLoadingControl.justLeftPlayMode += NormalReInit;
+			// Here, both justLeftPlayMode and justOpenedNewScene have to act because of timing
+			EditorLoadingControl.justOpenedNewScene -= NormalReInit;
+			EditorLoadingControl.justOpenedNewScene += NormalReInit;
+
+
 			// Setup Cache
 			tempSessionPath = Path.GetDirectoryName (AssetDatabase.GetAssetPath (MonoScript.FromScriptableObject (this)));
 			LoadCache ();
 			SetupCacheEvents ();
+		}
+
+		private void NormalReInit () 
+		{
+			NodeEditor.ReInit (false);
 		}
 
 		private void OnDestroy () 
@@ -181,8 +194,9 @@ namespace NodeEditorFramework.Standard
 			EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
 			EditorLoadingControl.lateEnteredPlayMode += LoadCache;
 
-			EditorLoadingControl.justLeftPlayMode -= LoadCache;
-			EditorLoadingControl.justLeftPlayMode += LoadCache;
+			// included in justOpenedNewScene as playmode scene is a new, temporary scene
+			//EditorLoadingControl.justLeftPlayMode -= LoadCache;
+			//EditorLoadingControl.justLeftPlayMode += LoadCache;
 
 			EditorLoadingControl.justOpenedNewScene -= LoadCache;
 			EditorLoadingControl.justOpenedNewScene += LoadCache;
