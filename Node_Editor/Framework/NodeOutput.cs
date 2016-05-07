@@ -24,6 +24,8 @@ namespace NodeEditorFramework
 		[System.NonSerialized]
 		private object value = null;
 
+		public bool calculationBlockade = false;
+
 		#region General
 
 		/// <summary>

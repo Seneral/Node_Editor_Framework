@@ -370,8 +370,11 @@ namespace NodeEditorFramework
 					for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
 					{
 						NodeOutput output = node.Outputs [outCnt];
-						for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-							ContinueCalculation (output.connections [conCnt].body);
+						if (!output.calculationBlockade)
+						{
+							for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
+								ContinueCalculation (output.connections [conCnt].body);
+						}
 					}
 				}
 				else if (calculationCount >= 1000)
