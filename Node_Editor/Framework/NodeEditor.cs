@@ -220,14 +220,18 @@ namespace NodeEditorFramework
 
 			// Draw the transitions and connections. Has to be drawn before nodes as transitions originate from node centers
 			foreach (Node node in curNodeCanvas.nodes)
-				node.DrawConnections ();
+				if (node != null)
+					node.DrawConnections ();
 
 			// Draw the nodes
 			foreach (Node node in curNodeCanvas.nodes)
 			{
-				node.DrawNode ();
-				if (Event.current.type == EventType.Repaint)
-					node.DrawKnobs ();
+				if (node != null)
+				{
+					node.DrawNode ();
+					if (Event.current.type == EventType.Repaint)
+						node.DrawKnobs ();
+				}
 			}
 
 			// ---- END SCALE ----
