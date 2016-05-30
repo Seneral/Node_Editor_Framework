@@ -107,7 +107,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public bool CanApplyConnection (NodeOutput output)
 		{
-			if (output == null || body == output.body || connection == output || typeData.Type != output.typeData.Type)
+			if (output == null || body == output.body || connection == output || (typeData.Type != output.typeData.Type && !output.typeData.Type.IsSubclassOf(typeData.Type)))
 				return false;
 
 			if (output.body.isChildOf (body)) 

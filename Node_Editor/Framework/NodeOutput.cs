@@ -90,7 +90,7 @@ namespace NodeEditorFramework
 		public T GetValue<T> ()
 		{
 			CheckType ();
-			if (typeData.Type == typeof(T))
+			if (typeData.Type == typeof(T) || typeData.Type.IsSubclassOf(typeof(T)))
 				return (T)(value?? (value = GetDefault<T> ()));
 			Debug.LogError ("Trying to GetValue<" + typeof(T).FullName + "> for Output Type: " + typeData.Type.FullName);
 			return GetDefault<T> ();
