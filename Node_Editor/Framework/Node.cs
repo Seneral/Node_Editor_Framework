@@ -16,11 +16,9 @@ namespace NodeEditorFramework
 		public List<NodeKnob> nodeKnobs = new List<NodeKnob> ();
 
 		// Calculation graph
-//		[NonSerialized]
-		[SerializeField, HideInInspector]
+		[NonSerialized]
 		public List<NodeInput> Inputs = new List<NodeInput>();
-//		[NonSerialized]
-		[SerializeField, HideInInspector]
+		[NonSerialized]
 		public List<NodeOutput> Outputs = new List<NodeOutput>();
 		[HideInInspector]
 		[NonSerialized]
@@ -541,8 +539,8 @@ namespace NodeEditorFramework
 
 		#region Recursive Search Helpers
 
-		private List<Node> recursiveSearchSurpassed;
-		private Node startRecursiveSearchNode; // Temporary start node for recursive searches
+		[NonSerialized] private List<Node> recursiveSearchSurpassed;
+		[NonSerialized] private Node startRecursiveSearchNode; // Temporary start node for recursive searches
 
 		/// <summary>
 		/// Begins the recursive search loop and returns whether this node has already been searched

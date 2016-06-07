@@ -41,7 +41,7 @@ namespace NodeEditorFramework.Standard
 			canvasPath = path;
 			if (!string.IsNullOrEmpty (canvasPath)) 
 			{
-				canvas = NodeEditorSaveManager.LoadNodeCanvas (canvasPath);
+				canvas = NodeEditorSaveManager.LoadNodeCanvas (canvasPath, true);
 				CalculateCanvas ();
 			}
 			else

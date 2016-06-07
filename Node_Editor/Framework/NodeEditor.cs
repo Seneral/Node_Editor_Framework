@@ -79,7 +79,7 @@ namespace NodeEditorFramework
 			UnityEditor.EditorApplication.update += Update;
 			RepaintClients ();
 	#endif
-			initiated = true;
+			initiated = GUIFunction;
 		}
 
 		/// <summary>
@@ -125,11 +125,7 @@ namespace NodeEditorFramework
 				return;
 			checkInit (true);
 
-			NodeEditorGUI.StartNodeGUI ();
-			OverlayGUI.StartOverlayGUI ();
 			DrawSubCanvas (nodeCanvas, editorState);
-			OverlayGUI.EndOverlayGUI ();
-			NodeEditorGUI.EndNodeGUI ();
 		}
 
 		/// <summary>

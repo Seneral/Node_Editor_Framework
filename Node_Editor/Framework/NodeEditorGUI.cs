@@ -74,15 +74,20 @@ namespace NodeEditorFramework
 
 		public static void StartNodeGUI () 
 		{
-			defaultSkin = GUI.skin;
-			if (nodeSkin == null)
-				Init (true);
-			GUI.skin = nodeSkin;
+			if (GUI.skin != defaultSkin)
+			{
+				if (nodeSkin == null)
+					Init (true);
+				GUI.skin = nodeSkin;
+			}
+			OverlayGUI.StartOverlayGUI ();
 		}
 
 		public static void EndNodeGUI () 
 		{
-			GUI.skin = defaultSkin;
+			OverlayGUI.EndOverlayGUI ();
+			if (GUI.skin == defaultSkin)
+				GUI.skin = defaultSkin;
 		}
 
 		#region Connection Drawing

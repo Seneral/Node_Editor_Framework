@@ -26,25 +26,17 @@ namespace NodeEditorFramework.Utilities
 		public static string PreparePath (string path) 
 		{
 			path = path.Replace (Application.dataPath, "Assets");
-			#if UNITY_EDITOR
-			if (!path.StartsWith ("Assets/"))
-				path = _ResourcePath + path;
-			#else
+		#if UNITY_EDITOR
+			if (!Application.isPlaying)
+			{
+				if (!path.StartsWith ("Assets/"))
+					path = _ResourcePath + path;
+				return path;
+			}
+		#endif
 			if (path.Contains ("Resources"))
 				path = path.Substring (path.LastIndexOf ("Resources") + 10);
-			path = path.Substring (0, path.LastIndexOf ('.'));
-			#endif
-//			if (Application.isPlaying)
-//			{ // At runtime
-//				if (path.Contains ("Resources"))
-//					path = path.Substring (path.LastIndexOf ("Resources") + 10);
-//				path = path.Substring (0, path.LastIndexOf ('.'));
-//				return path;
-//			}
-//			// In the editor
-//			if (!path.StartsWith ("Assets/"))
-//				path = _ResourcePath + path;
-			return path;
+			return path.Substring (0, path.LastIndexOf ('.'));
 		}
 
 		/// <summary>
@@ -54,15 +46,12 @@ namespace NodeEditorFramework.Utilities
 		public static T[] LoadResources<T> (string path) where T : UnityEngine.Object
 		{
 			path = PreparePath (path);
-			//if (Application.isPlaying) // At runtime
-				//return UnityEngine.Resources.LoadAll<T> (path);
-		#if UNITY_EDITOR
-			// In the editor
-			return UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path).OfType<T> ().ToArray ();
-		#else
-			throw new NotImplementedException ("Currently it is not possible to load subAssets at runtime!");
-			return UnityEngine.Resources.LoadAll<T> (path);
+		#if UNITY_EDITOR // In the editor
+			if (!Application.isPlaying)
+				return UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path).OfType<T> ().ToArray ();
 		#endif
+			throw new NotImplementedException ("Currently it is not possible to load subAssets at runtime!");
+			// return UnityEngine.Resources.LoadAll<T> (path);
 		}
 
 		/// <summary>
@@ -72,18 +61,15 @@ namespace NodeEditorFramework.Utilities
 		public static T LoadResource<T> (string path) where T : UnityEngine.Object
 		{
 			path = PreparePath (path);
-			if (Application.isPlaying) // At runtime
-				return UnityEngine.Resources.Load<T> (path);
-		#if UNITY_EDITOR
-			// In the editor
-			return UnityEditor.AssetDatabase.LoadAssetAtPath<T> (path);
-		#else
-			return null;
+		#if UNITY_EDITOR // In the editor
+			if (!Application.isPlaying)
+				return UnityEditor.AssetDatabase.LoadAssetAtPath<T> (path);
 		#endif
+			return UnityEngine.Resources.Load<T> (path);
 		}
 
 		#endregion
-		
+
 		#region Texture Management
 
 		private static List<MemoryTexture> loadedTextures = new List<MemoryTexture> ();

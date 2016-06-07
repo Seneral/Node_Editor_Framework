@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System;
-using System.Collections;
+using System.IO;
+using System.Linq;
 using System.Collections.Generic;
 
 using NodeEditorFramework;
@@ -19,13 +20,15 @@ namespace NodeEditorFramework.Standard
 		public Rect specifiedRootRect;
 		public Rect specifiedCanvasRect;
 
+		// GUI
+		private string sceneCanvasName = "";
+		private Vector2 loadScenePos;
+
 		public void Start () 
 		{
-			if (!string.IsNullOrEmpty (canvasPath))
-				LoadNodeCanvas (canvasPath);
-			else
-				NewNodeCanvas ();
+			NodeEditor.checkInit (false);
 			NodeEditor.initiated = false;
+			LoadNodeCanvas (canvasPath);
 			FPSCounter.Create ();
 		}
 
@@ -35,10 +38,14 @@ namespace NodeEditorFramework.Standard
 			FPSCounter.Update ();
 		}
 
+		#region GUI
+
 		public void OnGUI ()
 		{
-			if (canvas != null && state != null) 
+			if (canvas != null) 
 			{
+				if (state == null)
+					NewEditorState ();
 				NodeEditor.checkInit (true);
 				if (NodeEditor.InitiationError) 
 				{
@@ -50,11 +57,18 @@ namespace NodeEditorFramework.Standard
 				{
 					if (!screenSize && specifiedRootRect.max != specifiedRootRect.min) GUI.BeginGroup (specifiedRootRect, NodeEditorGUI.nodeSkin.box);
 
+					NodeEditorGUI.StartNodeGUI ();
+
 					canvasRect = screenSize? new Rect (0, 0, Screen.width, Screen.height) : specifiedCanvasRect;
 					canvasRect.width -= 200;
 					state.canvasRect = canvasRect;
 					NodeEditor.DrawCanvas (canvas, state);
+
+					GUILayout.BeginArea (new Rect (canvasRect.x + state.canvasRect.width, state.canvasRect.y, 200, state.canvasRect.height), NodeEditorGUI.nodeSkin.box);
 					SideGUI ();
+					GUILayout.EndArea ();
+
+					NodeEditorGUI.EndNodeGUI ();
 
 					if (!screenSize && specifiedRootRect.max != specifiedRootRect.min) GUI.EndGroup ();
 				}
@@ -70,19 +84,23 @@ namespace NodeEditorFramework.Standard
 
 		public void SideGUI () 
 		{
-			GUILayout.BeginArea (new Rect (canvasRect.x + state.canvasRect.width, state.canvasRect.y, 200, state.canvasRect.height), NodeEditorGUI.nodeSkin.box);
 			GUILayout.Label (new GUIContent ("Node Editor (" + canvas.name + ")", "The currently opened canvas in the Node Editor"));
 			screenSize = GUILayout.Toggle (screenSize, "Adapt to Screen");
 			GUILayout.Label ("FPS: " + FPSCounter.currentFPS);
 
 			GUILayout.Label (new GUIContent ("Node Editor (" + canvas.name + ")"), NodeEditorGUI.nodeLabelBold);
 
-			#if UNITY_EDITOR
+			if (GUILayout.Button (new GUIContent ("New Canvas", "Loads an empty Canvas")))
+				NewNodeCanvas ();
+
+			GUILayout.Space (6);
+
+		#if UNITY_EDITOR
 			if (GUILayout.Button (new GUIContent ("Save Canvas", "Saves the Canvas to a Canvas Save File in the Assets Folder")))
 			{
 				string path = UnityEditor.EditorUtility.SaveFilePanelInProject ("Save Node Canvas", "Node Canvas", "asset", "", NodeEditor.editorPath + "Resources/Saves/");
 				if (!string.IsNullOrEmpty (path))
-					NodeEditorSaveManager.SaveNodeCanvas (path, true, canvas, state);
+					NodeEditorSaveManager.SaveNodeCanvas (path, canvas, true);
 			}
 
 			if (GUILayout.Button (new GUIContent ("Load Canvas", "Loads the Canvas from a Canvas Save File in the Assets Folder"))) 
@@ -99,11 +117,31 @@ namespace NodeEditorFramework.Standard
 					LoadNodeCanvas (path);
 				}
 			}
+			GUILayout.Space (6);
+		#endif
 
-			#endif
+			GUILayout.BeginHorizontal ();
+			sceneCanvasName = GUILayout.TextField (sceneCanvasName, GUILayout.ExpandWidth (true));
+			if (GUILayout.Button (new GUIContent ("Save to Scene", "Saves the Canvas to the Scene"), GUILayout.ExpandWidth (false)))
+			{
+				SaveSceneNodeCanvas (sceneCanvasName);
+			}
+			GUILayout.EndHorizontal ();
 
-			if (GUILayout.Button (new GUIContent ("New Canvas", "Loads an empty Canvas")))
-				NewNodeCanvas ();
+			if (GUILayout.Button (new GUIContent ("Load from Scene", "Loads the Canvas from the Scene"))) 
+			{
+				NodeEditorFramework.Utilities.GenericMenu menu = new NodeEditorFramework.Utilities.GenericMenu ();
+				foreach (string sceneSave in NodeEditorSaveManager.GetSceneSaves ())
+					menu.AddItem (new GUIContent (sceneSave), false, LoadSceneCanvasCallback, (object)sceneSave);
+				menu.Show (loadScenePos);
+			}
+			if (Event.current.type == EventType.Repaint)
+			{
+				Rect popupPos = GUILayoutUtility.GetLastRect ();
+				loadScenePos = new Vector2 (popupPos.x+2, popupPos.yMax+2);
+			}
+
+			GUILayout.Space (6);
 
 			if (GUILayout.Button (new GUIContent ("Recalculate All", "Initiates complete recalculate. Usually does not need to be triggered manually.")))
 				NodeEditor.RecalculateAll (canvas);
@@ -113,41 +151,63 @@ namespace NodeEditorFramework.Standard
 
 			NodeEditorGUI.knobSize = RTEditorGUI.IntSlider (new GUIContent ("Handle Size", "The size of the Node Input/Output handles"), NodeEditorGUI.knobSize, 12, 20);
 			state.zoom = RTEditorGUI.Slider (new GUIContent ("Zoom", "Use the Mousewheel. Seriously."), state.zoom, 0.6f, 2);
-
-			GUILayout.EndArea ();
 		}
 
-		public void LoadNodeCanvas (string path) 
+		#endregion
+
+		#region Canvas management
+
+		private void LoadSceneCanvasCallback (object save)
 		{
-			// Load the NodeCanvas
-			canvas = NodeEditorSaveManager.LoadNodeCanvas (path);
-			if (canvas == null)
+			LoadSceneNodeCanvas ((string)save);
+		}
+
+		public void SaveSceneNodeCanvas (string path) 
+		{
+			canvas.editorStates = new NodeEditorState[] { state };
+			NodeEditorSaveManager.SaveSceneNodeCanvas (path, ref canvas, true);
+		}
+
+		public void LoadSceneNodeCanvas (string path) 
+		{
+			// Try to load the NodeCanvas
+			if ((canvas = NodeEditorSaveManager.LoadSceneNodeCanvas (path, true)) == null)
 			{
 				NewNodeCanvas ();
 				return;
 			}
+			state = NodeEditorSaveManager.ExtractEditorState (canvas, "MainEditorState");
 
-			// Load the associated MainEditorState
-			List<NodeEditorState> editorStates = NodeEditorSaveManager.LoadEditorStates (path);
-			if (editorStates.Count == 0)
-				state = ScriptableObject.CreateInstance<NodeEditorState> ();
-			else 
+			NodeEditor.RecalculateAll (canvas);
+		}
+
+		public void LoadNodeCanvas (string path) 
+		{
+			if (!File.Exists (path) || (canvas = NodeEditorSaveManager.LoadNodeCanvas (path, true)) == null)
 			{
-				state = editorStates.Find (x => x.name == "MainEditorState");
-				if (state == null) state = editorStates[0];
+				NewNodeCanvas ();
+				return;
 			}
-			state.canvas = canvas;
-
+			state = NodeEditorSaveManager.ExtractEditorState (canvas, "MainEditorState");
 			NodeEditor.RecalculateAll (canvas);
 		}
 
 		public void NewNodeCanvas () 
 		{
 			canvas = ScriptableObject.CreateInstance<NodeCanvas> ();
+			canvas.name = "New Canvas";
+			NewEditorState ();
+		}
+
+		private void NewEditorState () 
+		{
 			state = ScriptableObject.CreateInstance<NodeEditorState> ();
 			state.canvas = canvas;
 			state.name = "MainEditorState";
+			canvas.editorStates = new NodeEditorState[] { state };
 		}
+
+		#endregion
 	}
 }
 

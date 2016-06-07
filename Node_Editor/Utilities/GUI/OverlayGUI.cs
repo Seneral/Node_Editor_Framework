@@ -79,7 +79,9 @@ namespace NodeEditorFramework.Utilities
 			selectedPath = "";
 			OverlayGUI.currentPopup = this;
 		}
-		
+
+		public Vector2 Position { get { return position.position; } }
+
 		#region Creation
 		
 		public void AddItem (GUIContent content, bool on, MenuFunctionData func, object userData)
@@ -334,6 +336,8 @@ namespace NodeEditorFramework.Utilities
 	public class GenericMenu
 	{
 		private static PopupMenu popup;
+
+		public Vector2 Position { get { return popup.Position; } }
 		
 		public GenericMenu () 
 		{
@@ -342,14 +346,12 @@ namespace NodeEditorFramework.Utilities
 		
 		public void ShowAsContext ()
 		{
-			Vector2 mousePos = Event.current.mousePosition;
-			//Vector2 screenMousePos = GUIScaleUtility.GUIToScreenSpace (mousePos);
-			popup.Show (mousePos);
+			popup.Show (GUIScaleUtility.GUIToScreenSpace (Event.current.mousePosition));
 		}
 
 		public void Show (Vector2 pos)
 		{
-			popup.Show (pos);
+			popup.Show (GUIScaleUtility.GUIToScreenSpace (pos));
 		}
 		
 		public void AddItem (GUIContent content, bool on, PopupMenu.MenuFunctionData func, object userData)
