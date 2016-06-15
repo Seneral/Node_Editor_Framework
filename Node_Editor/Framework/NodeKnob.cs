@@ -69,7 +69,7 @@ namespace NodeEditorFramework
 		{
 			ReloadTexture ();
 			if (knobTexture == null)
-				throw new UnityException ("Knob texture could not be loaded!");
+				throw new UnityException ("Knob texture of " + name + " could not be loaded!");
 			if (side != defaultSide) 
 			{ // Rotate Knob texture according to the side it's used on
 				ResourceManager.SetDefaultResourcePath (NodeEditor.editorPath + "Resources/");

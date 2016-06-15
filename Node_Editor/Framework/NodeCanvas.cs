@@ -75,6 +75,11 @@ namespace NodeEditorFramework
 				editorStates = new NodeEditorState[0];
 			}
 			editorStates = editorStates.Where ((NodeEditorState state) => state != null).ToArray ();
+			foreach (NodeEditorState state in editorStates)
+			{
+				if (!nodes.Contains (state.selectedNode))
+					state.selectedNode = null;
+			}
 		}
 	}
 }

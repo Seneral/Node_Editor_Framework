@@ -27,16 +27,14 @@ namespace NodeEditorFramework.Utilities
 		{
 			path = path.Replace (Application.dataPath, "Assets");
 		#if UNITY_EDITOR
-			if (!Application.isPlaying)
-			{
-				if (!path.StartsWith ("Assets/"))
-					path = _ResourcePath + path;
-				return path;
-			}
-		#endif
+			if (!path.StartsWith ("Assets/"))
+				path = _ResourcePath + path;
+			return path;
+		#else
 			if (path.Contains ("Resources"))
 				path = path.Substring (path.LastIndexOf ("Resources") + 10);
 			return path.Substring (0, path.LastIndexOf ('.'));
+		#endif
 		}
 
 		/// <summary>
@@ -47,11 +45,11 @@ namespace NodeEditorFramework.Utilities
 		{
 			path = PreparePath (path);
 		#if UNITY_EDITOR // In the editor
-			if (!Application.isPlaying)
-				return UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path).OfType<T> ().ToArray ();
-		#endif
+			return UnityEditor.AssetDatabase.LoadAllAssetsAtPath (path).OfType<T> ().ToArray ();
+		#else
 			throw new NotImplementedException ("Currently it is not possible to load subAssets at runtime!");
 			// return UnityEngine.Resources.LoadAll<T> (path);
+		#endif
 		}
 
 		/// <summary>
@@ -62,10 +60,10 @@ namespace NodeEditorFramework.Utilities
 		{
 			path = PreparePath (path);
 		#if UNITY_EDITOR // In the editor
-			if (!Application.isPlaying)
-				return UnityEditor.AssetDatabase.LoadAssetAtPath<T> (path);
-		#endif
+			return UnityEditor.AssetDatabase.LoadAssetAtPath<T> (path);
+		#else
 			return UnityEngine.Resources.Load<T> (path);
+		#endif
 		}
 
 		#endregion

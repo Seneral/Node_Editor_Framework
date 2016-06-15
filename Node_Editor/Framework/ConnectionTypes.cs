@@ -47,9 +47,8 @@ namespace NodeEditorFramework
 				}
 				else 
 				{
-					List<TypeData> typeDatas = types.Values.ToList ();
-					//typeData = typeDatas.First ((TypeData data) => data.isValid () && data.Type == type);
-					typeData = typeDatas.Find ((TypeData data) => data.isValid () && data.Type == type);
+					//typeData = types.Values.First ((TypeData data) => data.isValid () && data.Type == type);
+					typeData = types.Values.ToList ().Find ((TypeData data) => data.isValid () && data.Type == type);
 					if (typeData == null)
 						types.Add (typeName, typeData = new TypeData (type));
 				}
@@ -94,6 +93,9 @@ namespace NodeEditorFramework
 
 			InputKnob = ResourceManager.GetTintedTexture (declaration.InputKnob_TexPath, col);
 			OutputKnob = ResourceManager.GetTintedTexture (declaration.OutputKnob_TexPath, col);
+
+			if (!isValid ())
+				throw new DataMisalignedException ("Type Declaration " + typeDecl.name + " contains invalid data!");
 		}
 
 		public TypeData (Type type) 

@@ -56,6 +56,8 @@ namespace NodeEditorFramework.Utilities
 		public static Texture2D expandRight;
 		public static float itemHeight;
 		public static GUIStyle selectedLabel;
+
+		public float minWidth;
 		
 		public PopupMenu () 
 		{
@@ -72,10 +74,11 @@ namespace NodeEditorFramework.Utilities
 			selectedLabel = new GUIStyle (GUI.skin.label);
 			selectedLabel.normal.background = NodeEditorFramework.Utilities.RTEditorGUI.ColorToTex (1, new Color (0.4f, 0.4f, 0.4f));
 		}
-		
-		public void Show (Vector2 pos)
+
+		public void Show (Vector2 pos, float MinWidth = 40)
 		{
-			position = calculateRect (pos, menuItems);
+			minWidth = MinWidth;
+			position = calculateRect (pos, menuItems, minWidth);
 			selectedPath = "";
 			OverlayGUI.currentPopup = this;
 		}
@@ -178,7 +181,7 @@ namespace NodeEditorFramework.Utilities
 		
 		private bool DrawGroup (Rect pos, List<MenuItem> menuItems) 
 		{
-			Rect rect = calculateRect (pos.position, menuItems);
+			Rect rect = calculateRect (pos.position, menuItems, minWidth);
 			
 			Rect clickRect = new Rect (rect);
 			clickRect.xMax += 20;
@@ -214,7 +217,7 @@ namespace NodeEditorFramework.Utilities
 				if (labelRect.Contains (Event.current.mousePosition))
 					selectedPath = item.path;
 
-				bool selected = selectedPath.Contains (item.path);
+				bool selected = selectedPath == item.path || selectedPath.Contains (item.path + "/");
 				GUI.Label (labelRect, item.content, selected? selectedLabel : GUI.skin.label);
 				
 				if (item.group) 
@@ -246,10 +249,10 @@ namespace NodeEditorFramework.Utilities
 			return rect;
 		}
 		
-		private static Rect calculateRect (Vector2 position, List<MenuItem> menuItems) 
+		private static Rect calculateRect (Vector2 position, List<MenuItem> menuItems, float minWidth) 
 		{
 			Vector2 size;
-			float width = 40, height = 0;
+			float width = minWidth, height = 0;
 			
 			for (int itemCnt = 0; itemCnt < menuItems.Count; itemCnt++)
 			{
@@ -349,9 +352,9 @@ namespace NodeEditorFramework.Utilities
 			popup.Show (GUIScaleUtility.GUIToScreenSpace (Event.current.mousePosition));
 		}
 
-		public void Show (Vector2 pos)
+		public void Show (Vector2 pos, float MinWidth = 40)
 		{
-			popup.Show (GUIScaleUtility.GUIToScreenSpace (pos));
+			popup.Show (GUIScaleUtility.GUIToScreenSpace (pos), MinWidth);
 		}
 		
 		public void AddItem (GUIContent content, bool on, PopupMenu.MenuFunctionData func, object userData)

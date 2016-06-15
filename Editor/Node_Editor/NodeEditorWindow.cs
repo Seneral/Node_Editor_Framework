@@ -28,7 +28,7 @@ namespace NodeEditorFramework.Standard
 
 		// GUI
 		private string sceneCanvasName = "";
-		private Vector2 loadScenePos;
+		private Rect loadScenePos;
 		public static int sideWindowWidth = 400;
 		private static Texture iconTexture;
 		public Rect sideWindowRect { get { return new Rect (position.width - sideWindowWidth, 0, sideWindowWidth, position.height); } }
@@ -133,7 +133,7 @@ namespace NodeEditorFramework.Standard
 			{ // on exceptions in drawing flush the canvas to avoid locking the ui.
 				NewNodeCanvas ();
 				NodeEditor.ReInit (true);
-				Debug.LogError ("Unloaded Canvas due to exception when drawing!");
+				Debug.LogError ("Unloaded Canvas due to an exception during the drawing phase!");
 				Debug.LogException (e);
 			}
 
@@ -189,12 +189,12 @@ namespace NodeEditorFramework.Standard
 				NodeEditorFramework.Utilities.GenericMenu menu = new NodeEditorFramework.Utilities.GenericMenu ();
 				foreach (string sceneSave in NodeEditorSaveManager.GetSceneSaves ())
 					menu.AddItem (new GUIContent (sceneSave), false, LoadSceneCanvasCallback, (object)sceneSave);
-				menu.Show (loadScenePos);
+				menu.Show (loadScenePos.position, loadScenePos.width);
 			}
 			if (Event.current.type == EventType.Repaint)
 			{
 				Rect popupPos = GUILayoutUtility.GetLastRect ();
-				loadScenePos = new Vector2 (popupPos.x+2, popupPos.yMax+2);
+				loadScenePos = new Rect (popupPos.x+2, popupPos.yMax+2, popupPos.width-4, 0);
 			}
 
 			GUILayout.Space (6);

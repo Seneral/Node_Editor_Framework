@@ -138,11 +138,13 @@ namespace NodeEditorFramework
 
 			if (string.IsNullOrEmpty (path)) throw new UnityException ("Cannot save NodeCanvas: No spath specified to save the NodeCanvas " + (nodeCanvas != null? nodeCanvas.name : "") + " to!");
 			if (nodeCanvas == null) throw new UnityException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path " + path + " is null!");
-			if (nodeCanvas.livesInScene) throw new UnityException ("Cannot save NodeCanvas: The specified NodeCanvas '" + nodeCanvas.name + "' lives in the scene and thus cannot be saved as an asset!");
+			if (nodeCanvas.livesInScene)
+				Debug.LogWarning ("Attempting to save scene canvas " + nodeCanvas.name + " to an asset, scene object references will be broken!" + (!createWorkingCopy? " No workingCopy is going to be created, so your scene save is broken, too!" : ""));
 		#if UNITY_EDITOR
 			if (!createWorkingCopy && UnityEditor.AssetDatabase.Contains (nodeCanvas) && UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas) != path) { Debug.LogError ("Trying to create a duplicate save file for '" + nodeCanvas.name + "'! Forcing to create a working copy!"); createWorkingCopy = true; }
 		#endif
 
+			nodeCanvas.livesInScene = false;
 			nodeCanvas.Validate ();
 
 		#if UNITY_EDITOR
@@ -343,7 +345,16 @@ namespace NodeEditorFramework
 			}
 
 			if (editorStates)
+			{
 				nodeCanvas.editorStates = CreateWorkingCopy (nodeCanvas.editorStates, nodeCanvas);
+				foreach (NodeEditorState state in nodeCanvas.editorStates)
+					state.selectedNode = ReplaceSO (allSOs, clonedSOs, state.selectedNode);
+			}
+			else
+			{
+				foreach (NodeEditorState state in nodeCanvas.editorStates)
+					state.selectedNode = null;
+			}
 
 			return nodeCanvas;
 		}
