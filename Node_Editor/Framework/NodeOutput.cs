@@ -81,7 +81,7 @@ namespace NodeEditorFramework
 		protected override void ReloadTexture () 
 		{
 			CheckType ();
-			knobTexture = typeData.OutputKnob;
+			knobTexture = typeData.OutKnobTex;
 		}
 
 		private void CheckType () 

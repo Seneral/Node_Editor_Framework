@@ -186,7 +186,7 @@ namespace NodeEditorFramework
 				Vector2 endPos = Event.current.mousePosition;
 				// There is no specific direction of the end knob so we pick the best according to the relative position
 				Vector2 endDir = NodeEditorGUI.GetSecondConnectionVector (startPos, endPos, startDir);
-				NodeEditorGUI.DrawConnection (startPos, startDir, endPos, endDir, output.typeData.col);
+				NodeEditorGUI.DrawConnection (startPos, startDir, endPos, endDir, output.typeData.Color);
 				RepaintClients ();
 			}
 
