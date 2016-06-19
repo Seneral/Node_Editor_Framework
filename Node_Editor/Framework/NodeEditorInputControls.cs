@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections.Generic;
 using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
+using System.Reflection;
 
 namespace NodeEditorFramework 
 {
@@ -64,11 +65,52 @@ namespace NodeEditorFramework
 			}
 		}
 
-		#endregion
+        #endregion
 
-		#region Node Dragging
+        #region Node Keyboard Control
 
-		[EventHandlerAttribute (EventType.MouseDown, priority = 110)] // Priority over hundred to make it call after the GUI
+        // Main Keyboard_Move method
+        [HotkeyAttribute(KeyCode.UpArrow, EventType.KeyDown)]
+        [HotkeyAttribute(KeyCode.LeftArrow, EventType.KeyDown)]
+        [HotkeyAttribute(KeyCode.RightArrow, EventType.KeyDown)]
+        [HotkeyAttribute(KeyCode.DownArrow, EventType.KeyDown)]
+        private static void KB_MoveNode(NodeEditorInputInfo inputInfo)
+        {
+            NodeEditorState state = inputInfo.editorState;
+            if (state.selectedNode != null)
+            { 
+                Vector2 pos = state.selectedNode.rect.position;
+
+                int shiftAmount = 0;
+
+                // Increase the distance moved to 10 if shift is being held.
+                if (inputInfo.inputEvent.shift)
+                    shiftAmount = 10;
+                else
+                    shiftAmount = 5;
+
+                if (inputInfo.inputEvent.keyCode == KeyCode.RightArrow)
+                    pos = new Vector2(pos.x + shiftAmount, pos.y);
+                else if (inputInfo.inputEvent.keyCode == KeyCode.LeftArrow)
+                    pos = new Vector2(pos.x - shiftAmount, pos.y);
+                else if (inputInfo.inputEvent.keyCode == KeyCode.DownArrow)
+                    pos = new Vector2(pos.x, pos.y + shiftAmount);
+                else if (inputInfo.inputEvent.keyCode == KeyCode.UpArrow)
+                    pos = new Vector2(pos.x, pos.y - shiftAmount);
+
+                state.selectedNode.rect.position = pos;
+                inputInfo.inputEvent.Use();
+            }
+            NodeEditor.RepaintClients();
+
+        }
+
+
+        #endregion
+
+        #region Node Dragging
+
+        [EventHandlerAttribute (EventType.MouseDown, priority = 110)] // Priority over hundred to make it call after the GUI
 		private static void HandleNodeDraggingStart (NodeEditorInputInfo inputInfo) 
 		{
 			if (GUIUtility.hotControl > 0)
@@ -238,6 +280,9 @@ namespace NodeEditorFramework
 			NodeEditor.RepaintClients ();
 		}
 
-		#endregion
-	}
+        #endregion
+
+    }
+
 }
+
