@@ -70,31 +70,33 @@ namespace NodeEditorFramework
         #region Node Keyboard Control
 
         // Main Keyboard_Move method
-        private static void KB_MoveNode(NodeEditorInputInfo inputInfo, KeyCode key)
+        [HotkeyAttribute(KeyCode.UpArrow, EventType.KeyDown)]
+        [HotkeyAttribute(KeyCode.LeftArrow, EventType.KeyDown)]
+        [HotkeyAttribute(KeyCode.RightArrow, EventType.KeyDown)]
+        [HotkeyAttribute(KeyCode.DownArrow, EventType.KeyDown)]
+        private static void KB_MoveNode(NodeEditorInputInfo inputInfo)
         {
-            Event e = Event.current;
             NodeEditorState state = inputInfo.editorState;
             if (state.selectedNode != null)
-            { // Snap selected Node's position to multiples of 10
+            { 
                 Vector2 pos = state.selectedNode.rect.position;
 
                 int shiftAmount = 0;
 
-                // Increase the distance moved to 10 if shift if being held.
-                if (Event.current.shift)
+                // Increase the distance moved to 10 if shift is being held.
+                if (inputInfo.inputEvent.shift)
                     shiftAmount = 10;
                 else
                     shiftAmount = 5;
 
-                if (key == KeyCode.RightArrow)
+                if (inputInfo.inputEvent.keyCode == KeyCode.RightArrow)
                     pos = new Vector2(pos.x + shiftAmount, pos.y);
-                else if (key == KeyCode.LeftArrow)
+                else if (inputInfo.inputEvent.keyCode == KeyCode.LeftArrow)
                     pos = new Vector2(pos.x - shiftAmount, pos.y);
-                else if (key == KeyCode.DownArrow)
+                else if (inputInfo.inputEvent.keyCode == KeyCode.DownArrow)
                     pos = new Vector2(pos.x, pos.y + shiftAmount);
-                else if (key == KeyCode.UpArrow)
+                else if (inputInfo.inputEvent.keyCode == KeyCode.UpArrow)
                     pos = new Vector2(pos.x, pos.y - shiftAmount);
-
 
                 state.selectedNode.rect.position = pos;
                 inputInfo.inputEvent.Use();
@@ -103,49 +105,6 @@ namespace NodeEditorFramework
 
         }
 
-        
-        [HotkeyAttribute(KeyCode.LeftArrow, EventType.KeyDown)]
-        private static void KB_MoveNodeLeft(NodeEditorInputInfo inputInfo)   /// Left arrow functionality
-        {
-            HotkeyAttribute attr = GetHKAttribute(MethodBase.GetCurrentMethod());
-
-            KB_MoveNode(inputInfo, attr.handledHotKey);
-        }
-
-        [HotkeyAttribute(KeyCode.RightArrow, EventType.KeyDown)]
-        public static void KB_MoveNodeRight(NodeEditorInputInfo inputInfo)   /// Right arrow functionality
-        {
-            HotkeyAttribute attr = GetHKAttribute(MethodBase.GetCurrentMethod());
-
-            KB_MoveNode(inputInfo, attr.handledHotKey);
-        }
-
-        [HotkeyAttribute(KeyCode.UpArrow, EventType.KeyDown)]
-        public static void KB_MoveNodeUp(NodeEditorInputInfo inputInfo)   /// Up arrow functionality
-        {
-            HotkeyAttribute attr = GetHKAttribute(MethodBase.GetCurrentMethod());
-
-            KB_MoveNode(inputInfo, attr.handledHotKey);
-        }
-
-        [HotkeyAttribute(KeyCode.DownArrow, EventType.KeyDown)]
-        public static void KB_MoveNodeDown(NodeEditorInputInfo inputInfo) /// Down arrow functionality
-        {
-            HotkeyAttribute attr = GetHKAttribute(MethodBase.GetCurrentMethod());
-
-            KB_MoveNode(inputInfo, attr.handledHotKey);
-        }
-        
-
-        private static HotkeyAttribute GetHKAttribute(MethodBase method)
-        {
-            return (HotkeyAttribute)method.GetCustomAttributes(typeof(HotkeyAttribute), true)[0];
-        }
-
-        private enum MoveNodeDirection
-        {
-            UP, DOWN, LEFT, RIGHT
-        }
 
         #endregion
 
