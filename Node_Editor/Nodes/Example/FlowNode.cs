@@ -31,7 +31,7 @@ namespace NodeEditorFramework.Standard
 			return node;
 		}
 		
-		protected internal override void NodeGUI () 
+		public override void NodeGUI () 
 		{
 			// Display Connections
 			// Start counter at 1 to ignore flow connections

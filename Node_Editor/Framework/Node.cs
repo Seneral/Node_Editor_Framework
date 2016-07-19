@@ -12,13 +12,13 @@ namespace NodeEditorFramework
 	{
 		public Rect rect = new Rect ();
 		internal Vector2 contentOffset = Vector2.zero;
-		[SerializeField]
-		public List<NodeKnob> nodeKnobs = new List<NodeKnob> ();
+		//[SerializeField]
+		//public List<NodeKnob> nodeKnobs = new List<NodeKnob> ();
 
 		// Calculation graph
-		[NonSerialized]
+		[SerializeField]
 		public List<NodeInput> Inputs = new List<NodeInput>();
-		[NonSerialized]
+		[SerializeField]
 		public List<NodeOutput> Outputs = new List<NodeOutput>();
 		[HideInInspector]
 		[NonSerialized]
@@ -64,11 +64,11 @@ namespace NodeEditorFramework
 					input.connection.connections.Remove (input);
 				DestroyImmediate (input, true);
 			}
-			for (int knobCnt = 0; knobCnt < nodeKnobs.Count; knobCnt++) 
-			{ // Inputs/Outputs need specific treatment, unfortunately
-				if (nodeKnobs[knobCnt] != null)
-					DestroyImmediate (nodeKnobs[knobCnt], true);
-			}
+			//for (int knobCnt = 0; knobCnt < nodeKnobs.Count; knobCnt++) 
+			//{ // Inputs/Outputs need specific treatment, unfortunately
+			//	if (nodeKnobs[knobCnt] != null)
+			//		DestroyImmediate (nodeKnobs[knobCnt], true);
+			//}
 			DestroyImmediate (this, true);
 		}
 
@@ -106,17 +106,17 @@ namespace NodeEditorFramework
 
 			return node;
 		}
-
-		/// <summary>
-		/// Makes sure this Node has migrated from the previous save version of NodeKnobs to the current mixed and generic one
-		/// </summary>
-		internal void CheckNodeKnobMigration () 
+        
+        /// <summary>
+        /// Makes sure this Node has migrated from the previous save version of NodeKnobs to the current mixed and generic one
+        /// </summary>
+        internal void CheckNodeKnobMigration () 
 		{ // TODO: Migration from previous NodeKnob system; Remove later on
-			if (nodeKnobs.Count == 0 && (Inputs.Count != 0 || Outputs.Count != 0)) 
-			{
-				nodeKnobs.AddRange (Inputs.Cast<NodeKnob> ());
-				nodeKnobs.AddRange (Outputs.Cast<NodeKnob> ());
-			}
+			//if (nodeKnobs.Count == 0 && (Inputs.Count != 0 || Outputs.Count != 0)) 
+			//{
+			//	nodeKnobs.AddRange (Inputs.Cast<NodeKnob> ());
+			//	nodeKnobs.AddRange (Outputs.Cast<NodeKnob> ());
+			//}
 		}
 
 		#endregion
@@ -138,7 +138,7 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Draw the Node immediately
 		/// </summary>
-		protected internal abstract void NodeGUI ();
+		public abstract void NodeGUI ();
 
 		/// <summary>
 		/// Used to display a custom node property editor in the side window of the NodeEditorWindow
@@ -242,8 +242,13 @@ namespace NodeEditorFramework
 		protected internal virtual void DrawKnobs () 
 		{
 			CheckNodeKnobMigration ();
-			for (int knobCnt = 0; knobCnt < nodeKnobs.Count; knobCnt++) 
-				nodeKnobs[knobCnt].DrawKnob ();
+            for (int knobCnt = 0; knobCnt < Inputs.Count; knobCnt++) 
+                Inputs[knobCnt].DrawKnob();
+            for (int knobCnt = 0; knobCnt < Outputs.Count; knobCnt++)
+                Outputs[knobCnt].DrawKnob();
+
+    //        for (int knobCnt = 0; knobCnt < nodeKnobs.Count; knobCnt++) 
+				//nodeKnobs[knobCnt].DrawKnob ();
 		}
 
 		/// <summary>

@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿#if !CUSTOM_CODE
+
+using UnityEngine;
 using UnityEditor;
 using System;
 using System.IO;
@@ -34,7 +36,7 @@ namespace NodeEditorFramework.Standard
 		public Rect sideWindowRect { get { return new Rect (position.width - sideWindowWidth, 0, sideWindowWidth, position.height); } }
 		public Rect canvasWindowRect { get { return new Rect (0, 0, position.width - sideWindowWidth, position.height); } }
 
-		#region General 
+#region General 
 
 		/// <summary>
 		/// Opens the Node Editor window and loads the last session
@@ -100,9 +102,9 @@ namespace NodeEditorFramework.Standard
 			ClearCacheEvents ();
 		}
 
-		#endregion
+#endregion
 
-		#region GUI
+#region GUI
 
 		private void OnGUI () 
 		{
@@ -212,9 +214,9 @@ namespace NodeEditorFramework.Standard
 				mainEditorState.selectedNode.DrawNodePropertyEditor();
 		}
 
-		#endregion
+#endregion
 
-		#region Cache
+#region Cache
 
 		private void SetupCacheEvents () 
 		{
@@ -345,9 +347,9 @@ namespace NodeEditorFramework.Standard
 //			EditorPrefs.DeleteKey ("NodeEditorLastSession");
 //		}
 
-		#endregion
+#endregion
 
-		#region Save/Load
+#region Save/Load
 
 		private void LoadSceneCanvasCallback (object save)
 		{
@@ -436,6 +438,8 @@ namespace NodeEditorFramework.Standard
 			EditorUtility.SetDirty (mainNodeCanvas);
 		}
 		
-		#endregion
+#endregion
 	}
 }
+
+#endif

@@ -26,7 +26,7 @@ namespace NodeEditorFramework.Standard
 			return node;
 		}
 
-		protected internal override void NodeGUI () 
+		public override void NodeGUI () 
 		{
 			value = RTEditorGUI.FloatField (new GUIContent ("Value", "The input value of type float"), value);
 			OutputKnob (0);

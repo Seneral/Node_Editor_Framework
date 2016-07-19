@@ -5,6 +5,7 @@ using NodeEditorFramework;
 
 namespace NodeEditorFramework 
 {
+    [NodeCanvasType("Default")]
 	public class NodeCanvas : ScriptableObject 
 	{ // Just contains the nodes and global canvas stuff; an associated NodeEditorState holds the actual state now
 		public List<Node> nodes = new List<Node> ();
@@ -33,40 +34,77 @@ namespace NodeEditorFramework
 					nodeCnt--;
 					continue;
 				}
-				for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++) 
-				{
-					NodeKnob nodeKnob = node.nodeKnobs[knobCnt];
-					if (nodeKnob == null)
-					{
-						Debug.LogWarning ("NodeCanvas '" + name + "' Node '" + node.name + "' contained broken (null) NodeKnobs! Automatically fixed!");
-						node.nodeKnobs.RemoveAt (knobCnt);
-						knobCnt--;
-						continue;
-					}
 
-					if (nodeKnob is NodeInput)
-					{
-						NodeInput input = nodeKnob as NodeInput;
-						if (input.connection != null && input.connection.body == null)
-						{ // References broken node; Clear connection
-							input.connection = null;
-						}
-//						for (int conCnt = 0; conCnt < (nodeKnob as NodeInput).connection.Count; conCnt++)
-					}
-					else if (nodeKnob is NodeOutput)
-					{
-						NodeOutput output = nodeKnob as NodeOutput;
-						for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
-						{
-							NodeInput con = output.connections[conCnt];
-							if (con == null || con.body == null)
-							{ // Broken connection; Clear connection
-								output.connections.RemoveAt (conCnt);
-								conCnt--;
-							}
-						}
-					}
-				}
+			    for(int knobCnt = 0; knobCnt < node.Inputs.Count; knobCnt++)
+			    {
+			        NodeInput input = node.Inputs[knobCnt];
+                    if (input == null)
+                    {
+                        Debug.LogWarning("NodeCanvas '" + name + "' Node '" + node.name + "' contained broken (null) NodeKnobs! Automatically fixed!");
+                        node.Inputs.RemoveAt(knobCnt);
+                        knobCnt--;
+                        continue;
+                    }
+                    if (input.connection != null && input.connection.body == null)
+                    { // References broken node; Clear connection
+                        input.connection = null;
+                    }
+                }
+
+                for (int knobCnt = 0; knobCnt < node.Outputs.Count; knobCnt++)
+                {
+                    NodeOutput output = node.Outputs[knobCnt];
+                    if (output == null)
+                    {
+                        Debug.LogWarning("NodeCanvas '" + name + "' Node '" + node.name + "' contained broken (null) NodeKnobs! Automatically fixed!");
+                        node.Outputs.RemoveAt(knobCnt);
+                        knobCnt--;
+                        continue;
+                    }
+                    for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
+                    {
+                        NodeInput con = output.connections[conCnt];
+                        if (con == null || con.body == null)
+                        { // Broken connection; Clear connection
+                            output.connections.RemoveAt(conCnt);
+                            conCnt--;
+                        }
+                    }
+                }
+//                for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++) 
+//				{
+//					NodeKnob nodeKnob = node.nodeKnobs[knobCnt];
+//					if (nodeKnob == null)
+//					{
+//						Debug.LogWarning ("NodeCanvas '" + name + "' Node '" + node.name + "' contained broken (null) NodeKnobs! Automatically fixed!");
+//						node.nodeKnobs.RemoveAt (knobCnt);
+//						knobCnt--;
+//						continue;
+//					}
+
+//					if (nodeKnob is NodeInput)
+//					{
+//						NodeInput input = nodeKnob as NodeInput;
+//						if (input.connection != null && input.connection.body == null)
+//						{ // References broken node; Clear connection
+//							input.connection = null;
+//						}
+////						for (int conCnt = 0; conCnt < (nodeKnob as NodeInput).connection.Count; conCnt++)
+//					}
+//					else if (nodeKnob is NodeOutput)
+//					{
+//						NodeOutput output = nodeKnob as NodeOutput;
+//						for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
+//						{
+//							NodeInput con = output.connections[conCnt];
+//							if (con == null || con.body == null)
+//							{ // Broken connection; Clear connection
+//								output.connections.RemoveAt (conCnt);
+//								conCnt--;
+//							}
+//						}
+//					}
+//				}
 			}
 
 			if (editorStates == null)
@@ -81,5 +119,7 @@ namespace NodeEditorFramework
 					state.selectedNode = null;
 			}
 		}
+
+        public virtual void BeforeSavingCanvas() { }
 	}
 }

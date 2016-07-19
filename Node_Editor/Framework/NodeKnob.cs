@@ -39,13 +39,13 @@ namespace NodeEditorFramework
 			side = nodeSide;
 			sidePosition = nodeSidePosition;
 			name = knobName;
-			nodeBody.nodeKnobs.Add (this);
+			//nodeBody.nodeKnobs.Add (this);
 			ReloadKnobTexture ();
 		}
 
 		public virtual void Delete () 
 		{
-			body.nodeKnobs.Remove (this);
+			//body.nodeKnobs.Remove (this);
 			DestroyImmediate (this, true);
 		}
 
@@ -262,4 +262,47 @@ namespace NodeEditorFramework
 
 		#endregion
 	}
+
+
+    public static class NodeKnobUtilities
+    {
+        //public static Node GetFirstNodeAtOutputTypeKnob(this Node node)
+        //{
+        //    NodeOutput knob = node.nodeKnobs.OfType<NodeOutput>().FirstOrDefault();
+        //    if (knob != default(NodeOutput))
+        //    {
+        //        if (knob.connections.Count > 0)
+        //            return knob.connections[0].body;
+        //    }
+        //    return null;
+        //}
+
+        //public static Node GetFirstNodeAtInputTypeKnob(this Node node)
+        //{
+        //    NodeInput knob = node.nodeKnobs.OfType<NodeInput>().FirstOrDefault();
+        //    if (knob != default(NodeInput))
+        //    {
+        //        if (knob.connection != null)
+        //            return knob.connection.body;
+        //    }
+        //    return null;
+        //}
+
+        public static Node GetNodeKnob(this Node node, NodeKnob knob)
+        {
+            if(knob == null)
+                return null;
+            else if(knob is NodeOutput)
+            {
+                if (((NodeOutput)knob).connections.Count > 0)
+                    return ((NodeOutput)knob).connections[0].body;
+            }
+            else if(knob is NodeInput)
+            {
+                if (((NodeInput)knob).connection != null)
+                    return ((NodeInput)knob).connection.body;
+            }
+            return null;
+        }
+    }
 }
