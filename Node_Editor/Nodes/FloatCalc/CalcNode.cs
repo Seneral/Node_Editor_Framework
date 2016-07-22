@@ -33,7 +33,7 @@ namespace NodeEditorFramework.Standard
 			return node;
 		}
 
-		public override void NodeGUI () 
+		protected internal override void NodeGUI () 
 		{
 			GUILayout.BeginHorizontal ();
 			GUILayout.BeginVertical ();

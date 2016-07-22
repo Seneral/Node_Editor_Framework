@@ -23,7 +23,7 @@ namespace NodeEditorFramework.Standard
 			return node;
 		}
 		
-		public override void NodeGUI () 
+		protected internal override void NodeGUI () 
 		{
 			GUILayout.Label ("This is a custom Node!");
 

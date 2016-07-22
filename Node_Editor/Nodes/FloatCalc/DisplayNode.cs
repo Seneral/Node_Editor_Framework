@@ -27,7 +27,7 @@ namespace NodeEditorFramework.Standard
 			return node;
 		}
 		
-		public override void NodeGUI () 
+		protected internal override void NodeGUI () 
 		{
 			Inputs [0].DisplayLayout (new GUIContent ("Value : " + (assigned? value.ToString () : ""), "The input value to display"));
 		}

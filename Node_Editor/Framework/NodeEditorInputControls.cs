@@ -20,24 +20,11 @@ namespace NodeEditorFramework
 		{ // Show all nodes, and if a connection is drawn, only compatible nodes to auto-connect
 			NodeEditorState state = inputInfo.editorState;
 			List<Node> displayedNodes = state.connectOutput != null? NodeTypes.getCompatibleNodes (state.connectOutput) : NodeTypes.nodes.Keys.ToList ();
-		    DeCafList(ref displayedNodes, state.canvas);
 			foreach (Node compatibleNode in displayedNodes)
 				canvasContextMenu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[compatibleNode].adress), false, CreateNodeCallback, new NodeEditorInputInfo (compatibleNode.GetID, state));
 		}
 
-	    private static void DeCafList(ref List<Node> displayedNodes, NodeCanvas canvas)
-	    {
-	        for (int i = 0; i < displayedNodes.Count; i++)
-	        {
-	            if (!NodeTypes.nodes[displayedNodes[i]].typeOfNodeCanvas.Contains(canvas.GetType()))
-	            {
-	                displayedNodes.RemoveAt(i);
-	                i--;
-	            }
-	        }
-	    }
-
-	    private static void CreateNodeCallback (object infoObj)
+		private static void CreateNodeCallback (object infoObj)
 		{
 			NodeEditorInputInfo callback = infoObj as NodeEditorInputInfo;
 			if (callback == null)
@@ -123,7 +110,7 @@ namespace NodeEditorFramework
 
         #region Node Dragging
 
-        [EventHandlerAttribute (EventType.MouseDown, 110)] // Priority over hundred to make it call after the GUI
+        [EventHandlerAttribute (EventType.MouseDown, priority = 110)] // Priority over hundred to make it call after the GUI
 		private static void HandleNodeDraggingStart (NodeEditorInputInfo inputInfo) 
 		{
 			if (GUIUtility.hotControl > 0)
@@ -169,7 +156,7 @@ namespace NodeEditorFramework
 
 		#region Window Panning
 
-		[EventHandlerAttribute (EventType.MouseDown, 100)] // Priority over hundred to make it call after the GUI
+		[EventHandlerAttribute (EventType.MouseDown, priority = 100)] // Priority over hundred to make it call after the GUI
 		private static void HandleWindowPanningStart (NodeEditorInputInfo inputInfo) 
 		{
 			if (GUIUtility.hotControl > 0)
@@ -278,8 +265,8 @@ namespace NodeEditorFramework
 
 		#region Node Snap
 
-		[HotkeyAttribute (KeyCode.LeftControl, EventType.KeyDown, 60)] // 60 ensures it is checked after the dragging was performed before
-		[HotkeyAttribute (KeyCode.LeftControl, EventType.KeyUp, 60)]
+		[HotkeyAttribute (KeyCode.LeftControl, EventType.KeyDown, priority = 60)] // 60 ensures it is checked after the dragging was performed before
+		[HotkeyAttribute (KeyCode.LeftControl, EventType.KeyUp, priority = 60)]
 		private static void HandleNodeSnap (NodeEditorInputInfo inputInfo) 
 		{
 			NodeEditorState state = inputInfo.editorState;

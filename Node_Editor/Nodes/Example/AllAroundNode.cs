@@ -45,7 +45,7 @@ namespace NodeEditorFramework.Standard
 			GUILayout.EndArea ();
 		}
 		
-		public override void NodeGUI () 
+		protected internal override void NodeGUI () 
 		{
 			
 		}

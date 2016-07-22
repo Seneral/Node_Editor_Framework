@@ -25,20 +25,18 @@ namespace NodeEditorFramework
 			IEnumerable<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where ((Assembly assembly) => assembly.FullName.Contains ("Assembly"));
 			foreach (Assembly assembly in scriptAssemblies) 
 			{
-                foreach (Type type in assembly.GetTypes().Where(T => T.IsClass && !T.IsAbstract && T.IsSubclassOf(typeof(Node))))
-                {
-                    object[] nodeAttributes = type.GetCustomAttributes(typeof(NodeAttribute), false);                    
-                    NodeAttribute attr = nodeAttributes[0] as NodeAttribute;
-                    if(attr == null || !attr.hide)
-                    {
-                        Node node = ScriptableObject.CreateInstance(type.Name) as Node;
-                        // Create a 'raw' instance (not setup using the appropriate Create function)
-                        node = node.Create(Vector2.zero);
-                        // From that, call the appropriate Create Method to init the previously 'raw' instance
-                        nodes.Add(node, new NodeData(attr == null ? node.name : attr.contextText, attr.typeOfNodeCanvas));
-                    }
-                }
-            }
+				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.IsSubclassOf (typeof (Node)))) 
+				{
+					object[] nodeAttributes = type.GetCustomAttributes (typeof (NodeAttribute), false);
+					NodeAttribute attr = nodeAttributes [0] as NodeAttribute;
+					if (attr == null || !attr.hide)
+					{
+						Node node = ScriptableObject.CreateInstance (type.Name) as Node; // Create a 'raw' instance (not setup using the appropriate Create function)
+						node = node.Create (Vector2.zero); // From that, call the appropriate Create Method to init the previously 'raw' instance
+						nodes.Add (node, new NodeData (attr == null? node.name : attr.contextText));
+					}
+				}
+			}
 		}
 
 		/// <summary>
@@ -99,12 +97,10 @@ namespace NodeEditorFramework
 	public struct NodeData 
 	{
 		public string adress;
-        public Type[] typeOfNodeCanvas;
 
-        public NodeData (string name, Type[] types) 
+		public NodeData (string name) 
 		{
 			adress = name;
-            typeOfNodeCanvas = types;
 		}
 	}
 
@@ -115,13 +111,11 @@ namespace NodeEditorFramework
 	{
 		public bool hide { get; private set; }
 		public string contextText { get; private set; }
-	    public Type[] typeOfNodeCanvas = null;
 
-		public NodeAttribute (bool HideNode, string ReplacedContextText, Type[] nodeCanvasTypes = null) 
+		public NodeAttribute (bool HideNode, string ReplacedContextText) 
 		{
 			hide = HideNode;
 			contextText = ReplacedContextText;
-            typeOfNodeCanvas = nodeCanvasTypes ?? new Type[] {typeof(NodeCanvas)};
 		}
 	}
 }

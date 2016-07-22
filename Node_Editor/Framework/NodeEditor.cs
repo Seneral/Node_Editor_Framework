@@ -64,12 +64,8 @@ namespace NodeEditorFramework
 			ConnectionTypes.FetchTypes ();
 			NodeTypes.FetchNodes ();
 
-#if CUSTOM_CODE
-            //ROHIT CUSTOM CODE
-            NodeCanvasManager.GetAllCanvasTypes();
-#endif
-            // Setup Callback system
-            NodeEditorCallbacks.SetupReceivers ();
+			// Setup Callback system
+			NodeEditorCallbacks.SetupReceivers ();
 			NodeEditorCallbacks.IssueOnEditorStartUp ();
 
 			// Init GUIScaleUtility. This fetches reflected calls and my throw a message notifying about incompability.
@@ -261,31 +257,15 @@ namespace NodeEditorFramework
 				Node node = canvas.nodes [nodeCnt];
 				if (node.rect.Contains (canvasPos))
 					return node;
-				//for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++)
-				//{ // Check if any nodeKnob is focused instead
-				//	if (node.nodeKnobs[knobCnt].GetCanvasSpaceKnob ().Contains (canvasPos)) 
-				//	{
-				//		focusedKnob = node.nodeKnobs[knobCnt];
-				//		return node;
-				//	}
-				//}
-                for (int knobCnt = 0; knobCnt < node.Inputs.Count; knobCnt++)
-                { // Check if any nodeKnob is focused instead
-                    if (node.Inputs[knobCnt].GetCanvasSpaceKnob().Contains(canvasPos))
-                    {
-                        focusedKnob = node.Inputs[knobCnt];
-                        return node;
-                    }
-                }
-                for (int knobCnt = 0; knobCnt < node.Outputs.Count; knobCnt++)
-                { // Check if any nodeKnob is focused instead
-                    if (node.Outputs[knobCnt].GetCanvasSpaceKnob().Contains(canvasPos))
-                    {
-                        focusedKnob = node.Outputs[knobCnt];
-                        return node;
-                    }
-                }
-            }
+				for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++)
+				{ // Check if any nodeKnob is focused instead
+					if (node.nodeKnobs[knobCnt].GetCanvasSpaceKnob ().Contains (canvasPos)) 
+					{
+						focusedKnob = node.nodeKnobs[knobCnt];
+						return node;
+					}
+				}
+			}
 			return null;
 		}
 
