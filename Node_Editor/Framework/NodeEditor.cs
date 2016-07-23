@@ -64,8 +64,11 @@ namespace NodeEditorFramework
 			ConnectionTypes.FetchTypes ();
 			NodeTypes.FetchNodes ();
 
-			// Setup Callback system
-			NodeEditorCallbacks.SetupReceivers ();
+
+            NodeCanvasManager.GetAllCanvasTypes();
+
+            // Setup Callback system
+            NodeEditorCallbacks.SetupReceivers ();
 			NodeEditorCallbacks.IssueOnEditorStartUp ();
 
 			// Init GUIScaleUtility. This fetches reflected calls and my throw a message notifying about incompability.
@@ -265,7 +268,23 @@ namespace NodeEditorFramework
 						return node;
 					}
 				}
-			}
+                for (int knobCnt = 0; knobCnt < node.Inputs.Count; knobCnt++)
+                { // Check if any nodeKnob is focused instead
+                    if (node.Inputs[knobCnt].GetCanvasSpaceKnob().Contains(canvasPos))
+                    {
+                        focusedKnob = node.Inputs[knobCnt];
+                        return node;
+                    }
+                }
+                for (int knobCnt = 0; knobCnt < node.Outputs.Count; knobCnt++)
+                { // Check if any nodeKnob is focused instead
+                    if (node.Outputs[knobCnt].GetCanvasSpaceKnob().Contains(canvasPos))
+                    {
+                        focusedKnob = node.Outputs[knobCnt];
+                        return node;
+                    }
+                }
+            }
 			return null;
 		}
 

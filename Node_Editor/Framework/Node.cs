@@ -16,9 +16,9 @@ namespace NodeEditorFramework
 		public List<NodeKnob> nodeKnobs = new List<NodeKnob> ();
 
 		// Calculation graph
-		[NonSerialized]
+		[SerializeField]
 		public List<NodeInput> Inputs = new List<NodeInput>();
-		[NonSerialized]
+		[SerializeField]
 		public List<NodeOutput> Outputs = new List<NodeOutput>();
 		[HideInInspector]
 		[NonSerialized]
@@ -107,10 +107,10 @@ namespace NodeEditorFramework
 			return node;
 		}
 
-		/// <summary>
-		/// Makes sure this Node has migrated from the previous save version of NodeKnobs to the current mixed and generic one
-		/// </summary>
-		internal void CheckNodeKnobMigration () 
+        /// <summary>
+        /// Makes sure this Node has migrated from the previous save version of NodeKnobs to the current mixed and generic one
+        /// </summary>
+        internal void CheckNodeKnobMigration () 
 		{ // TODO: Migration from previous NodeKnob system; Remove later on
 			if (nodeKnobs.Count == 0 && (Inputs.Count != 0 || Outputs.Count != 0)) 
 			{
@@ -201,6 +201,11 @@ namespace NodeEditorFramework
 		/// Replaces all REFERENCES aswell as SOURCES of any ScriptableObjects this Node holds with the cloned versions in the serialization process.
 		/// </summary>
 		protected internal virtual void CopyScriptableObjects (System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) {}
+
+	    public void SerializeInputsAndOutputs(System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject)
+	    {
+	        
+	    }
 
 		#endregion
 
