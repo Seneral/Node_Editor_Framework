@@ -268,22 +268,6 @@ namespace NodeEditorFramework
 						return node;
 					}
 				}
-                for (int knobCnt = 0; knobCnt < node.Inputs.Count; knobCnt++)
-                { // Check if any nodeKnob is focused instead
-                    if (node.Inputs[knobCnt].GetCanvasSpaceKnob().Contains(canvasPos))
-                    {
-                        focusedKnob = node.Inputs[knobCnt];
-                        return node;
-                    }
-                }
-                for (int knobCnt = 0; knobCnt < node.Outputs.Count; knobCnt++)
-                { // Check if any nodeKnob is focused instead
-                    if (node.Outputs[knobCnt].GetCanvasSpaceKnob().Contains(canvasPos))
-                    {
-                        focusedKnob = node.Outputs[knobCnt];
-                        return node;
-                    }
-                }
             }
 			return null;
 		}

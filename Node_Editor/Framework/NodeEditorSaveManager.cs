@@ -171,16 +171,6 @@ namespace NodeEditorFramework
 					AddSubAsset (knob, node);
 					AddSubAssets (knob.GetScriptableObjects (), knob);
 				}
-                //foreach (NodeInput knob in node.Inputs)
-                //{ // Write knobs and their additional scriptable objects
-                //    AddSubAsset(knob, node);
-                //    AddSubAssets(knob.GetScriptableObjects(), knob);
-                //}
-                //foreach (NodeOutput knob in node.Outputs)
-                //{ // Write knobs and their additional scriptable objects
-                //    AddSubAsset(knob, node);
-                //    AddSubAssets(knob.GetScriptableObjects(), knob);
-                //}
             }
 
             nodeCanvas.BeforeSavingCanvas();
@@ -340,16 +330,7 @@ namespace NodeEditorFramework
 					AddClonedSO (allSOs, clonedSOs, knob);
 					AddClonedSOs (allSOs, clonedSOs, knob.GetScriptableObjects ());
 				}
-                //foreach (NodeInput knob in clonedNode.Inputs)
-                //{ // Clone NodeKnobs and additional scriptableObjects
-                //    AddClonedSO(allSOs, clonedSOs, knob);
-                //    AddClonedSOs(allSOs, clonedSOs, knob.GetScriptableObjects());
-                //}
-                //foreach (NodeOutput knob in clonedNode.Outputs)
-                //{ // Clone NodeKnobs and additional scriptableObjects
-                //    AddClonedSO(allSOs, clonedSOs, knob);
-                //    AddClonedSOs(allSOs, clonedSOs, knob.GetScriptableObjects());
-                //}
+
             }
 
 			// Replace every reference to any of the initial SOs of the first list with the respective clones of the second list
@@ -374,15 +355,11 @@ namespace NodeEditorFramework
                 { // Clone generic NodeKnobs
                     NodeInput knob = clonedNode.Inputs[knobCnt] = ReplaceSO(allSOs, clonedSOs, clonedNode.Inputs[knobCnt]);
                     knob.body = clonedNode;
-                    // Replace additional scriptableObjects in the NodeKnob
-                    //knob.CopyScriptableObjects((ScriptableObject so) => ReplaceSO(allSOs, clonedSOs, so));
                 }
                 for (int knobCnt = 0; knobCnt < clonedNode.Outputs.Count; knobCnt++)
                 { // Clone generic NodeKnobs
                     NodeOutput knob = clonedNode.Outputs[knobCnt] = ReplaceSO(allSOs, clonedSOs, clonedNode.Outputs[knobCnt]);
                     knob.body = clonedNode;
-                    // Replace additional scriptableObjects in the NodeKnob
-                    //knob.CopyScriptableObjects((ScriptableObject so) => ReplaceSO(allSOs, clonedSOs, so));
                 }
             }
 

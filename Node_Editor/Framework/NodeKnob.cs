@@ -261,25 +261,13 @@ namespace NodeEditorFramework
 		}
 
 		#endregion
-	}
 
-    public static class NodeKnobUtilities
-    {
-        public static Node GetNodeKnob(this Node node, NodeKnob knob)
+        #region Utility
+
+	    public virtual Node GetNodeAcrossConnection()
         {
-            if (knob == null)
-                return null;
-            else if (knob is NodeOutput)
-            {
-                if (((NodeOutput)knob).connections.Count > 0)
-                    return ((NodeOutput)knob).connections[0].body;
-            }
-            else if (knob is NodeInput)
-            {
-                if (((NodeInput)knob).connection != null)
-                    return ((NodeInput)knob).connection.body;
-            }
             return null;
         }
+	    #endregion
     }
 }

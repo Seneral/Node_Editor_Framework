@@ -54,7 +54,6 @@ namespace NodeEditorFramework.Standard
         [UnityEditor.Callbacks.OnOpenAsset(1)]
         private static bool AutoOpenCanvas(int instanceID, int line)
         {
-            var value = Selection.activeObject;
             if (Selection.activeObject != null && Selection.activeObject is NodeCanvas)
             {
                 string NodeCanvasPath = AssetDatabase.GetAssetPath(instanceID);

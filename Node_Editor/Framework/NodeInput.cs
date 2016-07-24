@@ -225,5 +225,14 @@ namespace NodeEditorFramework
 
 
 		#endregion
+
+        #region Utility
+
+        public override Node GetNodeAcrossConnection()
+        {
+            return connection != null ? connection.body : null;
+        }
+
+        #endregion
 	}
 }

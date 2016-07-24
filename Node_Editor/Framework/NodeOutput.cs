@@ -194,5 +194,14 @@ namespace NodeEditorFramework
 		}
 
 		#endregion
+
+        #region Utility
+
+        public override Node GetNodeAcrossConnection()
+        {
+            return connections.Count > 0 ? connections[0].body : null;
+        }
+
+	    #endregion
 	}
 }
