@@ -1,5 +1,0 @@
-<linker>
-    <assembly fullname="UnityEngine">
-        <type fullname="UnityEngine.GUIClip" preserve="all"/>
-    </assembly>
-</linker>
