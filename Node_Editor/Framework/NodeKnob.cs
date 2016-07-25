@@ -248,8 +248,8 @@ namespace NodeEditorFramework
 		{
 			return side == NodeSide.Right? 	Vector2.right : 
 					(side == NodeSide.Bottom? Vector2.up : 
-				 	(side == NodeSide.Top? 	Vector2.down : 
-				 			/* Left */		Vector2.left));
+					(side == NodeSide.Top? 	Vector2.down : 
+							/* Left */		Vector2.left));
 		}
 
 		/// <summary>
@@ -262,12 +262,12 @@ namespace NodeEditorFramework
 
 		#endregion
 
-        #region Utility
+		#region Utility
 
-	    public virtual Node GetNodeAcrossConnection()
-        {
-            return null;
-        }
-	    #endregion
-    }
+		public virtual Node GetNodeAcrossConnection()
+		{
+			return null;
+		}
+		#endregion
+	}
 }

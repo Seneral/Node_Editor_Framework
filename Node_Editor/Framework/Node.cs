@@ -104,10 +104,10 @@ namespace NodeEditorFramework
 			return node;
 		}
 
-        /// <summary>
-        /// Makes sure this Node has migrated from the previous save version of NodeKnobs to the current mixed and generic one
-        /// </summary>
-        internal void CheckNodeKnobMigration () 
+		/// <summary>
+		/// Makes sure this Node has migrated from the previous save version of NodeKnobs to the current mixed and generic one
+		/// </summary>
+		internal void CheckNodeKnobMigration () 
 		{ // TODO: Migration from previous NodeKnob system; Remove later on
 			if (nodeKnobs.Count == 0 && (Inputs.Count != 0 || Outputs.Count != 0)) 
 			{
@@ -164,7 +164,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public virtual bool ContinueCalculation { get { return true; } }
 
-        #endregion
+		#endregion
 
 		#region Protected Callbacks
 
@@ -199,10 +199,10 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal virtual void CopyScriptableObjects (System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) {}
 
-	    public void SerializeInputsAndOutputs(System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject)
-	    {
-	        
-	    }
+		public void SerializeInputsAndOutputs(System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject)
+		{
+			
+		}
 
 		#endregion
 

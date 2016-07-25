@@ -20,24 +20,24 @@ namespace NodeEditorFramework
 		{ // Show all nodes, and if a connection is drawn, only compatible nodes to auto-connect
 			NodeEditorState state = inputInfo.editorState;
 			List<Node> displayedNodes = state.connectOutput != null? NodeTypes.getCompatibleNodes (state.connectOutput) : NodeTypes.nodes.Keys.ToList ();
-		    DeCafList(ref displayedNodes, state.canvas);
+			DeCafList(ref displayedNodes, state.canvas);
 			foreach (Node compatibleNode in displayedNodes)
 				canvasContextMenu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[compatibleNode].adress), false, CreateNodeCallback, new NodeEditorInputInfo (compatibleNode.GetID, state));
 		}
 
-	    private static void DeCafList(ref List<Node> displayedNodes, NodeCanvas canvas)
-	    {
-	        for (int i = 0; i < displayedNodes.Count; i++)
-	        {
-	            if (!NodeTypes.nodes[displayedNodes[i]].typeOfNodeCanvas.Contains(canvas.GetType()))
-	            {
-	                displayedNodes.RemoveAt(i);
-	                i--;
-	            }
-	        }
-	    }
+		private static void DeCafList(ref List<Node> displayedNodes, NodeCanvas canvas)
+		{
+			for (int i = 0; i < displayedNodes.Count; i++)
+			{
+				if (!NodeTypes.nodes[displayedNodes[i]].typeOfNodeCanvas.Contains(canvas.GetType()))
+				{
+					displayedNodes.RemoveAt(i);
+					i--;
+				}
+			}
+		}
 
-	    private static void CreateNodeCallback (object infoObj)
+		private static void CreateNodeCallback (object infoObj)
 		{
 			NodeEditorInputInfo callback = infoObj as NodeEditorInputInfo;
 			if (callback == null)
@@ -78,52 +78,52 @@ namespace NodeEditorFramework
 			}
 		}
 
-        #endregion
+		#endregion
 
-        #region Node Keyboard Control
+		#region Node Keyboard Control
 
-        // Main Keyboard_Move method
-        [HotkeyAttribute(KeyCode.UpArrow, EventType.KeyDown)]
-        [HotkeyAttribute(KeyCode.LeftArrow, EventType.KeyDown)]
-        [HotkeyAttribute(KeyCode.RightArrow, EventType.KeyDown)]
-        [HotkeyAttribute(KeyCode.DownArrow, EventType.KeyDown)]
-        private static void KB_MoveNode(NodeEditorInputInfo inputInfo)
-        {
-            NodeEditorState state = inputInfo.editorState;
-            if (state.selectedNode != null)
-            { 
-                Vector2 pos = state.selectedNode.rect.position;
+		// Main Keyboard_Move method
+		[HotkeyAttribute(KeyCode.UpArrow, EventType.KeyDown)]
+		[HotkeyAttribute(KeyCode.LeftArrow, EventType.KeyDown)]
+		[HotkeyAttribute(KeyCode.RightArrow, EventType.KeyDown)]
+		[HotkeyAttribute(KeyCode.DownArrow, EventType.KeyDown)]
+		private static void KB_MoveNode(NodeEditorInputInfo inputInfo)
+		{
+			NodeEditorState state = inputInfo.editorState;
+			if (state.selectedNode != null)
+			{ 
+				Vector2 pos = state.selectedNode.rect.position;
 
-                int shiftAmount = 0;
+				int shiftAmount = 0;
 
-                // Increase the distance moved to 10 if shift is being held.
-                if (inputInfo.inputEvent.shift)
-                    shiftAmount = 10;
-                else
-                    shiftAmount = 5;
+				// Increase the distance moved to 10 if shift is being held.
+				if (inputInfo.inputEvent.shift)
+					shiftAmount = 10;
+				else
+					shiftAmount = 5;
 
-                if (inputInfo.inputEvent.keyCode == KeyCode.RightArrow)
-                    pos = new Vector2(pos.x + shiftAmount, pos.y);
-                else if (inputInfo.inputEvent.keyCode == KeyCode.LeftArrow)
-                    pos = new Vector2(pos.x - shiftAmount, pos.y);
-                else if (inputInfo.inputEvent.keyCode == KeyCode.DownArrow)
-                    pos = new Vector2(pos.x, pos.y + shiftAmount);
-                else if (inputInfo.inputEvent.keyCode == KeyCode.UpArrow)
-                    pos = new Vector2(pos.x, pos.y - shiftAmount);
+				if (inputInfo.inputEvent.keyCode == KeyCode.RightArrow)
+					pos = new Vector2(pos.x + shiftAmount, pos.y);
+				else if (inputInfo.inputEvent.keyCode == KeyCode.LeftArrow)
+					pos = new Vector2(pos.x - shiftAmount, pos.y);
+				else if (inputInfo.inputEvent.keyCode == KeyCode.DownArrow)
+					pos = new Vector2(pos.x, pos.y + shiftAmount);
+				else if (inputInfo.inputEvent.keyCode == KeyCode.UpArrow)
+					pos = new Vector2(pos.x, pos.y - shiftAmount);
 
-                state.selectedNode.rect.position = pos;
-                inputInfo.inputEvent.Use();
-            }
-            NodeEditor.RepaintClients();
+				state.selectedNode.rect.position = pos;
+				inputInfo.inputEvent.Use();
+			}
+			NodeEditor.RepaintClients();
 
-        }
+		}
 
 
-        #endregion
+		#endregion
 
-        #region Node Dragging
+		#region Node Dragging
 
-        [EventHandlerAttribute (EventType.MouseDown, 110)] // Priority over hundred to make it call after the GUI
+		[EventHandlerAttribute (EventType.MouseDown, 110)] // Priority over hundred to make it call after the GUI
 		private static void HandleNodeDraggingStart (NodeEditorInputInfo inputInfo) 
 		{
 			if (GUIUtility.hotControl > 0)
@@ -293,9 +293,9 @@ namespace NodeEditorFramework
 			NodeEditor.RepaintClients ();
 		}
 
-        #endregion
+		#endregion
 
-    }
+	}
 
 }
 

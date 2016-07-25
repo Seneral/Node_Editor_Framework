@@ -320,28 +320,28 @@ namespace NodeEditorFramework
 		public EventType? handledEvent { get; private set; }
 		public int priority { get; private set; }
 
-        /// <summary>
+		/// <summary>
 		/// Handle all events of the specified eventType
 		/// </summary>
 		public EventHandlerAttribute(EventType eventType, int priorityValue)
-        {
-            handledEvent = eventType;
-            priority = priorityValue;
-        }
+		{
+			handledEvent = eventType;
+			priority = priorityValue;
+		}
 
-        /// <summary>
-        /// Handle all events of the specified eventType
-        /// </summary>
-        public EventHandlerAttribute(int priorityValue)
-        {
-            handledEvent = null;
-            priority = priorityValue;
-        }
+		/// <summary>
+		/// Handle all events of the specified eventType
+		/// </summary>
+		public EventHandlerAttribute(int priorityValue)
+		{
+			handledEvent = null;
+			priority = priorityValue;
+		}
 
-        /// <summary>
-        /// Handle all events of the specified eventType
-        /// </summary>
-        public EventHandlerAttribute (EventType eventType) 
+		/// <summary>
+		/// Handle all events of the specified eventType
+		/// </summary>
+		public EventHandlerAttribute (EventType eventType) 
 		{
 			handledEvent = eventType;
 			priority = 50;
@@ -415,22 +415,22 @@ namespace NodeEditorFramework
 			priority = 50;
 		}
 
-        /// <summary>
+		/// <summary>
 		/// Handle the specified hotkey limited to the specified eventType
 		/// </summary>
 		public HotkeyAttribute(KeyCode handledKey, EventType LimitEventType, int priorityValue)
-        {
-            handledHotKey = handledKey;
-            modifiers = null;
-            limitingEventType = LimitEventType;
-            priority = priorityValue;
-        }
+		{
+			handledHotKey = handledKey;
+			modifiers = null;
+			limitingEventType = LimitEventType;
+			priority = priorityValue;
+		}
 
 
-        /// <summary>
-        /// Handle the specified hotkey with modifiers limited to the specified eventType
-        /// </summary>
-        public HotkeyAttribute (KeyCode handledKey, EventModifiers eventModifiers, EventType LimitEventType) 
+		/// <summary>
+		/// Handle the specified hotkey with modifiers limited to the specified eventType
+		/// </summary>
+		public HotkeyAttribute (KeyCode handledKey, EventModifiers eventModifiers, EventType LimitEventType) 
 		{
 			handledHotKey = handledKey;
 			modifiers = eventModifiers;

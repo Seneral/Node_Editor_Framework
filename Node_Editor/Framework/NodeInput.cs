@@ -226,13 +226,13 @@ namespace NodeEditorFramework
 
 		#endregion
 
-        #region Utility
+		#region Utility
 
-        public override Node GetNodeAcrossConnection()
-        {
-            return connection != null ? connection.body : null;
-        }
+		public override Node GetNodeAcrossConnection()
+		{
+			return connection != null ? connection.body : null;
+		}
 
-        #endregion
+		#endregion
 	}
 }

@@ -65,10 +65,10 @@ namespace NodeEditorFramework
 			NodeTypes.FetchNodes ();
 
 
-            NodeCanvasManager.GetAllCanvasTypes();
+			NodeCanvasManager.GetAllCanvasTypes();
 
-            // Setup Callback system
-            NodeEditorCallbacks.SetupReceivers ();
+			// Setup Callback system
+			NodeEditorCallbacks.SetupReceivers ();
 			NodeEditorCallbacks.IssueOnEditorStartUp ();
 
 			// Init GUIScaleUtility. This fetches reflected calls and my throw a message notifying about incompability.
@@ -109,7 +109,7 @@ namespace NodeEditorFramework
 				correctEditorPath = correctEditorPath.Substring (0, subFolderIndex);
 				
 				Debug.LogWarning ("Node Editor: Not installed in default directory '" + editorPath + "'! " +
-				                  "Editor-only automatic detection adjusted the path to " + correctEditorPath + ", but if you plan to use at runtime, please correct the editorPath variable in NodeEditor.cs!");
+								  "Editor-only automatic detection adjusted the path to " + correctEditorPath + ", but if you plan to use at runtime, please correct the editorPath variable in NodeEditor.cs!");
 				editorPath = correctEditorPath;
 			}
 	#endif
@@ -268,7 +268,7 @@ namespace NodeEditorFramework
 						return node;
 					}
 				}
-            }
+			}
 			return null;
 		}
 
