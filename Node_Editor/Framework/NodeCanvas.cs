@@ -1,10 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using NodeEditorFramework;
 
 namespace NodeEditorFramework 
 {
+	[NodeCanvasType("Default")]
 	public class NodeCanvas : ScriptableObject 
 	{ // Just contains the nodes and global canvas stuff; an associated NodeEditorState holds the actual state now
 		public List<Node> nodes = new List<Node> ();
@@ -32,6 +32,43 @@ namespace NodeEditorFramework
 					nodes.RemoveAt (nodeCnt);
 					nodeCnt--;
 					continue;
+				}
+
+				for(int knobCnt = 0; knobCnt < node.Inputs.Count; knobCnt++)
+				{
+					NodeInput input = node.Inputs[knobCnt];
+					if (input == null)
+					{
+						Debug.LogWarning("NodeCanvas '" + name + "' Node '" + node.name + "' contained broken (null) NodeKnobs! Automatically fixed!");
+						node.Inputs.RemoveAt(knobCnt);
+						knobCnt--;
+						continue;
+					}
+					if (input.connection != null && input.connection.body == null)
+					{ // References broken node; Clear connection
+						input.connection = null;
+					}
+				}
+
+				for (int knobCnt = 0; knobCnt < node.Outputs.Count; knobCnt++)
+				{
+					NodeOutput output = node.Outputs[knobCnt];
+					if (output == null)
+					{
+						Debug.LogWarning("NodeCanvas '" + name + "' Node '" + node.name + "' contained broken (null) NodeKnobs! Automatically fixed!");
+						node.Outputs.RemoveAt(knobCnt);
+						knobCnt--;
+						continue;
+					}
+					for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
+					{
+						NodeInput con = output.connections[conCnt];
+						if (con == null || con.body == null)
+						{ // Broken connection; Clear connection
+							output.connections.RemoveAt(conCnt);
+							conCnt--;
+						}
+					}
 				}
 				for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++) 
 				{
@@ -81,5 +118,7 @@ namespace NodeEditorFramework
 					state.selectedNode = null;
 			}
 		}
+
+		public virtual void BeforeSavingCanvas() { }
 	}
 }

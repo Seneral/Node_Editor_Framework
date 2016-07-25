@@ -3,9 +3,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 
-using NodeEditorFramework;
-using NodeEditorFramework.Utilities;
-
 namespace NodeEditorFramework
 {
 	public abstract class Node : ScriptableObject
@@ -16,9 +13,9 @@ namespace NodeEditorFramework
 		public List<NodeKnob> nodeKnobs = new List<NodeKnob> ();
 
 		// Calculation graph
-		[NonSerialized]
+		[SerializeField]
 		public List<NodeInput> Inputs = new List<NodeInput>();
-		[NonSerialized]
+		[SerializeField]
 		public List<NodeOutput> Outputs = new List<NodeOutput>();
 		[HideInInspector]
 		[NonSerialized]
@@ -167,7 +164,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public virtual bool ContinueCalculation { get { return true; } }
 
-        #endregion
+		#endregion
 
 		#region Protected Callbacks
 
@@ -201,6 +198,11 @@ namespace NodeEditorFramework
 		/// Replaces all REFERENCES aswell as SOURCES of any ScriptableObjects this Node holds with the cloned versions in the serialization process.
 		/// </summary>
 		protected internal virtual void CopyScriptableObjects (System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) {}
+
+		public void SerializeInputsAndOutputs(System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject)
+		{
+			
+		}
 
 		#endregion
 

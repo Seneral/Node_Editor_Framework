@@ -64,6 +64,9 @@ namespace NodeEditorFramework
 			ConnectionTypes.FetchTypes ();
 			NodeTypes.FetchNodes ();
 
+
+			NodeCanvasManager.GetAllCanvasTypes();
+
 			// Setup Callback system
 			NodeEditorCallbacks.SetupReceivers ();
 			NodeEditorCallbacks.IssueOnEditorStartUp ();
@@ -106,7 +109,7 @@ namespace NodeEditorFramework
 				correctEditorPath = correctEditorPath.Substring (0, subFolderIndex);
 				
 				Debug.LogWarning ("Node Editor: Not installed in default directory '" + editorPath + "'! " +
-				                  "Editor-only automatic detection adjusted the path to " + correctEditorPath + ", but if you plan to use at runtime, please correct the editorPath variable in NodeEditor.cs!");
+								  "Editor-only automatic detection adjusted the path to " + correctEditorPath + ", but if you plan to use at runtime, please correct the editorPath variable in NodeEditor.cs!");
 				editorPath = correctEditorPath;
 			}
 	#endif
