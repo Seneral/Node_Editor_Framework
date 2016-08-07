@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEditor;
 using System;
 using System.IO;
@@ -9,311 +9,333 @@ using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
 {
-	public class NodeEditorWindow : EditorWindow 
-	{
-		// Information about current instance
-		private static NodeEditorWindow _editor;
-		public static NodeEditorWindow editor { get { AssureEditor (); return _editor; } }
-		public static void AssureEditor () { if (_editor == null) CreateEditor (); }
+    public class NodeEditorWindow : EditorWindow
+    {
+        // Information about current instance
+        private static NodeEditorWindow _editor;
+        public static NodeEditorWindow editor { get { AssureEditor(); return _editor; } }
+        public static void AssureEditor() { if (_editor == null) CreateEditor(); }
 
-		// Opened Canvas
-		public NodeCanvas mainNodeCanvas;
-		public NodeEditorState mainEditorState;
-		public static NodeCanvas MainNodeCanvas { get { return editor.mainNodeCanvas; } }
-		public static NodeEditorState MainEditorState { get { return editor.mainEditorState; } }
-		public void AssureCanvas () { if (mainNodeCanvas == null) NewNodeCanvas (); }
-		public static string openedCanvasPath;
-		public string tempSessionPath;
+        // Opened Canvas
+        public NodeCanvas mainNodeCanvas;
+        public NodeEditorState mainEditorState;
+        public static NodeCanvas MainNodeCanvas { get { return editor.mainNodeCanvas; } }
+        public static NodeEditorState MainEditorState { get { return editor.mainEditorState; } }
+        public void AssureCanvas() { if (mainNodeCanvas == null) NewNodeCanvas(); }
+        public static string openedCanvasPath;
+        public string tempSessionPath;
 
-		// GUI
-		public static int sideWindowWidth = 400;
-		private static Texture iconTexture;
-		public Rect sideWindowRect { get { return new Rect (position.width - sideWindowWidth, 0, sideWindowWidth, position.height); } }
-		public Rect canvasWindowRect { get { return new Rect (0, 0, position.width - sideWindowWidth, position.height); } }
+        // GUI
+        public static int sideWindowWidth = 400;
+        private static Texture iconTexture;
+        public Rect sideWindowRect { get { return new Rect(position.width - sideWindowWidth, 0, sideWindowWidth, position.height); } }
+        public Rect canvasWindowRect { get { return new Rect(0, 0, position.width - sideWindowWidth, position.height); } }
 
-		#region General 
+        #region General 
 
-		[MenuItem ("Window/Node Editor")]
-		public static void CreateEditor () 
-		{
-			_editor = GetWindow<NodeEditorWindow> ();
-			_editor.minSize = new Vector2 (800, 600);
-			NodeEditor.ClientRepaints += _editor.Repaint;
-			NodeEditor.initiated = NodeEditor.InitiationError = false;
+        [MenuItem("Window/Node Editor")]
+        public static void CreateEditor()
+        {
+            _editor = GetWindow<NodeEditorWindow>();
+            _editor.minSize = new Vector2(800, 600);
+            NodeEditor.ClientRepaints += _editor.Repaint;
+            NodeEditor.initiated = NodeEditor.InitiationError = false;
 
-			iconTexture = ResourceManager.LoadTexture (EditorGUIUtility.isProSkin? "Textures/Icon_Dark.png" : "Textures/Icon_Light.png");
-			_editor.titleContent = new GUIContent ("Node Editor", iconTexture);
-		}
-		
-		/// <summary>
-		/// Handle opening canvas when double-clicking asset
-		/// </summary>
-		[UnityEditor.Callbacks.OnOpenAsset(1)]
-		public static bool AutoOpenCanvas (int instanceID, int line) 
-		{
-			if (Selection.activeObject != null && Selection.activeObject.GetType () == typeof(NodeCanvas))
-			{
-				string NodeCanvasPath = AssetDatabase.GetAssetPath (instanceID);
-				NodeEditorWindow.CreateEditor ();
-				EditorWindow.GetWindow<NodeEditorWindow> ().LoadNodeCanvas (NodeCanvasPath);
-				return true;
-			}
-			return false;
-		}
+            iconTexture = ResourceManager.LoadTexture(EditorGUIUtility.isProSkin ? "Textures/Icon_Dark.png" : "Textures/Icon_Light.png");
+            _editor.titleContent = new GUIContent("Node Editor", iconTexture);
+        }
 
-		public void OnDestroy () 
-		{
-			NodeEditor.ClientRepaints -= _editor.Repaint;
+        /// <summary>
+        /// Handle opening canvas when double-clicking asset
+        /// </summary>
+        [UnityEditor.Callbacks.OnOpenAsset(1)]
+        public static bool AutoOpenCanvas(int instanceID, int line)
+        {
+            if (Selection.activeObject != null && Selection.activeObject.GetType() == typeof(NodeCanvas))
+            {
+                string NodeCanvasPath = AssetDatabase.GetAssetPath(instanceID);
+                NodeEditorWindow.CreateEditor();
+                EditorWindow.GetWindow<NodeEditorWindow>().LoadNodeCanvas(NodeCanvasPath);
+                return true;
+            }
+            return false;
+        }
 
-	#if UNITY_EDITOR
-			// Remove callbacks
-			EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
-			EditorLoadingControl.justLeftPlayMode -= LoadCache;
-			EditorLoadingControl.justOpenedNewScene -= LoadCache;
+        public void OnDestroy()
+        {
+            NodeEditor.ClientRepaints -= _editor.Repaint;
 
-			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
-	#endif
-		}
+#if UNITY_EDITOR
+            // Remove callbacks
+            EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
+            EditorLoadingControl.justLeftPlayMode -= LoadCache;
+            EditorLoadingControl.justOpenedNewScene -= LoadCache;
+            SceneView.onSceneGUIDelegate -= this.OnSceneGUI;
+            NodeEditorCallbacks.OnAddNode -= SaveNewNode;
+#endif
+        }
 
-		// Following section is all about caching the last editor session
+        // Following section is all about caching the last editor session
 
-		private void OnEnable () 
-		{
-			tempSessionPath = Path.GetDirectoryName (AssetDatabase.GetAssetPath (MonoScript.FromScriptableObject (this))) + "/Resources";
-			LoadCache ();
+        private void OnEnable()
+        {
+            tempSessionPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this))) + "/Resources";
+            LoadCache();
 
-	#if UNITY_EDITOR
-			// This makes sure the Node Editor is reinitiated after the Playmode changed
-			EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
-			EditorLoadingControl.lateEnteredPlayMode += LoadCache;
+#if UNITY_EDITOR
+            // This makes sure the Node Editor is reinitiated after the Playmode changed
+            EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
+            EditorLoadingControl.lateEnteredPlayMode += LoadCache;
 
-			EditorLoadingControl.justLeftPlayMode -= LoadCache;
-			EditorLoadingControl.justLeftPlayMode += LoadCache;
+            EditorLoadingControl.justLeftPlayMode -= LoadCache;
+            EditorLoadingControl.justLeftPlayMode += LoadCache;
 
-			EditorLoadingControl.justOpenedNewScene -= LoadCache;
-			EditorLoadingControl.justOpenedNewScene += LoadCache;
+            EditorLoadingControl.justOpenedNewScene -= LoadCache;
+            EditorLoadingControl.justOpenedNewScene += LoadCache;
 
-			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
-			NodeEditorCallbacks.OnAddNode += SaveNewNode;
-	#endif
-		}
+            NodeEditorCallbacks.OnAddNode -= SaveNewNode;
+            NodeEditorCallbacks.OnAddNode += SaveNewNode;
 
-		#endregion
+            SceneView.onSceneGUIDelegate -= this.OnSceneGUI;
+            SceneView.onSceneGUIDelegate += this.OnSceneGUI;
+#endif
+        }
 
-		#region GUI
+        #endregion
 
-		private void OnGUI () 
-		{
-			// Initiation
-			NodeEditor.checkInit ();
-			if (NodeEditor.InitiationError) 
-			{
-				GUILayout.Label ("Node Editor Initiation failed! Check console for more information!");
-				return;
-			}
-			AssureEditor ();
-			AssureCanvas ();
+        #region GUI
 
-			// Specify the Canvas rect in the EditorState
-			mainEditorState.canvasRect = canvasWindowRect;
-			// If you want to use GetRect:
-//			Rect canvasRect = GUILayoutUtility.GetRect (600, 600);
-//			if (Event.current.type != EventType.Layout)
-//				mainEditorState.canvasRect = canvasRect;
+        private void OnGUI()
+        {
+            // Initiation
+            NodeEditor.checkInit();
+            if (NodeEditor.InitiationError)
+            {
+                GUILayout.Label("Node Editor Initiation failed! Check console for more information!");
+                return;
+            }
+            AssureEditor();
+            AssureCanvas();
 
-			// Perform drawing with error-handling
-			try
-			{
-				NodeEditor.DrawCanvas (mainNodeCanvas, mainEditorState);
-			}
-			catch (UnityException e)
-			{ // on exceptions in drawing flush the canvas to avoid locking the ui.
-				NewNodeCanvas ();
-				NodeEditor.ReInit (true);
-				Debug.LogError ("Unloaded Canvas due to exception when drawing!");
-				Debug.LogException (e);
-			}
+            // Specify the Canvas rect in the EditorState
+            mainEditorState.canvasRect = canvasWindowRect;
+            // If you want to use GetRect:
+            //			Rect canvasRect = GUILayoutUtility.GetRect (600, 600);
+            //			if (Event.current.type != EventType.Layout)
+            //				mainEditorState.canvasRect = canvasRect;
 
-			// Draw Side Window
-			sideWindowWidth = Math.Min (600, Math.Max (200, (int)(position.width / 5)));
-			NodeEditorGUI.StartNodeGUI ();
-			GUILayout.BeginArea (sideWindowRect, GUI.skin.box);
-			DrawSideWindow ();
-			GUILayout.EndArea ();
-			NodeEditorGUI.EndNodeGUI ();
-		}
+            // Perform drawing with error-handling
+            try
+            {
+                NodeEditor.DrawCanvas(mainNodeCanvas, mainEditorState);
+            }
+            catch (UnityException e)
+            { // on exceptions in drawing flush the canvas to avoid locking the ui.
+                NewNodeCanvas();
+                NodeEditor.ReInit(true);
+                Debug.LogError("Unloaded Canvas due to exception when drawing!");
+                Debug.LogException(e);
+            }
 
-		private void DrawSideWindow () 
-		{
-			GUILayout.Label (new GUIContent ("Node Editor (" + mainNodeCanvas.name + ")", "Opened Canvas path: " + openedCanvasPath), NodeEditorGUI.nodeLabelBold);
+            // Draw Side Window
+            sideWindowWidth = Math.Min(600, Math.Max(200, (int)(position.width / 5)));
+            NodeEditorGUI.StartNodeGUI();
+            GUILayout.BeginArea(sideWindowRect, GUI.skin.box);
+            DrawSideWindow();
+            GUILayout.EndArea();
+            NodeEditorGUI.EndNodeGUI();
+        }
 
-			if (GUILayout.Button (new GUIContent ("Save Canvas", "Saves the Canvas to a Canvas Save File in the Assets Folder")))
-			{
-				string path = EditorUtility.SaveFilePanelInProject ("Save Node Canvas", "Node Canvas", "asset", "", NodeEditor.editorPath + "Resources/Saves/");
-				if (!string.IsNullOrEmpty (path))
-					SaveNodeCanvas (path);
-			}
+#if UNITY_EDITOR
+        private void OnSceneGUI(SceneView sceneView)
+        {
+            DrawSceneGUI();
+        }
 
-			if (GUILayout.Button (new GUIContent ("Load Canvas", "Loads the Canvas from a Canvas Save File in the Assets Folder"))) 
-			{
-				string path = EditorUtility.OpenFilePanel ("Load Node Canvas", NodeEditor.editorPath + "Resources/Saves/", "asset");
-				if (!path.Contains (Application.dataPath)) 
-				{
-					if (!string.IsNullOrEmpty (path))
-						ShowNotification (new GUIContent ("You should select an asset inside your project folder!"));
-				}
-				else
-				{
-					path = path.Replace (Application.dataPath, "Assets");
-					LoadNodeCanvas (path);
-				}
-			}
+        /// <summary>
+        /// Calls OnSceneGUI in the selected node to make it possible to draw to the scene
+        /// </summary>
+        private void DrawSceneGUI()
+        {
+            if (mainEditorState.selectedNode != null)
+            {
+                mainEditorState.selectedNode.OnSceneGUI();
+            }
+            SceneView.lastActiveSceneView.Repaint();
+        }
+#endif
 
-			if (GUILayout.Button (new GUIContent ("New Canvas", "Loads an empty Canvas")))
-				NewNodeCanvas ();
+        private void DrawSideWindow()
+        {
+            GUILayout.Label(new GUIContent("Node Editor (" + mainNodeCanvas.name + ")", "Opened Canvas path: " + openedCanvasPath), NodeEditorGUI.nodeLabelBold);
 
-			if (GUILayout.Button (new GUIContent ("Recalculate All", "Initiates complete recalculate. Usually does not need to be triggered manually.")))
-				NodeEditor.RecalculateAll (mainNodeCanvas);
+            if (GUILayout.Button(new GUIContent("Save Canvas", "Saves the Canvas to a Canvas Save File in the Assets Folder")))
+            {
+                string path = EditorUtility.SaveFilePanelInProject("Save Node Canvas", "Node Canvas", "asset", "", NodeEditor.editorPath + "Resources/Saves/");
+                if (!string.IsNullOrEmpty(path))
+                    SaveNodeCanvas(path);
+            }
 
-			if (GUILayout.Button ("Force Re-Init"))
-				NodeEditor.ReInit (true);
+            if (GUILayout.Button(new GUIContent("Load Canvas", "Loads the Canvas from a Canvas Save File in the Assets Folder")))
+            {
+                string path = EditorUtility.OpenFilePanel("Load Node Canvas", NodeEditor.editorPath + "Resources/Saves/", "asset");
+                if (!path.Contains(Application.dataPath))
+                {
+                    if (!string.IsNullOrEmpty(path))
+                        ShowNotification(new GUIContent("You should select an asset inside your project folder!"));
+                }
+                else
+                {
+                    path = path.Replace(Application.dataPath, "Assets");
+                    LoadNodeCanvas(path);
+                }
+            }
 
-			NodeEditorGUI.knobSize = EditorGUILayout.IntSlider (new GUIContent ("Handle Size", "The size of the Node Input/Output handles"), NodeEditorGUI.knobSize, 12, 20);
-			mainEditorState.zoom = EditorGUILayout.Slider (new GUIContent ("Zoom", "Use the Mousewheel. Seriously."), mainEditorState.zoom, 0.6f, 2);
+            if (GUILayout.Button(new GUIContent("New Canvas", "Loads an empty Canvas")))
+                NewNodeCanvas();
+
+            if (GUILayout.Button(new GUIContent("Recalculate All", "Initiates complete recalculate. Usually does not need to be triggered manually.")))
+                NodeEditor.RecalculateAll(mainNodeCanvas);
+
+            if (GUILayout.Button("Force Re-Init"))
+                NodeEditor.ReInit(true);
+
+            NodeEditorGUI.knobSize = EditorGUILayout.IntSlider(new GUIContent("Handle Size", "The size of the Node Input/Output handles"), NodeEditorGUI.knobSize, 12, 20);
+            mainEditorState.zoom = EditorGUILayout.Slider(new GUIContent("Zoom", "Use the Mousewheel. Seriously."), mainEditorState.zoom, 0.6f, 2);
 
             if (mainEditorState.selectedNode != null)
                 if (Event.current.type != EventType.Ignore)
                     mainEditorState.selectedNode.DrawNodePropertyEditor();
         }
 
-		#endregion
+        #endregion
 
-		#region Cache
+        #region Cache
 
-		private void SaveNewNode (Node node) 
-		{
-			if (!mainNodeCanvas.nodes.Contains (node))
-				throw new UnityException ("Cache system: Writing new Node to save file failed as Node is not part of the Cache!");
-			string path = tempSessionPath + "/LastSession.asset";
-			if (AssetDatabase.GetAssetPath (mainNodeCanvas) != path)
-				throw new UnityException ("Cache system error: Current Canvas is not saved as the temporary cache!");
-			NodeEditorSaveManager.AddSubAsset (node, path);
-			foreach (NodeKnob knob in node.nodeKnobs)
-				NodeEditorSaveManager.AddSubAsset (knob, path);
+        private void SaveNewNode(Node node)
+        {
+            if (!mainNodeCanvas.nodes.Contains(node))
+                throw new UnityException("Cache system: Writing new Node to save file failed as Node is not part of the Cache!");
+            string path = tempSessionPath + "/LastSession.asset";
+            if (AssetDatabase.GetAssetPath(mainNodeCanvas) != path)
+                throw new UnityException("Cache system error: Current Canvas is not saved as the temporary cache!");
+            NodeEditorSaveManager.AddSubAsset(node, path);
+            foreach (NodeKnob knob in node.nodeKnobs)
+                NodeEditorSaveManager.AddSubAsset(knob, path);
 
-			AssetDatabase.SaveAssets ();
-			AssetDatabase.Refresh ();
-		}
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
 
-		private void SaveCache () 
-		{
-			string canvasName = mainNodeCanvas.name;
-			EditorPrefs.SetString ("NodeEditorLastSession", canvasName);
-			NodeEditorSaveManager.SaveNodeCanvas (tempSessionPath + "/LastSession.asset", false, mainNodeCanvas, mainEditorState);
-			mainNodeCanvas.name = canvasName;
+        private void SaveCache()
+        {
+            string canvasName = mainNodeCanvas.name;
+            EditorPrefs.SetString("NodeEditorLastSession", canvasName);
+            NodeEditorSaveManager.SaveNodeCanvas(tempSessionPath + "/LastSession.asset", false, mainNodeCanvas, mainEditorState);
+            mainNodeCanvas.name = canvasName;
 
-			AssetDatabase.SaveAssets ();
-			AssetDatabase.Refresh ();
-		}
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
 
-		private void LoadCache () 
-		{
-			string lastSessionName = EditorPrefs.GetString ("NodeEditorLastSession");
-			string path = tempSessionPath + "/LastSession.asset";
-			mainNodeCanvas = NodeEditorSaveManager.LoadNodeCanvas (path, false);
-			if (mainNodeCanvas == null)
-				NewNodeCanvas ();
-			else 
-			{
-				mainNodeCanvas.name = lastSessionName;
-				List<NodeEditorState> editorStates = NodeEditorSaveManager.LoadEditorStates (path, false);
-				if (editorStates == null || editorStates.Count == 0 || (mainEditorState = editorStates.Find (x => x.name == "MainEditorState")) == null )
-				{ // New NodeEditorState
-					mainEditorState = CreateInstance<NodeEditorState> ();
-					mainEditorState.canvas = mainNodeCanvas;
-					mainEditorState.name = "MainEditorState";
-					NodeEditorSaveManager.AddSubAsset (mainEditorState, path);
-					AssetDatabase.SaveAssets ();
-					AssetDatabase.Refresh ();
-				}
-			}
-		}
+        private void LoadCache()
+        {
+            string lastSessionName = EditorPrefs.GetString("NodeEditorLastSession");
+            string path = tempSessionPath + "/LastSession.asset";
+            mainNodeCanvas = NodeEditorSaveManager.LoadNodeCanvas(path, false);
+            if (mainNodeCanvas == null)
+                NewNodeCanvas();
+            else
+            {
+                mainNodeCanvas.name = lastSessionName;
+                List<NodeEditorState> editorStates = NodeEditorSaveManager.LoadEditorStates(path, false);
+                if (editorStates == null || editorStates.Count == 0 || (mainEditorState = editorStates.Find(x => x.name == "MainEditorState")) == null)
+                { // New NodeEditorState
+                    mainEditorState = CreateInstance<NodeEditorState>();
+                    mainEditorState.canvas = mainNodeCanvas;
+                    mainEditorState.name = "MainEditorState";
+                    NodeEditorSaveManager.AddSubAsset(mainEditorState, path);
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
+                }
+            }
+        }
 
-		private void DeleteCache () 
-		{
-			string lastSession = EditorPrefs.GetString ("NodeEditorLastSession");
-			if (!String.IsNullOrEmpty (lastSession))
-			{
-				AssetDatabase.DeleteAsset (tempSessionPath + "/" + lastSession);
-				AssetDatabase.Refresh ();
-			}
-			EditorPrefs.DeleteKey ("NodeEditorLastSession");
-		}
+        private void DeleteCache()
+        {
+            string lastSession = EditorPrefs.GetString("NodeEditorLastSession");
+            if (!String.IsNullOrEmpty(lastSession))
+            {
+                AssetDatabase.DeleteAsset(tempSessionPath + "/" + lastSession);
+                AssetDatabase.Refresh();
+            }
+            EditorPrefs.DeleteKey("NodeEditorLastSession");
+        }
 
-		#endregion
+        #endregion
 
-		#region Save/Load
-		
-		/// <summary>
-		/// Saves the mainNodeCanvas and it's associated mainEditorState as an asset at path
-		/// </summary>
-		public void SaveNodeCanvas (string path) 
-		{
-			NodeEditorSaveManager.SaveNodeCanvas (path, true, mainNodeCanvas, mainEditorState);
-			Repaint ();
-		}
-		
-		/// <summary>
-		/// Loads the mainNodeCanvas and it's associated mainEditorState from an asset at path
-		/// </summary>
-		public void LoadNodeCanvas (string path) 
-		{
-			// Load the NodeCanvas
-			mainNodeCanvas = NodeEditorSaveManager.LoadNodeCanvas (path, true);
-			if (mainNodeCanvas == null) 
-			{
-				Debug.Log ("Error loading NodeCanvas from '" + path + "'!");
-				NewNodeCanvas ();
-				return;
-			}
-			
-			// Load the associated MainEditorState
-			List<NodeEditorState> editorStates = NodeEditorSaveManager.LoadEditorStates (path, true);
-			if (editorStates.Count == 0) 
-			{
-				mainEditorState = ScriptableObject.CreateInstance<NodeEditorState> ();
-				Debug.LogError ("The save file '" + path + "' did not contain an associated NodeEditorState!");
-			}
-			else 
-			{
-				mainEditorState = editorStates.Find (x => x.name == "MainEditorState");
-				if (mainEditorState == null) mainEditorState = editorStates[0];
-			}
-			mainEditorState.canvas = mainNodeCanvas;
+        #region Save/Load
 
-			openedCanvasPath = path;
-			NodeEditor.RecalculateAll (mainNodeCanvas);
-			SaveCache ();
-			Repaint ();
-		}
+        /// <summary>
+        /// Saves the mainNodeCanvas and it's associated mainEditorState as an asset at path
+        /// </summary>
+        public void SaveNodeCanvas(string path)
+        {
+            NodeEditorSaveManager.SaveNodeCanvas(path, true, mainNodeCanvas, mainEditorState);
+            Repaint();
+        }
 
-		/// <summary>
-		/// Creates and opens a new empty node canvas
-		/// </summary>
-		public void NewNodeCanvas () 
-		{
-			// New NodeCanvas
-			mainNodeCanvas = CreateInstance<NodeCanvas> ();
-			mainNodeCanvas.name = "New Canvas";
-			// New NodeEditorState
-			mainEditorState = CreateInstance<NodeEditorState> ();
-			mainEditorState.canvas = mainNodeCanvas;
-			mainEditorState.name = "MainEditorState";
+        /// <summary>
+        /// Loads the mainNodeCanvas and it's associated mainEditorState from an asset at path
+        /// </summary>
+        public void LoadNodeCanvas(string path)
+        {
+            // Load the NodeCanvas
+            mainNodeCanvas = NodeEditorSaveManager.LoadNodeCanvas(path, true);
+            if (mainNodeCanvas == null)
+            {
+                Debug.Log("Error loading NodeCanvas from '" + path + "'!");
+                NewNodeCanvas();
+                return;
+            }
 
-			openedCanvasPath = "";
-			SaveCache ();
-		}
-		
-		#endregion
-	}
+            // Load the associated MainEditorState
+            List<NodeEditorState> editorStates = NodeEditorSaveManager.LoadEditorStates(path, true);
+            if (editorStates.Count == 0)
+            {
+                mainEditorState = ScriptableObject.CreateInstance<NodeEditorState>();
+                Debug.LogError("The save file '" + path + "' did not contain an associated NodeEditorState!");
+            }
+            else
+            {
+                mainEditorState = editorStates.Find(x => x.name == "MainEditorState");
+                if (mainEditorState == null) mainEditorState = editorStates[0];
+            }
+            mainEditorState.canvas = mainNodeCanvas;
+
+            openedCanvasPath = path;
+            NodeEditor.RecalculateAll(mainNodeCanvas);
+            SaveCache();
+            Repaint();
+        }
+
+        /// <summary>
+        /// Creates and opens a new empty node canvas
+        /// </summary>
+        public void NewNodeCanvas()
+        {
+            // New NodeCanvas
+            mainNodeCanvas = CreateInstance<NodeCanvas>();
+            mainNodeCanvas.name = "New Canvas";
+            // New NodeEditorState
+            mainEditorState = CreateInstance<NodeEditorState>();
+            mainEditorState.canvas = mainNodeCanvas;
+            mainEditorState.name = "MainEditorState";
+
+            openedCanvasPath = "";
+            SaveCache();
+        }
+
+        #endregion
+    }
 }

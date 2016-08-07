@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -250,14 +250,23 @@ namespace NodeEditorFramework
 			}
 		}
 
-		#endregion
-		
-		#region Node Calculation Utility
-		
-		/// <summary>
-		/// Checks if there are no unassigned and no null-value inputs.
-		/// </summary>
-		protected internal bool allInputsReady ()
+        /// <summary>
+        /// Override this to draw to the scene.
+        /// </summary>
+#if UNITY_EDITOR
+        public virtual void OnSceneGUI()
+        {
+
+        }
+#endif
+        #endregion
+
+        #region Node Calculation Utility
+
+        /// <summary>
+        /// Checks if there are no unassigned and no null-value inputs.
+        /// </summary>
+        protected internal bool allInputsReady ()
 		{
 			foreach (NodeInput input in Inputs)
 			{
