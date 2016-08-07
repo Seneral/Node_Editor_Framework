@@ -1,7 +1,8 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
+using UnityEditor;
 
 [System.Serializable]
 [Node (false, "Standard/Float/Input")]
@@ -32,8 +33,8 @@ public class InputNode : Node
 		if (GUI.changed)
 			NodeEditor.RecalculateFrom (this);
 	}
-	
-	public override bool Calculate () 
+
+    public override bool Calculate () 
 	{
 		Outputs[0].SetValue<float> (value);
 		return true;
