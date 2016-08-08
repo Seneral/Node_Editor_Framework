@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -204,16 +204,23 @@ namespace NodeEditorFramework
 			
 		}
 
-		#endregion
+        #endregion
 
-		#endregion
+        #endregion
 
-		#region Drawing
+        #region Drawing
 
-		/// <summary>
-		/// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
-		/// </summary>
-		protected internal virtual void DrawNode () 
+#if UNITY_EDITOR
+        public virtual void OnSceneGUI()
+	    {
+	        
+	    }
+#endif
+
+        /// <summary>
+        /// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
+        /// </summary>
+        protected internal virtual void DrawNode () 
 		{
 			// TODO: Node Editor Feature: Custom Windowing System
 			// Create a rect that is adjusted to the editor zoom

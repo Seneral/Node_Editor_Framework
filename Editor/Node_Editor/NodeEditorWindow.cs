@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using NodeEditorFramework.Utilities;
@@ -78,13 +78,16 @@ namespace NodeEditorFramework.Standard
 			EditorLoadingControl.justOpenedNewScene -= NormalReInit;
 			EditorLoadingControl.justOpenedNewScene += NormalReInit;
 
-			// Setup Cache
-			tempSessionPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this)));
+            SceneView.onSceneGUIDelegate -= this.OnSceneGUI;
+            SceneView.onSceneGUIDelegate += this.OnSceneGUI;
+
+            // Setup Cache
+            tempSessionPath = Path.GetDirectoryName(AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this)));
 			SetupCacheEvents();
 			LoadCache();
 		}
 
-		private void NormalReInit()
+	    private void NormalReInit()
 		{
 			NodeEditor.ReInit(false);
 		}
@@ -101,11 +104,25 @@ namespace NodeEditorFramework.Standard
 			ClearCacheEvents();
 		}
 
-		#endregion
+        #endregion
 
-		#region GUI
+        #region GUI
 
-		private void OnGUI()
+        private void OnSceneGUI(SceneView sceneview)
+        {
+            DrawSceneGUI();
+        }
+
+	    private void DrawSceneGUI()
+	    {
+	        if (mainEditorState.selectedNode != null)
+	        {
+	            mainEditorState.selectedNode.OnSceneGUI();
+	        }
+            SceneView.lastActiveSceneView.Repaint();
+        }
+
+        private void OnGUI()
 		{            
 			// Initiation
 			NodeEditor.checkInit(true);
