@@ -138,7 +138,7 @@ namespace NodeEditorFramework
 			connection = output;
 			output.connections.Add (this);
 
-			NodeEditor.RecalculateFrom (body);
+			NodeEditor.Calculator.RecalculateFrom (body);
 			output.body.OnAddOutputConnection (output);
 			body.OnAddInputConnection (this);
 			NodeEditorCallbacks.IssueOnAddConnection (this);
@@ -156,7 +156,7 @@ namespace NodeEditorFramework
 			connection.connections.Remove (this);
 			connection = null;
 
-			NodeEditor.RecalculateFrom (body);
+			NodeEditor.Calculator.RecalculateFrom (body);
 		}
 
 
