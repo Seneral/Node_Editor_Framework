@@ -438,6 +438,17 @@ namespace NodeEditorFramework
 			priority = 50;
 		}
 
+		/// <summary>
+		/// Handle the specified hotkey with modifiers limited to the specified eventType with specified priority
+		/// </summary>
+		public HotkeyAttribute (KeyCode handledKey, EventModifiers eventModifiers, EventType LimitEventType, int priorityValue) 
+		{
+			handledHotKey = handledKey;
+			modifiers = eventModifiers;
+			limitingEventType = LimitEventType;
+			priority = priorityValue;
+		}
+
 		internal static bool AssureValidity (MethodInfo method, HotkeyAttribute attr) 
 		{
 			if (!method.IsGenericMethod && !method.IsGenericMethodDefinition && (method.ReturnType == null || method.ReturnType == typeof(void)))

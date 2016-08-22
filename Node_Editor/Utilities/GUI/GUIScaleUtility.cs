@@ -98,18 +98,6 @@ namespace NodeEditorFramework.Utilities
 
 		#region Scale Area
 
-		//		public static Vector2 secondaryGroupOffset;
-		//
-		//		public static Vector2 primaryScale;
-		//		public static Vector2 primaryZoomPanAdjust;
-		//		public static Rect primaryInitialRect;
-		//		public static Rect primaryScaledRect;
-		//
-		//		public static Vector2 secondaryScale;
-		//		public static Vector2 secondaryZoomPanAdjust;
-		//		public static Rect secondaryInitialRect;
-		//		public static Rect secondaryScaledRect;
-
 		public static Vector2 getCurrentScale { get { return new Vector2 (1/GUI.matrix.GetColumn (0).magnitude, 1/GUI.matrix.GetColumn (1).magnitude); } } 
 
 		/// <summary>
@@ -135,25 +123,7 @@ namespace NodeEditorFramework.Utilities
 				screenRect = GUIScaleUtility.GUIToScaledSpace (rect);
 			}
 
-//			Vector2 GUIScale = getCurrentScale;
-
 			rect = Scale (screenRect, screenRect.position + zoomPivot, new Vector2 (zoom, zoom));
-
-//			bool primary = adjustedGUILayout.Count == 0;
-//			if (!primary) 
-//			{
-//				rect.position += secondaryGroupOffset;
-//
-//				secondaryScale = new Vector2 (zoom, zoom);
-//				secondaryInitialRect = screenRect;
-//				secondaryScaledRect = rect;
-//			}
-//			else 
-//			{
-//				primaryScale = new Vector2 (zoom, zoom);
-//				primaryInitialRect = screenRect;
-//				primaryScaledRect = rect;
-//			}
 
 			// Now continue drawing using the new clipping group
 			GUI.BeginGroup (rect);
@@ -179,15 +149,6 @@ namespace NodeEditorFramework.Utilities
 
 			// Scale GUI.matrix. After that we have the correct clipping group again.
 			GUIUtility.ScaleAroundPivot (new Vector2 (1/zoom, 1/zoom), zoomPosAdjust);
-
-//			if (!primary) 
-//			{
-//				secondaryZoomPanAdjust = zoomPosAdjust;
-//			}
-//			else 
-//			{
-//				primaryZoomPanAdjust = zoomPosAdjust;
-//			}
 
 			return zoomPosAdjust;
 		}
@@ -430,6 +391,7 @@ namespace NodeEditorFramework.Utilities
 			#endif
 			return guiPosition + getTopRectScreenSpace.position;
 		}
+
 		/// <summary>
 		/// Transforms the rect to screen space.
 		/// You can use GUIToScaledSpace when you want to transform an old rect to the new space aquired with BeginNoClip or MoveClipsUp (slower, try to call this function before any of these two)!

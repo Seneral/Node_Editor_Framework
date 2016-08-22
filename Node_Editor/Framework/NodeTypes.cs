@@ -31,11 +31,9 @@ namespace NodeEditorFramework
 					NodeAttribute attr = nodeAttributes[0] as NodeAttribute;
 					if(attr == null || !attr.hide)
 					{
-						Node node = ScriptableObject.CreateInstance(type.Name) as Node;
-						// Create a 'raw' instance (not setup using the appropriate Create function)
-						node = node.Create(Vector2.zero);
-						// From that, call the appropriate Create Method to init the previously 'raw' instance
-						nodes.Add(node, new NodeData(attr == null ? node.name : attr.contextText, attr.typeOfNodeCanvas));
+						Node node = ScriptableObject.CreateInstance (type.Name) as Node; // Create a 'raw' instance (not setup using the appropriate Create function)
+						node = node.Create (Vector2.zero); // From that, call the appropriate Create Method to init the previously 'raw' instance
+						nodes.Add (node, new NodeData (attr == null? node.name : attr.contextText, attr.limitToCanvasTypes));
 					}
 				}
 			}
@@ -99,12 +97,12 @@ namespace NodeEditorFramework
 	public struct NodeData 
 	{
 		public string adress;
-		public Type[] typeOfNodeCanvas;
+		public Type[] limitToCanvasTypes;
 
-		public NodeData (string name, Type[] types) 
+		public NodeData (string name, Type[] limitedCanvasTypes)
 		{
 			adress = name;
-			typeOfNodeCanvas = types;
+			limitToCanvasTypes = limitedCanvasTypes;
 		}
 	}
 
@@ -115,13 +113,20 @@ namespace NodeEditorFramework
 	{
 		public bool hide { get; private set; }
 		public string contextText { get; private set; }
-		public Type[] typeOfNodeCanvas = null;
+		public Type[] limitToCanvasTypes { get; private set; }
 
-		public NodeAttribute (bool HideNode, string ReplacedContextText, Type[] nodeCanvasTypes = null) 
+		public NodeAttribute (bool HideNode, string ReplacedContextText)
 		{
 			hide = HideNode;
 			contextText = ReplacedContextText;
-			typeOfNodeCanvas = nodeCanvasTypes ?? new Type[] {typeof(NodeCanvas)};
+			limitToCanvasTypes = null;
+		}
+
+		public NodeAttribute (bool HideNode, string ReplacedContextText, Type[] limitedCanvasTypes)
+		{
+			hide = HideNode;
+			contextText = ReplacedContextText;
+			limitToCanvasTypes = limitedCanvasTypes;
 		}
 	}
 }

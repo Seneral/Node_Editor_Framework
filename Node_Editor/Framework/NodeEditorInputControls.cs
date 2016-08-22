@@ -4,7 +4,6 @@ using System.Linq;
 using System.Collections.Generic;
 using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
-using System.Reflection;
 
 namespace NodeEditorFramework 
 {
@@ -20,20 +19,10 @@ namespace NodeEditorFramework
 		{ // Show all nodes, and if a connection is drawn, only compatible nodes to auto-connect
 			NodeEditorState state = inputInfo.editorState;
 			List<Node> displayedNodes = state.connectOutput != null? NodeTypes.getCompatibleNodes (state.connectOutput) : NodeTypes.nodes.Keys.ToList ();
-			DeCafList(ref displayedNodes, state.canvas);
 			foreach (Node compatibleNode in displayedNodes)
-				canvasContextMenu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[compatibleNode].adress), false, CreateNodeCallback, new NodeEditorInputInfo (compatibleNode.GetID, state));
-		}
-
-		private static void DeCafList(ref List<Node> displayedNodes, NodeCanvas canvas)
-		{
-			for (int i = 0; i < displayedNodes.Count; i++)
 			{
-				if (!NodeTypes.nodes[displayedNodes[i]].typeOfNodeCanvas.Contains(canvas.GetType()))
-				{
-					displayedNodes.RemoveAt(i);
-					i--;
-				}
+				if (NodeCanvasManager.CheckCanvasCompability (compatibleNode, inputInfo.editorState.canvas.GetType ()))
+					canvasContextMenu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[compatibleNode].adress), false, CreateNodeCallback, new NodeEditorInputInfo (compatibleNode.GetID, state));
 			}
 		}
 
@@ -93,14 +82,7 @@ namespace NodeEditorFramework
 			if (state.selectedNode != null)
 			{ 
 				Vector2 pos = state.selectedNode.rect.position;
-
-				int shiftAmount = 0;
-
-				// Increase the distance moved to 10 if shift is being held.
-				if (inputInfo.inputEvent.shift)
-					shiftAmount = 10;
-				else
-					shiftAmount = 5;
+				int shiftAmount = inputInfo.inputEvent.shift? 50 : 10;
 
 				if (inputInfo.inputEvent.keyCode == KeyCode.RightArrow)
 					pos = new Vector2(pos.x + shiftAmount, pos.y);

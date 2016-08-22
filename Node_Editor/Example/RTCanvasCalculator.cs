@@ -6,19 +6,12 @@ using NodeEditorFramework;
 
 namespace NodeEditorFramework.Standard
 {
+	/// <summary>
+	/// Example of accessing and using the canvas at runtime 
+	/// </summary>
 	public class RTCanvasCalculator : MonoBehaviour 
 	{
-		public string canvasPath;
-
-		/// <summary>
-		/// Gets the working canvas that is internally used, it is not the saved one the path points to
-		/// </summary>
-		public NodeCanvas canvas { get; private set; }
-
-		private void Start () 
-		{
-			LoadCanvas (canvasPath);
-		}
+		public NodeCanvas canvas;
 
 		/// <summary>
 		/// Assures the canvas is loaded
@@ -26,26 +19,7 @@ namespace NodeEditorFramework.Standard
 		public void AssureCanvas () 
 		{
 			if (canvas == null)
-			{ // Try to load canvas
-				LoadCanvas (canvasPath);
-				if (canvas == null)
-					throw new UnityException ("No canvas specified to calculate on " + name + "!");
-			}
-		}
-
-		/// <summary>
-		/// Loads the canvas at path as a copy
-		/// </summary>
-		public void LoadCanvas (string path) 
-		{
-			canvasPath = path;
-			if (!string.IsNullOrEmpty (canvasPath)) 
-			{
-				canvas = NodeEditorSaveManager.LoadNodeCanvas (canvasPath, true);
-				CalculateCanvas ();
-			}
-			else
-				canvas = null;
+				throw new UnityException ("No canvas specified to calculate on " + name + "!");
 		}
 
 		/// <summary>

@@ -31,7 +31,7 @@ namespace NodeEditorFramework
 				sceneSaveHolder = GameObject.Find ("NodeEditor_SceneSaveHolder");
 				if (sceneSaveHolder == null)
 					sceneSaveHolder = new GameObject ("NodeEditor_SceneSaveHolder");
-				sceneSaveHolder.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+				sceneSaveHolder.hideFlags = HideFlags.None;//HideFlags.HideInHierarchy | HideFlags.HideInInspector;
 			}
 		}
 
@@ -64,32 +64,36 @@ namespace NodeEditorFramework
 				Debug.LogError ("Cannot save Canvas to scene: No save name specified!");
 				return;
 			}
-			
+
+			if (!nodeCanvas.livesInScene
 		#if UNITY_EDITOR // Make sure the canvas has no reference to an asset
-			if (!createWorkingCopy && UnityEditor.AssetDatabase.Contains (nodeCanvas)) 
-			{
-				Debug.LogWarning ("Forced to create working copy of '" + saveName + "' when saving to scene because it already exists as an asset!");
+			|| UnityEditor.AssetDatabase.Contains (nodeCanvas)
+		#endif
+			) {
+				//Debug.LogWarning ("Forced to create working copy of '" + saveName + "' when saving to scene because it already exists as an asset!");
 				nodeCanvas = CreateWorkingCopy (nodeCanvas, true);
 			}
-		#endif
+			else
+				nodeCanvas.Validate ();
+
 			nodeCanvas.livesInScene = true;
 			nodeCanvas.name = saveName;
 
-			// Get the saveHolder and the find the existing stored save or create a new one
+		#if UNITY_EDITOR
+			nodeCanvas.BeforeSavingCanvas();
+		#endif
+
+			NodeCanvas savedCanvas = nodeCanvas;
+			// Preprocess canvas
+			ProcessCanvas (ref savedCanvas, createWorkingCopy);
+
+			// Get the saveHolder and store the canvas
 			NodeCanvasSceneSave sceneSave = FindSceneSave (saveName);
 			if (sceneSave == null)
 				sceneSave = sceneSaveHolder.AddComponent<NodeCanvasSceneSave> ();
-			
-			// Store the canvas and editor states or optionally their working copies
-			sceneSave.savedNodeCanvas = nodeCanvas;
-			if (createWorkingCopy)
-			{
-				sceneSave.savedNodeCanvas = CreateWorkingCopy (sceneSave.savedNodeCanvas, true);
-				Compress (ref sceneSave.savedNodeCanvas);
-			}
+			sceneSave.savedNodeCanvas = savedCanvas;
 
 		#if UNITY_EDITOR
-			nodeCanvas.BeforeSavingCanvas();
 			UnityEditor.EditorUtility.SetDirty (sceneSaveHolder);
 		#endif
 		}
@@ -114,9 +118,7 @@ namespace NodeEditorFramework
 			savedCanvas.livesInScene = true;
 
 			// Postprocess the loaded canvas
-			if (createWorkingCopy) // Create working copies if specified
-				savedCanvas = CreateWorkingCopy (savedCanvas, true);
-			Uncompress (ref savedCanvas);
+			ProcessCanvas (ref savedCanvas, createWorkingCopy);
 
 		#if UNITY_EDITOR
 			UnityEditor.EditorUtility.SetDirty (sceneSaveHolder);
@@ -137,7 +139,7 @@ namespace NodeEditorFramework
 		#if !UNITY_EDITOR
 			throw new System.NotImplementedException ();
 		#endif
-			
+
 			if (string.IsNullOrEmpty (path)) throw new UnityException ("Cannot save NodeCanvas: No spath specified to save the NodeCanvas " + (nodeCanvas != null? nodeCanvas.name : "") + " to!");
 			if (nodeCanvas == null) throw new UnityException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path " + path + " is null!");
 			if (nodeCanvas.livesInScene)
@@ -146,16 +148,12 @@ namespace NodeEditorFramework
 			if (!createWorkingCopy && UnityEditor.AssetDatabase.Contains (nodeCanvas) && UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas) != path) { Debug.LogError ("Trying to create a duplicate save file for '" + nodeCanvas.name + "'! Forcing to create a working copy!"); createWorkingCopy = true; }
 		#endif
 
-			nodeCanvas.livesInScene = false;
-			nodeCanvas.Validate ();
-
 		#if UNITY_EDITOR
+			nodeCanvas.BeforeSavingCanvas();
+
 			// Preprocess the canvas
-			if (createWorkingCopy)
-			{
-				nodeCanvas = CreateWorkingCopy (nodeCanvas, true);
-				Compress (ref nodeCanvas);
-			}
+			ProcessCanvas (ref nodeCanvas, createWorkingCopy);
+			nodeCanvas.livesInScene = false;
 
 			// Write canvas and editorStates
 			UnityEditor.AssetDatabase.CreateAsset (nodeCanvas, path);
@@ -172,8 +170,6 @@ namespace NodeEditorFramework
 					AddSubAssets (knob.GetScriptableObjects (), knob);
 				}
 			}
-
-			nodeCanvas.BeforeSavingCanvas();
 
 			UnityEditor.AssetDatabase.SaveAssets ();
 			UnityEditor.AssetDatabase.Refresh ();
@@ -203,11 +199,7 @@ namespace NodeEditorFramework
 		#endif
 
 			// Postprocess the loaded canvas
-			if (createWorkingCopy)
-				nodeCanvas = CreateWorkingCopy (nodeCanvas, true);
-			else
-				nodeCanvas.Validate ();
-			Uncompress (ref nodeCanvas);
+			ProcessCanvas (ref nodeCanvas, createWorkingCopy);
 
 		#if UNITY_EDITOR
 			UnityEditor.AssetDatabase.Refresh ();
@@ -253,6 +245,18 @@ namespace NodeEditorFramework
 			}
 		}
 
+		/// <summary>
+		/// Applies a general process on the canvas for loading/saving operations
+		/// </summary>
+		private static void ProcessCanvas (ref NodeCanvas canvas, bool workingCopy) 
+		{
+			//Uncompress (ref canvas);
+			if (workingCopy)
+				canvas = CreateWorkingCopy (canvas, true);
+			else
+				canvas.Validate ();
+		}
+
 		#endif
 
 		#endregion
@@ -261,40 +265,38 @@ namespace NodeEditorFramework
 
 		#region Compression
 
+
 		/// <summary>
 		/// Compresses the nodeCanvas, meaning it will remove duplicate references that are only for convenience
 		/// </summary>
-		public static void Compress (ref NodeCanvas nodeCanvas)
+		/*public static void Compress (ref NodeCanvas nodeCanvas)
 		{
-			//for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
-			//{
-			//	Node node = nodeCanvas.nodes[nodeCnt];
-			//	node.Inputs = new List<NodeInput> ();
-			//	node.Outputs = new List<NodeOutput> ();
-			//}
-		}
+			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
+			{
+				Node node = nodeCanvas.nodes[nodeCnt];
+				node.Inputs = new List<NodeInput> ();
+				node.Outputs = new List<NodeOutput> ();
+			}
+		}*/
+
 
 		/// <summary>
 		/// Uncompresses the nodeCanvas, meaning it will restore duplicate references for convenience
 		/// </summary>
 		public static void Uncompress (ref NodeCanvas nodeCanvas)
 		{
-			//For Backward Compatibility of Old Canvas
-			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++)
-			{                
+			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
+			{
 				Node node = nodeCanvas.nodes[nodeCnt];
-				if((node.Inputs == null || node.Inputs.Count == 0) || (node.Outputs == null || node.Outputs.Count == 0))
+				node.Inputs = new List<NodeInput> ();
+				node.Outputs = new List<NodeOutput> ();
+				for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++) 
 				{
-					node.Inputs = new List<NodeInput>();
-					node.Outputs = new List<NodeOutput>();
-					for(int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++)
-					{
-						NodeKnob knob = node.nodeKnobs[knobCnt];
-						if(knob is NodeInput)
-							node.Inputs.Add(knob as NodeInput);
-						else if(knob is NodeOutput)
-							node.Outputs.Add(knob as NodeOutput);
-					}
+					NodeKnob knob = node.nodeKnobs[knobCnt];
+					if (knob is NodeInput)
+						node.Inputs.Add (knob as NodeInput);
+					else if (knob is NodeOutput) 
+						node.Outputs.Add (knob as NodeOutput);
 				}
 			}
 		}
@@ -330,7 +332,6 @@ namespace NodeEditorFramework
 					AddClonedSO (allSOs, clonedSOs, knob);
 					AddClonedSOs (allSOs, clonedSOs, knob.GetScriptableObjects ());
 				}
-
 			}
 
 			// Replace every reference to any of the initial SOs of the first list with the respective clones of the second list
@@ -341,25 +342,20 @@ namespace NodeEditorFramework
 				Node clonedNode = nodeCanvas.nodes[nodeCnt] = ReplaceSO (allSOs, clonedSOs, node);
 				clonedNode.CopyScriptableObjects ((ScriptableObject so) => ReplaceSO (allSOs, clonedSOs, so));
 
-				// We're going to restore these from NodeKnobs if desired (!compressed)
-				//clonedNode.Inputs = new List<NodeInput> ();
-				//clonedNode.Outputs = new List<NodeOutput> ();
+				// We're going to restore these from NodeKnobs, no need to Replace muliple times
+				clonedNode.Inputs = new List<NodeInput> ();
+				clonedNode.Outputs = new List<NodeOutput> ();
 				for (int knobCnt = 0; knobCnt < clonedNode.nodeKnobs.Count; knobCnt++) 
 				{ // Clone generic NodeKnobs
 					NodeKnob knob = clonedNode.nodeKnobs[knobCnt] = ReplaceSO (allSOs, clonedSOs, clonedNode.nodeKnobs[knobCnt]);
 					knob.body = clonedNode;
 					// Replace additional scriptableObjects in the NodeKnob
 					knob.CopyScriptableObjects ((ScriptableObject so) => ReplaceSO (allSOs, clonedSOs, so));
-				}
-				for (int knobCnt = 0; knobCnt < clonedNode.Inputs.Count; knobCnt++)
-				{ // Clone generic NodeKnobs
-					NodeInput knob = clonedNode.Inputs[knobCnt] = ReplaceSO(allSOs, clonedSOs, clonedNode.Inputs[knobCnt]);
-					knob.body = clonedNode;
-				}
-				for (int knobCnt = 0; knobCnt < clonedNode.Outputs.Count; knobCnt++)
-				{ // Clone generic NodeKnobs
-					NodeOutput knob = clonedNode.Outputs[knobCnt] = ReplaceSO(allSOs, clonedSOs, clonedNode.Outputs[knobCnt]);
-					knob.body = clonedNode;
+					// Add it into Inputs/Outputs again
+					if (knob is NodeInput)
+						clonedNode.Inputs.Add (knob as NodeInput);
+					else if (knob is NodeOutput) 
+						clonedNode.Outputs.Add (knob as NodeOutput);
 				}
 			}
 
