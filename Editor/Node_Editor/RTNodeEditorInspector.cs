@@ -5,14 +5,14 @@ using NodeEditorFramework;
 
 namespace NodeEditorFramework.Standard
 {
-	[CustomEditor (typeof(RuntimeNodeEditor))]
-	public class RTNE_InspectorGUI : Editor
+	[CustomEditor (typeof(RTNodeEditor))]
+	public class RTNodeEditorInspector : Editor
 	{
-		public RuntimeNodeEditor RTNE;
-
+		public RTNodeEditor RTNE;
+		
 		public void OnEnable () 
 		{
-			RTNE = (RuntimeNodeEditor)target;
+			RTNE = (RTNodeEditor)target;
 		}
 
 		public override void OnInspectorGUI () 

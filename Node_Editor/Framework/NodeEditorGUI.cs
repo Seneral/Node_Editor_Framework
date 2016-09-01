@@ -29,7 +29,7 @@ namespace NodeEditorFramework
 		public static GUIStyle nodeBox;
 		public static GUIStyle nodeBoxBold;
 		
-		public static bool Init (bool GUIFunction) 
+		public static bool Init ()
 		{
 			// Textures
 			Background = ResourceManager.LoadTexture ("Textures/background.png");
@@ -40,8 +40,6 @@ namespace NodeEditorFramework
 			
 			if (!Background || !AALineTex || !GUIBox || !GUIButton)
 				return false;
-			if (!GUIFunction)
-				return true;
 
 			// Skin & Styles
 			nodeSkin = Object.Instantiate<GUISkin> (GUI.skin);
@@ -74,20 +72,18 @@ namespace NodeEditorFramework
 
 		public static void StartNodeGUI () 
 		{
-			if (GUI.skin != defaultSkin)
-			{
-				if (nodeSkin == null)
-					Init (true);
+			NodeEditor.checkInit(true);
+
+			defaultSkin = GUI.skin;
+			if (nodeSkin != null)
 				GUI.skin = nodeSkin;
-			}
 			OverlayGUI.StartOverlayGUI ();
 		}
 
 		public static void EndNodeGUI () 
 		{
 			OverlayGUI.EndOverlayGUI ();
-			if (GUI.skin == defaultSkin)
-				GUI.skin = defaultSkin;
+			GUI.skin = defaultSkin;
 		}
 
 		#region Connection Drawing

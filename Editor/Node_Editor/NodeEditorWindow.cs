@@ -39,7 +39,7 @@ namespace NodeEditorFramework.Standard
 		{
 			_editor = GetWindow<NodeEditorWindow>();
 			_editor.minSize = new Vector2(800, 600);
-			NodeEditor.initiated = NodeEditor.InitiationError = false;
+			NodeEditor.ReInit (false);
 
 			Texture iconTexture = ResourceManager.LoadTexture (EditorGUIUtility.isProSkin? "Textures/Icon_Dark.png" : "Textures/Icon_Light.png");
 			_editor.titleContent = new GUIContent ("Node Editor", iconTexture);

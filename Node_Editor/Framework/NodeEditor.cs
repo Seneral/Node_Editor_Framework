@@ -31,7 +31,8 @@ namespace NodeEditorFramework
 
 		#region Setup
 
-		public static bool initiated;
+		private static bool initiatedBase;
+		private static bool initiatedGUI;
 		public static bool InitiationError;
 
 		/// <summary>
@@ -39,8 +40,13 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void checkInit (bool GUIFunction) 
 		{
-			if (!initiated && !InitiationError)
-				ReInit (GUIFunction);
+			if (!InitiationError)
+			{
+				if (!initiatedBase)
+					setupBaseFramework ();
+				if (GUIFunction && !initiatedGUI)
+					setupGUI ();
+			}
 		}
 
 		/// <summary>
@@ -48,17 +54,22 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void ReInit (bool GUIFunction) 
 		{
+			InitiationError = initiatedBase = initiatedGUI = false;
+			
+			setupBaseFramework ();
+			if (GUIFunction)
+				setupGUI ();
+		}
+
+		/// <summary>
+		/// Setup of the base framework. Enough to manage and calculate canvases.
+		/// </summary>
+		private static void setupBaseFramework ()
+		{
 			CheckEditorPath ();
 
 			// Init Resource system. Can be called anywhere else, too, if it's needed before.
 			ResourceManager.SetDefaultResourcePath (editorPath + "Resources/");
-			
-			// Init NE GUI. I may throw an error if a texture was not found.	
-			if (!NodeEditorGUI.Init (GUIFunction)) 
-			{	
-				InitiationError = true;
-				return;
-			}
 
 			// Run fetching algorithms searching the script assemblies for Custom Nodes / Connection Types / NodeCanvas Types
 			ConnectionTypes.FetchTypes ();
@@ -69,18 +80,40 @@ namespace NodeEditorFramework
 			NodeEditorCallbacks.SetupReceivers ();
 			NodeEditorCallbacks.IssueOnEditorStartUp ();
 
-			// Init GUIScaleUtility. This fetches reflected calls and my throw a message notifying about incompability.
-			GUIScaleUtility.CheckInit ();
-
 			// Init input
 			NodeEditorInputSystem.SetupInput ();
 
-	#if UNITY_EDITOR
+		#if UNITY_EDITOR
 			UnityEditor.EditorApplication.update -= Update;
 			UnityEditor.EditorApplication.update += Update;
+		#endif
+
+			initiatedBase = true;
+		}
+
+		/// <summary>
+		/// Setup of the GUI. Only called when a GUI representation is actually used.
+		/// </summary>
+		private static void setupGUI ()
+		{
+			if (!initiatedBase)
+				setupBaseFramework ();
+			initiatedGUI = false;
+			
+			// Init GUIScaleUtility. This fetches reflected calls and my throw a message notifying about incompability.
+			GUIScaleUtility.CheckInit ();
+
+			if (!NodeEditorGUI.Init ()) 
+			{	
+				InitiationError = true;
+				return;
+			}
+
+		#if UNITY_EDITOR
 			RepaintClients ();
-	#endif
-			initiated = GUIFunction;
+		#endif
+
+			initiatedGUI = true;
 		}
 
 		/// <summary>

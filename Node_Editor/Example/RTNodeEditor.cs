@@ -12,7 +12,7 @@ namespace NodeEditorFramework.Standard
 	/// <summary>
 	/// Example of displaying the Node Editor at runtime including GUI
 	/// </summary>
-	public class RuntimeNodeEditor : MonoBehaviour 
+	public class RTNodeEditor : MonoBehaviour 
 	{
 		public NodeCanvas canvas;
 
