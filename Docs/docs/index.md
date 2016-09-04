@@ -11,7 +11,7 @@ A free and versatile Node Editor Framework for Unity 3D
 
 <br>
 
-<img src="/img/NodeEditorTitle.png" alt="Node Editor Front Image" width="85%">
+<img src="img/NodeEditorTitle.png" alt="Node Editor Front Image" width="85%">
 
 [The Texture Composer example, available on the Repo](https://github.com/Baste-RainGames/Node_Editor/tree/Examples/Texture_Composer)
 
