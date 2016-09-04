@@ -10,7 +10,7 @@ The following outlines the most important things to consider in order to build a
 ### The Canvas and Editor States
 
 The Editor obviously has to stores the currently opened NodeCanvas and it's NodeEditorState in the first place.
-For a detailed explanation of these, please look up the [Framework Overview](FrameworkOverview.md). <br>
+For a detailed explanation of these, please look up the [Framework Overview](../FrameworkOverview.md). <br>
 `NodeEditorUserCache` is a wrapper class to aid your extension managing the canvas and editor state. For the majority of cases, it is perfectly fine.
 The easy API for saving/loading and even caching in the editor works both in the editor and at runtime.
 
