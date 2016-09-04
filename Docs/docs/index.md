@@ -13,21 +13,21 @@ A free and versatile Node Editor Framework for Unity 3D
 
 <img src="/img/NodeEditorTitle.png" alt="Node Editor Front Image" width="85%">
 
-The Texture Composer, available on the Unity Forums
+[The Texture Composer example, available on the Repo](https://github.com/Baste-RainGames/Node_Editor/tree/Examples/Texture_Composer)
 
 <br>
 
 __Links:__
 
-[The Project's Github Repository](https://github.com/Baste-RainGames/Node_Editor)
+[Github Repository](https://github.com/Baste-RainGames/Node_Editor)
 <br>
-[The Project's Unity Forum Thread](http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738)
+[Unity Forum Thread](http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738)
 
 <br>
 
 This documentation was originally created by __Seneral__. It is still a WIP.
 <br>
-_Last update: (22.03.16)_
+_Last update: (21.08.16)_
 
 </center>
 
@@ -37,7 +37,7 @@ _Last update: (22.03.16)_
 
 This Documentation intends to give you an overview of the Node Editor. It was initially posted by me, [Seneral](http://forum.unity3d.com/members/seneral.638015/), 
 back in May 2015 as a personal project on the [Unity Forums](http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738).
-After receiving a great amount of positive feedback I continued improving and supporting it, now featuring a lot of major features you'd expect from a great Node Editor!
+After receiving a great amount of positive feedback I continued improving and supporting it, now, with the help of the community, featuring a lot of major features you'd expect from a great Node Editor!
 
 The [Github Repository](https://github.com/Baste-RainGames/Node_Editor) was set up by [Baste](http://forum.unity3d.com/members/baste.185905/) 
 during the early development, and now it's the main platform to share and contribute to Node Editor.
@@ -46,14 +46,13 @@ during the early development, and now it's the main platform to share and contri
 
 ## Features
 
-The Node Editor is special because it's open source, but still packed full of features, 
-some of which are very unique to this project and which we're proud of featuring:
+The Node Editor has some unique features despite being Open-Source, which we're proud of featuring:
 
-- Full interface featuring all expected controls like zooming/panning
+- Full interface with all expected controls like zooming/panning
 - Flexible and interchangeable GUI
 - Canvas and Editor State system featuring alot of advanced controls
-- Super easy to extend with custom nodes and types without modifying the provided code
-- Flexible calculation system, soon supporting for state-like behaviour
+- Super easy to extend with custom nodes, types and even controls without modifying the provided code
+- Powerful calculation system, soon revamped for complete flexibility
 - Extreme Node customization to create totally unique node appearances achieved by a custom windowing system
 - Growing Runtime support, including every bit from the EditorWindow
 
@@ -62,25 +61,9 @@ some of which can even be taken and used somewhere else, such as the unique, gen
 
 <br> <br>
 
-## Examples
-
-You can start off by checking out the Editor Window at '_Window/Node Editor_' and loading one of the example canvases, such as the CalculationCanvas. 
-Do that by either loading it with the button at the top right or by locating it in the project folder and double-clicking it.
-
-Using context-clicks you can manipulate the canvas, using drag'n'drop you can connect node Outputs and Inputs with each other. 
-`Control` will snap nodes to the grid and 'N' will help you navigate back to the origin!
-
-<br> <br>
-
-## License
-
-This software is distributed under the [MIT License](license.md)
-
-<br> <br>
-
 ## Contributing
 
-Since the initial start a few people took the time and motivation to contribute to the project which we all appreciate very much! 
+Since the initial start quite a few people took the time and motivation to contribute to the project which we all appreciate very much! 
 You can check all contributions out on the contributions page. But also those who use, test and report bugs are very important for this project.
 
 If you wish to contribute, you may take a look at the [Issues page of Github](https://github.com/Baste-RainGames/Node_Editor/issues) as a rough guideline what is planned and how you can help. 
@@ -89,4 +72,9 @@ This is vital to the project!
 
 Also, you can always contact Seneral with a PM on the Forums for questions on the framework:)
 
+<br> <br>
+
+## License
+
+This software is distributed under the [MIT License](license.md)
 

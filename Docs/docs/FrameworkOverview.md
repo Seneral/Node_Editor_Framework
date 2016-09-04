@@ -48,4 +48,5 @@ with the exception that only those that have to be handled after GUI are invoked
 - Calculation System at `NodeEditor`
 - Transitioning System including UnityFunc if they are ready
 - Runtime GUI and limitations at `RTEditorGUI` mostly
+- Experimental/Conceptional custom NodeCanvases and traversal algorithms
 

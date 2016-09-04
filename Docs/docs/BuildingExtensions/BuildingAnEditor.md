@@ -11,23 +11,20 @@ The following outlines the most important things to consider in order to build a
 
 The Editor obviously has to stores the currently opened NodeCanvas and it's NodeEditorState in the first place.
 For a detailed explanation of these, please look up the [Framework Overview](FrameworkOverview.md). <br>
-You can save both using `NodeEditor.SaveNodeCanvas` and load them with `NodeEditor.LoadNodeCanvas` and `NodeEditor.LoadEditorStates` respectively.
-Take reference from the default `NodeEditorWindow` to see how exactly these functions are integrated. 
-The function `AutoOpenCanvas` also shows how to automatically open a canvas by double-clicking it's asset in the Project View. 
-The default window also features a cache system, which is currently not the most optimal implementation possible.
+`NodeEditorUserCache` is a wrapper class to aid your extension managing the canvas and editor state. For the majority of cases, it is perfectly fine.
+The easy API for saving/loading and even caching in the editor works both in the editor and at runtime.
 
 <br>
 
 ### The Canvas GUI
 
-The GUI for the canvas is mainly compressed into the single function `NodeEditor.DrawCanvas`. 
-Before you can call it though you need to make sure that the `NodeEditor` is initiated using `NodeEditor.checkInit` and that there is always a canvas loaded. <br>
-Additionally you'll want to define the area in which the canvas is drawn by assigning the `EditorState.canvasRect` property.
-No limitations exist anymore on where the canvas is drawn, in how many groups, etc, only the case of modifying the `GUI.matrix` scale before is not yet supported. <br>
+For the GUI to look the same in the whole window and to allow for custom popups in your GUI, you first need to call `NodeEditorGUI.StartNodeGUI`. At the end you need to call `NodeEditorGUI.EndNodeGUI`. <br>
+Before you can draw the canvas area, first make sure a canvas is loaded and assign the rect for the canvas area to your `NodeEditorState.canvasRect` property.
+Also, not that modifying the `GUI.matrix` scale while when drawing the canvas area is not yet supported. <br>
 In order to best account for errors that may be thrown, the drawing function should be embedded in a try-catch block that unloads the canvas when an error was thrown.
 Make sure you only catch `UnityExceptions` though, because of a Unity bug all pickers like `ColorField`, `CurveField` or `ObjectField` will throw an error when inside a `System.Exception` try-catch-block. <br>
 In this try-catch-block you can safely call `NodeEditor.DrawCanvas`, passing both the `NodeCanvas` and the `EditorState`, in order to draw the canvas in the specified area.
-All additional interface elements like toolbar, side panel, etc. are up to you to handle.
+All additional interface elements like toolbar, side panel, etc. are up to you to handle, and are easily filled using the API of the Framework.
 
 <br>
 

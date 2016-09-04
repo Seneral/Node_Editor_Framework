@@ -27,4 +27,6 @@ Both classes can be found in `NodeEditorCallbackReceiver` <br>
 <br>
 
 -> Some of the Node-specific callbacks can also be accessed from the Node directly by overriding the appropriate method.
+<br>
+-> You can always implement additional callbacks or request them to be implemented!
 
