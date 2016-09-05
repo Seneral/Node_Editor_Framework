@@ -176,7 +176,7 @@ namespace NodeEditorFramework
 
 			CheckCurrentCache ();
 
-			NodeEditor.RecalculateAll (nodeCanvas);
+			NodeEditor.Calculator.RecalculateAll (nodeCanvas);
 			NodeEditor.RepaintClients ();
 		}
 
@@ -242,7 +242,7 @@ namespace NodeEditorFramework
 			editorState = NodeEditorSaveManager.ExtractEditorState (nodeCanvas, MainEditorStateIdentifier);
 
 			openedCanvasPath = path;
-			NodeEditor.RecalculateAll (nodeCanvas);
+			NodeEditor.Calculator.RecalculateAll (nodeCanvas);
 			NodeEditor.RepaintClients ();
 		}
 
@@ -272,7 +272,7 @@ namespace NodeEditorFramework
 			openedCanvasPath = path;
 			if (useCache)
 				SaveCache ();
-			NodeEditor.RecalculateAll (nodeCanvas);
+			NodeEditor.Calculator.RecalculateAll (nodeCanvas);
 			NodeEditor.RepaintClients ();
 		}
 

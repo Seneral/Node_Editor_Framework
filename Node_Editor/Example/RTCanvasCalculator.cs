@@ -28,7 +28,7 @@ namespace NodeEditorFramework.Standard
 		public void CalculateCanvas () 
 		{
 			AssureCanvas ();
-			NodeEditor.RecalculateAll (canvas);
+			NodeEditor.Calculator.RecalculateAll (canvas);
 			DebugOutputResults ();
 		}
 

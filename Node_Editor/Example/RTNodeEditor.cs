@@ -154,7 +154,7 @@ namespace NodeEditorFramework.Standard
 			GUILayout.Space (6);
 
 			if (GUILayout.Button (new GUIContent ("Recalculate All", "Initiates complete recalculate. Usually does not need to be triggered manually.")))
-				NodeEditor.RecalculateAll (cache.nodeCanvas);
+				NodeEditor.Calculator.RecalculateAll (cache.nodeCanvas);
 
 			if (GUILayout.Button ("Force Re-Init"))
 				NodeEditor.ReInit (true);
