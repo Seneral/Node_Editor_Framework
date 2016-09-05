@@ -1,4 +1,6 @@
 ﻿using UnityEngine;
+using UnityEngine.Serialization;
+using System;
 using System.Collections.Generic;
 
 namespace NodeEditorFramework 
@@ -15,13 +17,16 @@ namespace NodeEditorFramework
 
 		// NodeInput Members
 		public List<NodeInput> connections = new List<NodeInput> ();
-		public string type;
-		[System.NonSerialized]
-		internal TypeData typeData;
+		[FormerlySerializedAs("type")]
+		public string typeID;
+		private TypeData _typeData;
+		internal TypeData typeData { get { CheckType (); return _typeData; } }
 		[System.NonSerialized]
 		private object value = null;
 
-		#region Contructors
+		public bool calculationBlockade = false;
+
+		#region General
 
 		/// <summary>
 		/// Creates a new NodeOutput in NodeBody of specified type
@@ -45,10 +50,18 @@ namespace NodeEditorFramework
 		public static NodeOutput Create (Node nodeBody, string outputName, string outputType, NodeSide nodeSide, float sidePosition) 
 		{
 			NodeOutput output = CreateInstance <NodeOutput> ();
-			output.type = outputType;
+			output.typeID = outputType;
 			output.InitBase (nodeBody, nodeSide, sidePosition, outputName);
 			nodeBody.Outputs.Add (output);
 			return output;
+		}
+
+		public override void Delete () 
+		{
+			while (connections.Count > 0)
+				connections[0].RemoveConnection ();
+			body.Outputs.Remove (this);
+			base.Delete ();
 		}
 
 		#endregion
@@ -73,8 +86,15 @@ namespace NodeEditorFramework
 
 		private void CheckType () 
 		{
-			if (typeData == null || !typeData.isValid ()) 
-				typeData = ConnectionTypes.GetTypeData (type, true);
+			if (_typeData == null || !_typeData.isValid ()) 
+				_typeData = ConnectionTypes.GetTypeData (typeID);
+			if (_typeData == null || !_typeData.isValid ()) 
+			{
+				ConnectionTypes.FetchTypes ();
+				_typeData = ConnectionTypes.GetTypeData (typeID);
+				if (_typeData == null || !_typeData.isValid ())
+					throw new UnityException ("Could not find type " + typeID + "!");
+			}
 		}
 
 		#endregion
@@ -82,7 +102,41 @@ namespace NodeEditorFramework
 		#region Value
 		
 		public bool IsValueNull { get { return value == null; } }
-		
+
+		/// <summary>
+		/// Gets the output value anonymously. Not advised as it may lead to unwanted behaviour!
+		/// </summary>
+		public object GetValue ()
+		{
+			return value;
+		}
+
+		/// <summary>
+		/// Gets the output value if the type matches or null. If possible, use strongly typed version instead.
+		/// </summary>
+		public object GetValue (Type type)
+		{
+			if (type == null)
+				throw new UnityException ("Trying to get value of " + name + " with null type!");
+			CheckType ();
+			if (type.IsAssignableFrom (typeData.Type))
+				return value;
+			Debug.LogError ("Trying to GetValue<" + type.FullName + "> for Output Type: " + typeData.Type.FullName);
+			return null;
+		}
+
+		/// <summary>
+		/// Sets the output value if the type matches. If possible, use strongly typed version instead.
+		/// </summary>
+		public void SetValue (object Value)
+		{
+			CheckType ();
+			if (Value == null || typeData.Type.IsAssignableFrom (Value.GetType ()))
+				value = Value;
+			else
+				Debug.LogError ("Trying to SetValue of type " + Value.GetType ().FullName + " for Output Type: " + typeData.Type.FullName);
+		}
+
 		/// <summary>
 		/// Gets the output value if the type matches
 		/// </summary>
@@ -90,7 +144,7 @@ namespace NodeEditorFramework
 		public T GetValue<T> ()
 		{
 			CheckType ();
-			if (typeData.Type == typeof(T) || typeData.Type.IsSubclassOf(typeof(T)))
+			if (typeof(T).IsAssignableFrom (typeData.Type))
 				return (T)(value?? (value = GetDefault<T> ()));
 			Debug.LogError ("Trying to GetValue<" + typeof(T).FullName + "> for Output Type: " + typeData.Type.FullName);
 			return GetDefault<T> ();
@@ -102,7 +156,7 @@ namespace NodeEditorFramework
 		public void SetValue<T> (T Value)
 		{
 			CheckType ();
-			if (typeData.Type == typeof(T))
+			if (typeData.Type.IsAssignableFrom (typeof(T)))
 				value = Value;
 			else
 				Debug.LogError ("Trying to SetValue<" + typeof(T).FullName + "> for Output Type: " + typeData.Type.FullName);
@@ -117,16 +171,37 @@ namespace NodeEditorFramework
 		}
 		
 		/// <summary>
-		/// For value types, the default value; for reference types, the default constructor if existant, else null
+		/// Returns the default value of type when a default constructor is existant or type is a value type, else null
 		/// </summary>
 		public static T GetDefault<T> ()
 		{
-			if (typeof(T).GetConstructor (System.Type.EmptyTypes) != null) // Try to create using an empty constructor if existant
+			// Try to create using an empty constructor if existant
+			if (typeof(T).GetConstructor (System.Type.EmptyTypes) != null)
 				return System.Activator.CreateInstance<T> ();
-			else // Else try to get default. Returns null only on reference types
-				return default(T);
+			// Else try to get default. Returns null only on reference types
+			return default(T);
+		}
+
+		/// <summary>
+		/// Returns the default value of type when a default constructor is existant, else null
+		/// </summary>
+		public static object GetDefault (Type type)
+		{
+			// Try to create using an empty constructor if existant
+			if (type.GetConstructor (System.Type.EmptyTypes) != null)
+				return System.Activator.CreateInstance (type);
+			return null;
 		}
 
 		#endregion
+
+        #region Utility
+
+        public override Node GetNodeAcrossConnection()
+        {
+            return connections.Count > 0 ? connections[0].body : null;
+        }
+
+	    #endregion
 	}
 }

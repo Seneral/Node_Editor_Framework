@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
@@ -21,68 +22,49 @@ namespace NodeEditorFramework
 		private static Dictionary<string, TypeData> types;
 
 		/// <summary>
-		/// Gets the Type the specified identifier representates or, if not declared and checked, creates a new type data for the passed type
+		/// Gets the Type the specified type name representates or creates it if not defined
 		/// </summary>
-		public static Type GetType (string typeName, bool createIfNotDeclared)
+		public static Type GetType (string typeName)
 		{
-			TypeData data = GetTypeData (typeName, createIfNotDeclared);
-			return data != null? data.Type : NullType;
+			return GetTypeData (typeName).Type ?? NullType;
 		}
 
 		/// <summary>
-		/// Gets the type data with the specified identifier or, if not declared and checked, creates a new one when a valid type name with namespace is passed
+		/// Gets the type data for the specified type name or creates it if not defined
 		/// </summary>
-		public static TypeData GetTypeData (string typeName, bool createIfNotDeclared)
+		public static TypeData GetTypeData (string typeName)
 		{
 			if (types == null || types.Count == 0)
-				NodeEditor.ReInit (false);
+				FetchTypes ();
 			TypeData typeData;
 			if (!types.TryGetValue (typeName, out typeData))
 			{
-				if (createIfNotDeclared) 
+				Type type = Type.GetType (typeName);
+				if (type == null)
 				{
-					Type type = Type.GetType (typeName);
-					if (type == null)
-					{
-						typeData = types.First ().Value;
-						Debug.LogError ("No TypeData defined for: " + typeName + " and type could not be found either!");
-					}
-					else 
-					{
-						typeData = new TypeData (type);
-						types.Add (typeName, typeData);
-					}
+					typeData = types.First ().Value;
+					Debug.LogError ("No TypeData defined for: " + typeName + " and type could not be found either");
 				}
 				else 
 				{
-					typeData = types.First ().Value;
-					Debug.LogError ("No TypeData defined for: " + typeName + "!");
+					typeData = types.Values.Count <= 0? null : types.Values.First ((TypeData data) => data.isValid () && data.Type == type);
+					if (typeData == null)
+						types.Add (typeName, typeData = new TypeData (type));
 				}
 			}
 			return typeData;
 		}
 
 		/// <summary>
-		/// Gets the type data for the specified type or, if not declared and checked, creates a new one for that type
+		/// Gets the type data for the specified type or creates it if not defined
 		/// </summary>
-		public static TypeData GetTypeData (Type type, bool createIfNotDeclared)
+		public static TypeData GetTypeData (Type type)
 		{
 			if (types == null || types.Count == 0)
-				NodeEditor.ReInit (false);
-			TypeData typeData = types.Values.First ((TypeData tData) => tData.Type == type);
+				FetchTypes ();
+			TypeData typeData = types.Values.Count <= 0? null : types.Values.First ((TypeData data) => data.isValid () && data.Type == type);
 			if (typeData == null)
-			{
-				if (createIfNotDeclared)
-				{
-					typeData = new TypeData (type);
-					types.Add (type.FullName, typeData);
-				}
-				else 
-				{
-					typeData = types.First ().Value;
-					Debug.LogError ("No TypeData defined for: " + type.FullName + "!");
-				}
-			}
+				types.Add (type.Name, typeData = new TypeData (type));
 			return typeData;
 		}
 		
@@ -91,14 +73,13 @@ namespace NodeEditorFramework
 		/// </summary>
 		internal static void FetchTypes () 
 		{
-			types = new Dictionary<string, TypeData> { { "None", new TypeData () } };
+			types = new Dictionary<string, TypeData> { { "None", new TypeData (typeof(System.Object)) } };
 
 			IEnumerable<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where ((Assembly assembly) => assembly.FullName.Contains ("Assembly"));
 			foreach (Assembly assembly in scriptAssemblies) 
-			{ // Iterate through each script assembly
-				IEnumerable<Type> typeDeclarations = assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.GetInterface (typeof (IConnectionTypeDeclaration).FullName) != null);
-				foreach (Type type in typeDeclarations) 
-				{ // get all type declarations and create a typeData for them
+			{
+				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.GetInterfaces ().Contains (typeof (IConnectionTypeDeclaration)))) 
+				{
 					IConnectionTypeDeclaration typeDecl = assembly.CreateInstance (type.FullName) as IConnectionTypeDeclaration;
 					if (typeDecl == null)
 						throw new UnityException ("Error with Type Declaration " + type.FullName);
@@ -111,13 +92,15 @@ namespace NodeEditorFramework
 	public class TypeData 
 	{
 		private IConnectionTypeDeclaration declaration;
+		public string Identifier { get; private set; }
 		public Type Type { get; private set; }
 		public Color Color { get; private set; }
 		public Texture2D InKnobTex { get; private set; }
 		public Texture2D OutKnobTex { get; private set; }
-
+		
 		internal TypeData (IConnectionTypeDeclaration typeDecl) 
 		{
+			Identifier = typeDecl.Identifier;
 			declaration = typeDecl;
 			Type = declaration.Type;
 			Color = declaration.Color;
@@ -125,33 +108,29 @@ namespace NodeEditorFramework
 			InKnobTex = ResourceManager.GetTintedTexture (declaration.InKnobTex, Color);
 			OutKnobTex = ResourceManager.GetTintedTexture (declaration.OutKnobTex, Color);
 
-			if (InKnobTex == null || InKnobTex == null)
-				throw new UnityException ("Invalid textures for default typeData " + declaration.Identifier + "!");
+			if (!isValid ())
+				throw new DataMisalignedException ("Type Declaration " + typeDecl.Identifier + " contains invalid data!");
 		}
 
-		internal TypeData (Type type) 
+		public TypeData (Type type) 
 		{
+			Identifier = type.Name;
 			declaration = null;
 			Type = type;
 			Color = Color.white;//(float)type.GetHashCode() / (int.MaxValue/3);
 
+			// TODO: Experimental: Create colors randomly from hashcode of type
+			// right now everything is roughly the same color unfortunately
+
+			// int -> 3x float
+			int srcInt = type.GetHashCode ();
+			byte[] bytes = BitConverter.GetBytes (srcInt);
+			//Debug.Log ("hash " + srcInt + " from type " + type.FullName + " has byte count of " + bytes.Length);
+			Color = new Color (Mathf.Pow (((float)bytes[0])/255, 0.5f), Mathf.Pow (((float)bytes[1])/255, 0.5f), Mathf.Pow (((float)bytes[2])/255, 0.5f));
+			//Debug.Log ("Color " + col.ToString ());
+
 			InKnobTex = ResourceManager.GetTintedTexture ("Textures/In_Knob.png", Color);
 			OutKnobTex = ResourceManager.GetTintedTexture ("Textures/Out_Knob.png", Color);
-
-			if (InKnobTex == null || InKnobTex == null)
-				throw new UnityException ("Invalid textures for default typeData " + type.ToString () + "!");
-		}
-
-		internal TypeData () 
-		{
-			declaration = null;
-			Type = typeof(object);
-			Color = Color.white;
-			InKnobTex = ResourceManager.LoadTexture ("Textures/In_Knob.png");
-			OutKnobTex = ResourceManager.LoadTexture ("Textures/Out_Knob.png");
-
-			if (InKnobTex == null || InKnobTex == null)
-				throw new UnityException ("Invalid textures for default typeData!");
 		}
 
 		public bool isValid () 
@@ -178,6 +157,4 @@ namespace NodeEditorFramework
 		public string InKnobTex { get { return "Textures/In_Knob.png"; } }
 		public string OutKnobTex { get { return "Textures/Out_Knob.png"; } }
 	}
-
-
 }

@@ -3,27 +3,21 @@ using UnityEditor;
 using System.Collections.Generic;
 using NodeEditorFramework;
 
-namespace NodeEditorFramework 
+namespace NodeEditorFramework.Standard
 {
-	[CustomEditor (typeof(RuntimeNodeEditor))]
-	public class RTNE_InspectorGUI : Editor
+	[CustomEditor (typeof(RTNodeEditor))]
+	public class RTNodeEditorInspector : Editor
 	{
-		public RuntimeNodeEditor RTNE;
-
+		public RTNodeEditor RTNE;
+		
 		public void OnEnable () 
 		{
-			RTNE = (RuntimeNodeEditor)target;
-			RTNE.canvasPath = RTNE.canvas == null? "" : AssetDatabase.GetAssetPath (RTNE.canvas);
+			RTNE = (RTNodeEditor)target;
 		}
 
 		public override void OnInspectorGUI () 
 		{
-			NodeCanvas canvas = EditorGUILayout.ObjectField ("Canvas", RTNE.canvas, typeof(NodeCanvas), false) as NodeCanvas;
-			if (canvas != RTNE.canvas)
-			{
-				RTNE.canvas = canvas;
-				RTNE.canvasPath = RTNE.canvas == null? "" : AssetDatabase.GetAssetPath (RTNE.canvas);
-			}
+			RTNE.canvas = EditorGUILayout.ObjectField ("Canvas", RTNE.canvas, typeof(NodeCanvas), false) as NodeCanvas;
 
 			RTNE.screenSize = !EditorGUILayout.BeginToggleGroup (new GUIContent ("Specify Rect", "Specify Rects explicitly instead of adapting to the screen size"), !RTNE.screenSize);
 			RTNE.specifiedRootRect = EditorGUILayout.RectField (new GUIContent ("Root Rect", "The root/group rect of the actual canvas rect. If left blank it is ignored."), RTNE.specifiedRootRect);

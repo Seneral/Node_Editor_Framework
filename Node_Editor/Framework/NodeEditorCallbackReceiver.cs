@@ -19,6 +19,7 @@ namespace NodeEditorFramework
 		public virtual void OnAddNode (Node node) {}
 		public virtual void OnDeleteNode (Node node) {}
 		public virtual void OnMoveNode (Node node) {}
+		public virtual void OnAddNodeKnob (NodeKnob knob) {}
 		// Connection
 		public virtual void OnAddConnection (NodeInput input) {}
 		public virtual void OnRemoveConnection (NodeInput input) {}
@@ -160,6 +161,20 @@ namespace NodeEditorFramework
 			}
 		}
 
+		public static Action<NodeKnob> OnAddNodeKnob;
+		public static void IssueOnAddNodeKnob (NodeKnob nodeKnob) 
+		{
+			if (OnAddNodeKnob != null)
+				OnAddNodeKnob.Invoke (nodeKnob);
+			for (int cnt = 0; cnt < receiverCount; cnt++) 
+			{
+				if (callbackReceiver [cnt] == null)
+					callbackReceiver.RemoveAt (cnt--);
+				else
+					callbackReceiver [cnt].OnAddNodeKnob (nodeKnob);
+			}
+		}
+
 		#endregion
 
 		#region Connection (2)
@@ -193,5 +208,6 @@ namespace NodeEditorFramework
 		}
 
 		#endregion
+
 	}
 }

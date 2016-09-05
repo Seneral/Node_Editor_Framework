@@ -1,4 +1,6 @@
 ﻿using UnityEngine;
+using UnityEngine.Serialization;
+using System;
 using System.Collections.Generic;
 
 namespace NodeEditorFramework
@@ -13,13 +15,14 @@ namespace NodeEditorFramework
 
 		// NodeInput Members
 		public NodeOutput connection;
-		public string type;
-		[System.NonSerialized]
-		internal TypeData typeData;
+		[FormerlySerializedAs("type")]
+		public string typeID;
+		private TypeData _typeData;
+		internal TypeData typeData { get { CheckType (); return _typeData; } }
 		// Multiple connections
 //		public List<NodeOutput> connections;
 
-		#region Contructors
+		#region General
 
 		/// <summary>
 		/// Creates a new NodeInput in NodeBody of specified type
@@ -43,10 +46,17 @@ namespace NodeEditorFramework
 		public static NodeInput Create (Node nodeBody, string inputName, string inputType, NodeSide nodeSide, float sidePosition)
 		{
 			NodeInput input = CreateInstance <NodeInput> ();
-			input.type = inputType;
+			input.typeID = inputType;
 			input.InitBase (nodeBody, nodeSide, sidePosition, inputName);
 			nodeBody.Inputs.Add (input);
 			return input;
+		}
+
+		public override void Delete () 
+		{
+			RemoveConnection ();
+			body.Inputs.Remove (this);
+			base.Delete ();
 		}
 
 		#endregion
@@ -73,13 +83,47 @@ namespace NodeEditorFramework
 
 		private void CheckType () 
 		{
-			if (typeData == null || !typeData.isValid ()) 
-				typeData = ConnectionTypes.GetTypeData (type, true);
+			if (_typeData == null || !_typeData.isValid ()) 
+				_typeData = ConnectionTypes.GetTypeData (typeID);
+			if (_typeData == null || !_typeData.isValid ()) 
+			{
+				ConnectionTypes.FetchTypes ();
+				_typeData = ConnectionTypes.GetTypeData (typeID);
+				if (_typeData == null || !_typeData.isValid ())
+					throw new UnityException ("Could not find type " + typeID + "!");
+			}
 		}
 
 		#endregion
 
 		#region Value
+
+		public bool IsValueNull { get { return connection != null? connection.IsValueNull : true; } }
+
+		/// <summary>
+		/// Gets the value of the connection anonymously. Not advised as it may lead to unwanted behaviour!
+		/// </summary>
+		public object GetValue ()
+		{
+			return connection != null? connection.GetValue () : null;
+		}
+
+		/// <summary>
+		/// Gets the value of the connection or null. If possible, use strongly typed version instead.
+		/// </summary>
+		public object GetValue (Type type)
+		{
+			return connection != null? connection.GetValue (type) : null;
+		}
+
+		/// <summary>
+		/// Sets the value of the connection if the type matches. If possible, use strongly typed version instead.
+		/// </summary>
+		public void SetValue (object value)
+		{
+			if (connection != null)
+				connection.SetValue (value);
+		}
 
 		/// <summary>
 		/// Gets the value of the connection or the default value
@@ -103,12 +147,28 @@ namespace NodeEditorFramework
 		#region Connecting Utility
 
 		/// <summary>
+		/// Try to connect the passed NodeOutput to this NodeInput. Returns success / failure
+		/// </summary>
+		public bool TryApplyConnection (NodeOutput output)
+		{
+			if (CanApplyConnection (output)) 
+			{ // It can connect (type is equals, it does not cause recursion, ...)
+				ApplyConnection (output);
+				return true;
+			}
+			return false;
+		}
+
+		/// <summary>
 		/// Check if the passed NodeOutput can be connected to this NodeInput
 		/// </summary>
 		public bool CanApplyConnection (NodeOutput output)
 		{
-			if (output == null || body == output.body || connection == output || (typeData.Type != output.typeData.Type && !output.typeData.Type.IsSubclassOf(typeData.Type)))
+			if (output == null || body == output.body || connection == output || !typeData.Type.IsAssignableFrom (output.typeData.Type)) 
+			{
+//				Debug.LogError ("Cannot assign " + typeData.Type.ToString () + " to " + output.typeData.Type.ToString ());
 				return false;
+			}
 
 			if (output.body.isChildOf (body)) 
 			{ // Recursive
@@ -138,7 +198,11 @@ namespace NodeEditorFramework
 			connection = output;
 			output.connections.Add (this);
 
-			NodeEditor.RecalculateFrom (body);
+			if (!output.body.calculated)
+				NodeEditor.RecalculateFrom (output.body);
+			else
+				NodeEditor.RecalculateFrom (body);
+			
 			output.body.OnAddOutputConnection (output);
 			body.OnAddInputConnection (this);
 			NodeEditorCallbacks.IssueOnAddConnection (this);
@@ -159,6 +223,15 @@ namespace NodeEditorFramework
 			NodeEditor.RecalculateFrom (body);
 		}
 
+
+		#endregion
+
+		#region Utility
+
+		public override Node GetNodeAcrossConnection()
+		{
+			return connection != null ? connection.body : null;
+		}
 
 		#endregion
 	}

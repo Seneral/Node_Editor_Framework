@@ -29,7 +29,7 @@ namespace NodeEditorFramework
 		public static GUIStyle nodeBox;
 		public static GUIStyle nodeBoxBold;
 		
-		public static bool Init (bool GUIFunction) 
+		public static bool Init ()
 		{
 			// Textures
 			Background = ResourceManager.LoadTexture ("Textures/background.png");
@@ -40,8 +40,6 @@ namespace NodeEditorFramework
 			
 			if (!Background || !AALineTex || !GUIBox || !GUIButton)
 				return false;
-			if (!GUIFunction)
-				return true;
 
 			// Skin & Styles
 			nodeSkin = Object.Instantiate<GUISkin> (GUI.skin);
@@ -74,14 +72,17 @@ namespace NodeEditorFramework
 
 		public static void StartNodeGUI () 
 		{
+			NodeEditor.checkInit(true);
+
 			defaultSkin = GUI.skin;
-			if (nodeSkin == null)
-				Init (true);
-			GUI.skin = nodeSkin;
+			if (nodeSkin != null)
+				GUI.skin = nodeSkin;
+			OverlayGUI.StartOverlayGUI ();
 		}
 
 		public static void EndNodeGUI () 
 		{
+			OverlayGUI.EndOverlayGUI ();
 			GUI.skin = defaultSkin;
 		}
 

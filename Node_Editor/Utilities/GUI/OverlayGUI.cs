@@ -46,7 +46,7 @@ namespace NodeEditorFramework.Utilities
 		
 		// State
 		private Rect position;
-		private string selectedPath = "";
+		private string selectedPath;
 		private MenuItem groupToDraw;
 		private float currentItemHeight;
 		private bool close;
@@ -56,6 +56,8 @@ namespace NodeEditorFramework.Utilities
 		public static Texture2D expandRight;
 		public static float itemHeight;
 		public static GUIStyle selectedLabel;
+
+		public float minWidth;
 		
 		public PopupMenu () 
 		{
@@ -72,14 +74,17 @@ namespace NodeEditorFramework.Utilities
 			selectedLabel = new GUIStyle (GUI.skin.label);
 			selectedLabel.normal.background = NodeEditorFramework.Utilities.RTEditorGUI.ColorToTex (1, new Color (0.4f, 0.4f, 0.4f));
 		}
-		
-		public void Show (Rect pos)
+
+		public void Show (Vector2 pos, float MinWidth = 40)
 		{
-			position = pos;
+			minWidth = MinWidth;
+			position = calculateRect (pos, menuItems, minWidth);
 			selectedPath = "";
 			OverlayGUI.currentPopup = this;
 		}
-		
+
+		public Vector2 Position { get { return position.position; } }
+
 		#region Creation
 		
 		public void AddItem (GUIContent content, bool on, MenuFunctionData func, object userData)
@@ -121,16 +126,19 @@ namespace NodeEditorFramework.Utilities
 				string folderPath = subContents[0];
 				
 				// top level group
-				MenuItem parent = menuItems.Find ((MenuItem item) => item.content != null && item.content.text == folderPath);
+				MenuItem parent = menuItems.Find ((MenuItem item) => item.content != null && item.content.text == folderPath && item.group);
 				if (parent == null)
 					menuItems.Add (parent = new MenuItem (folderPath, new GUIContent (folderPath), true));
-				
 				// additional level groups
 				for (int groupCnt = 1; groupCnt < subContents.Length-1; groupCnt++)
 				{
 					string folder = subContents[groupCnt];
 					folderPath += "/" + folder;
-					MenuItem subGroup = parent.subItems.Find ((MenuItem item) => item.content != null && item.content.text == folder);
+					if (parent == null)
+						Debug.LogError ("Parent is null!");
+					else if (parent.subItems == null)
+						Debug.LogError ("Subitems of " + parent.content.text + " is null!");
+					MenuItem subGroup = parent.subItems.Find ((MenuItem item) => item.content != null && item.content.text == folder && item.group);
 					if (subGroup == null)
 						parent.subItems.Add (subGroup = new MenuItem (folderPath, new GUIContent (folder), true));
 					parent = subGroup;
@@ -163,15 +171,17 @@ namespace NodeEditorFramework.Utilities
 				}
 			}
 			
-			if (!inRect || close)
+			if (!inRect || close) 
+			{
 				OverlayGUI.currentPopup = null;
-			
+			}
+
 			NodeEditorFramework.NodeEditor.RepaintClients ();
 		}
 		
 		private bool DrawGroup (Rect pos, List<MenuItem> menuItems) 
 		{
-			Rect rect = calculateRect (pos.position, menuItems);
+			Rect rect = calculateRect (pos.position, menuItems, minWidth);
 			
 			Rect clickRect = new Rect (rect);
 			clickRect.xMax += 20;
@@ -179,7 +189,7 @@ namespace NodeEditorFramework.Utilities
 			clickRect.yMax += 20;
 			clickRect.yMin -= 20;
 			bool inRect = clickRect.Contains (Event.current.mousePosition);
-			
+
 			currentItemHeight = backgroundStyle.contentOffset.y;
 			GUI.BeginGroup (extendRect (rect, backgroundStyle.contentOffset), GUIContent.none, backgroundStyle);
 			for (int itemCnt = 0; itemCnt < menuItems.Count; itemCnt++)
@@ -203,14 +213,11 @@ namespace NodeEditorFramework.Utilities
 			else 
 			{
 				Rect labelRect = new Rect (backgroundStyle.contentOffset.x, currentItemHeight, groupRect.width, itemHeight);
-				
-				bool selected = selectedPath.Contains (item.path);
+
 				if (labelRect.Contains (Event.current.mousePosition))
-				{
 					selectedPath = item.path;
-					selected = true;
-				}
-				
+
+				bool selected = selectedPath == item.path || selectedPath.Contains (item.path + "/");
 				GUI.Label (labelRect, item.content, selected? selectedLabel : GUI.skin.label);
 				
 				if (item.group) 
@@ -242,10 +249,10 @@ namespace NodeEditorFramework.Utilities
 			return rect;
 		}
 		
-		private static Rect calculateRect (Vector2 position, List<MenuItem> menuItems) 
+		private static Rect calculateRect (Vector2 position, List<MenuItem> menuItems, float minWidth) 
 		{
 			Vector2 size;
-			float width = 40, height = 0;
+			float width = minWidth, height = 0;
 			
 			for (int itemCnt = 0; itemCnt < menuItems.Count; itemCnt++)
 			{
@@ -332,6 +339,8 @@ namespace NodeEditorFramework.Utilities
 	public class GenericMenu
 	{
 		private static PopupMenu popup;
+
+		public Vector2 Position { get { return popup.Position; } }
 		
 		public GenericMenu () 
 		{
@@ -340,7 +349,12 @@ namespace NodeEditorFramework.Utilities
 		
 		public void ShowAsContext ()
 		{
-			popup.Show (new Rect (Event.current.mousePosition.x, Event.current.mousePosition.y, 0f, 0f));
+			popup.Show (GUIScaleUtility.GUIToScreenSpace (Event.current.mousePosition));
+		}
+
+		public void Show (Vector2 pos, float MinWidth = 40)
+		{
+			popup.Show (GUIScaleUtility.GUIToScreenSpace (pos), MinWidth);
 		}
 		
 		public void AddItem (GUIContent content, bool on, PopupMenu.MenuFunctionData func, object userData)

@@ -2,7 +2,7 @@
 
 using UnityEngine;
 using UnityEditor;
-#if UNITY_5_3
+#if UNITY_5_3_OR_NEWER || UNITY_5_3
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 #endif
@@ -13,7 +13,7 @@ namespace NodeEditorFramework.Utilities
 	[InitializeOnLoad]
 	public static class EditorLoadingControl 
 	{
-#if UNITY_5_3
+#if UNITY_5_3_OR_NEWER || UNITY_5_3
 		private static Scene loadedScene;
 #else
 		private static string loadedScene;
@@ -41,8 +41,8 @@ namespace NodeEditorFramework.Utilities
 		}
 
 		private static void OnHierarchyChange () 
-		{
-#if UNITY_5_3
+		{ // TODO: OnGUI might be called before this function and migth cause problems. Find a better way to detect scene change!
+#if UNITY_5_3_OR_NEWER || UNITY_5_3
 			Scene currentScene = EditorSceneManager.GetActiveScene ();
 #else
 			string currentScene = Application.loadedLevelName;

@@ -1,10 +1,7 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Linq;
 using System.Collections.Generic;
-
-using NodeEditorFramework;
-using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
 {
@@ -16,11 +13,9 @@ namespace NodeEditorFramework
 		public List<NodeKnob> nodeKnobs = new List<NodeKnob> ();
 
 		// Calculation graph
-//		[NonSerialized]
-		[SerializeField, HideInInspector]
+		[SerializeField]
 		public List<NodeInput> Inputs = new List<NodeInput>();
-//		[NonSerialized]
-		[SerializeField, HideInInspector]
+		[SerializeField]
 		public List<NodeOutput> Outputs = new List<NodeOutput>();
 		[HideInInspector]
 		[NonSerialized]
@@ -33,13 +28,14 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal void InitBase () 
 		{
-			Calculate ();
+			NodeEditor.RecalculateFrom (this);
 			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
 				NodeEditor.curNodeCanvas.nodes.Add (this);
 			#if UNITY_EDITOR
-			if (name == "")
+			if (String.IsNullOrEmpty (name))
 				name = UnityEditor.ObjectNames.NicifyVariableName (GetID);
 			#endif
+			NodeEditor.RepaintClients ();
 		}
 
 		/// <summary>
@@ -73,7 +69,19 @@ namespace NodeEditorFramework
 			DestroyImmediate (this, true);
 		}
 
+		/// <summary>
+		/// Create the a Node of the type specified by the nodeID at position
+		/// </summary>
 		public static Node Create (string nodeID, Vector2 position) 
+		{
+			return Create (nodeID, position, null);
+		}
+
+		/// <summary>
+		/// Create the a Node of the type specified by the nodeID at position
+		/// Auto-connects the passed connectingOutput if not null to the first compatible input
+		/// </summary>
+		public static Node Create (string nodeID, Vector2 position, NodeOutput connectingOutput) 
 		{
 			Node node = NodeTypes.getDefaultNode (nodeID);
 			if (node == null)
@@ -82,7 +90,17 @@ namespace NodeEditorFramework
 			node = node.Create (position);
 			node.InitBase ();
 
+			if (connectingOutput != null)
+			{ // Handle auto-connection and link the output to the first compatible input
+				foreach (NodeInput input in node.Inputs)
+				{
+					if (input.TryApplyConnection (connectingOutput))
+						break;
+				}
+			}
+
 			NodeEditorCallbacks.IssueOnAddNode (node);
+
 			return node;
 		}
 
@@ -100,7 +118,9 @@ namespace NodeEditorFramework
 
 		#endregion
 
-		#region Node Type methods (abstract)
+		#region Dynamic Members
+
+		#region Node Type Methods
 
 		/// <summary>
 		/// Get the ID of the Node
@@ -121,14 +141,14 @@ namespace NodeEditorFramework
 		/// Used to display a custom node property editor in the side window of the NodeEditorWindow
 		/// Optionally override this to implement
 		/// </summary>
-		public virtual void DrawNodePropertyEditor() { }
+		public virtual void DrawNodePropertyEditor () { }
 		
 		/// <summary>
 		/// Calculate the outputs of this Node
 		/// Return Success/Fail
 		/// Might be dependant on previous nodes
 		/// </summary>
-		public abstract bool Calculate ();
+		public virtual bool Calculate () { return true; }
 
 		#endregion
 
@@ -144,12 +164,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public virtual bool ContinueCalculation { get { return true; } }
 
-		/// <summary>
-		/// Does this Node accepts Transitions?
-		/// </summary>
-		public virtual bool AcceptsTranstitions { get { return false; } }
-
-        #endregion
+		#endregion
 
 		#region Protected Callbacks
 
@@ -177,26 +192,37 @@ namespace NodeEditorFramework
 		/// That means only the actual SOURCES, simple REFERENCES will not be returned
 		/// This means all SciptableObjects returned here do not have it's source elsewhere
 		/// </summary>
-		protected internal virtual ScriptableObject[] GetScriptableObjects () { return new ScriptableObject[0]; }
+		public virtual ScriptableObject[] GetScriptableObjects () { return new ScriptableObject[0]; }
 
 		/// <summary>
 		/// Replaces all REFERENCES aswell as SOURCES of any ScriptableObjects this Node holds with the cloned versions in the serialization process.
 		/// </summary>
 		protected internal virtual void CopyScriptableObjects (System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) {}
 
-		#endregion
+		public void SerializeInputsAndOutputs(System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) {}
 
-		#region Node and Knob Drawing
+        #endregion
 
-		/// <summary>
-		/// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
-		/// </summary>
-		protected internal virtual void DrawNode () 
+        #endregion
+
+        #region Drawing
+
+#if UNITY_EDITOR
+        public virtual void OnSceneGUI()
+	    {
+	        
+	    }
+#endif
+
+        /// <summary>
+        /// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
+        /// </summary>
+        protected internal virtual void DrawNode () 
 		{
 			// TODO: Node Editor Feature: Custom Windowing System
 			// Create a rect that is adjusted to the editor zoom
 			Rect nodeRect = rect;
-			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust;
+			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
 			contentOffset = new Vector2 (0, 20);
 
 			// Create a headerRect out of the previous rect and draw it, marking the selected node as such by making the header bold
@@ -222,8 +248,8 @@ namespace NodeEditorFramework
 		protected internal virtual void DrawKnobs () 
 		{
 			CheckNodeKnobMigration ();
-			foreach (NodeKnob knob in nodeKnobs)
-				knob.DrawKnob ();
+			for (int knobCnt = 0; knobCnt < nodeKnobs.Count; knobCnt++) 
+				nodeKnobs[knobCnt].DrawKnob ();
 		}
 
 		/// <summary>
@@ -234,34 +260,36 @@ namespace NodeEditorFramework
 			CheckNodeKnobMigration ();
 			if (Event.current.type != EventType.Repaint)
 				return;
-			foreach (NodeOutput output in Outputs)
+			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
 			{
+				NodeOutput output = Outputs [outCnt];
 				Vector2 startPos = output.GetGUIKnob ().center;
 				Vector2 startDir = output.GetDirection ();
 
-				foreach (NodeInput input in output.connections) 
+				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
 				{
+					NodeInput input = output.connections [conCnt];
 					NodeEditorGUI.DrawConnection (startPos,
-												startDir,
-												input.GetGUIKnob ().center,
-												input.GetDirection (),
-												ConnectionTypes.GetTypeData (output.type, true).Color);
+													startDir,
+													input.GetGUIKnob ().center,
+													input.GetDirection (),
+													output.typeData.Color);
 				}
 			}
 		}
 
 		#endregion
 		
-		#region Node Calculation Utility
+		#region Calculation Utility
 		
 		/// <summary>
 		/// Checks if there are no unassigned and no null-value inputs.
 		/// </summary>
 		protected internal bool allInputsReady ()
 		{
-			foreach (NodeInput input in Inputs)
+			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
 			{
-				if (input.connection == null || input.connection.IsValueNull)
+				if (Inputs[inCnt].connection == null || Inputs[inCnt].connection.IsValueNull)
 					return false;
 			}
 			return true;
@@ -271,11 +299,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal bool hasUnassignedInputs () 
 		{
-			foreach (NodeInput input in Inputs)
-			{
-				if (input.connection == null)
+			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++)
+				if (Inputs [inCnt].connection == null)
 					return true;
-			}
 			return false;
 		}
 		
@@ -284,9 +310,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal bool descendantsCalculated () 
 		{
-			foreach (NodeInput input in Inputs)
+			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
 			{
-				if (input.connection != null && !input.connection.body.calculated)
+				if (Inputs [cnt].connection != null && !Inputs [cnt].connection.body.calculated)
 					return false;
 			}
 			return true;
@@ -297,40 +323,38 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal bool isInput () 
 		{
-			foreach (NodeInput input in Inputs)
-			{
-				if (input.connection != null)
+			for (int cnt = 0; cnt < Inputs.Count; cnt++)
+				if (Inputs [cnt].connection != null)
 					return false;
-			}
 			return true;
 		}
 
 		#endregion
 
-		#region Node Knob Utility
+		#region Knob Utility
 
 		// -- OUTPUTS --
 
 		/// <summary>
 		/// Creates and output on your Node of the given type.
 		/// </summary>
-		public void CreateOutput (string outputName, string outputType)
+		public NodeOutput CreateOutput (string outputName, string outputType)
 		{
-			NodeOutput.Create (this, outputName, outputType);
+			return NodeOutput.Create (this, outputName, outputType);
 		}
 		/// <summary>
 		/// Creates and output on this Node of the given type at the specified NodeSide.
 		/// </summary>
-		public void CreateOutput (string outputName, string outputType, NodeSide nodeSide)
+		public NodeOutput CreateOutput (string outputName, string outputType, NodeSide nodeSide)
 		{
-			NodeOutput.Create (this, outputName, outputType, nodeSide);
+			return NodeOutput.Create (this, outputName, outputType, nodeSide);
 		}
 		/// <summary>
 		/// Creates and output on this Node of the given type at the specified NodeSide and position.
 		/// </summary>
-		public void CreateOutput (string outputName, string outputType, NodeSide nodeSide, float sidePosition)
+		public NodeOutput CreateOutput (string outputName, string outputType, NodeSide nodeSide, float sidePosition)
 		{
-			NodeOutput.Create (this, outputName, outputType, nodeSide, sidePosition);
+			return NodeOutput.Create (this, outputName, outputType, nodeSide, sidePosition);
 		}
 
 		/// <summary>
@@ -343,42 +367,29 @@ namespace NodeEditorFramework
 				Outputs[outputIdx].SetPosition ();
 		}
 
-		/// <summary>
-		/// Returns the output knob that is at the position on this node or null
-		/// </summary>
-		public NodeOutput GetOutputAtPos (Vector2 pos) 
-		{
-			foreach (NodeOutput output in Outputs)
-			{ // Search for an output at the position
-				if (output.GetScreenKnob ().Contains (new Vector3 (pos.x, pos.y)))
-					return output;
-			}
-			return null;
-		}
-
 
 		// -- INPUTS --
 
 		/// <summary>
 		/// Creates and input on your Node of the given type.
 		/// </summary>
-		public void CreateInput (string inputName, string inputType)
+		public NodeInput CreateInput (string inputName, string inputType)
 		{
-			NodeInput.Create (this, inputName, inputType);
+			return NodeInput.Create (this, inputName, inputType);
 		}
 		/// <summary>
 		/// Creates and input on this Node of the given type at the specified NodeSide.
 		/// </summary>
-		public void CreateInput (string inputName, string inputType, NodeSide nodeSide)
+		public NodeInput CreateInput (string inputName, string inputType, NodeSide nodeSide)
 		{
-			NodeInput.Create (this, inputName, inputType, nodeSide);
+			return NodeInput.Create (this, inputName, inputType, nodeSide);
 		}
 		/// <summary>
 		/// Creates and input on this Node of the given type at the specified NodeSide and position.
 		/// </summary>
-		public void CreateInput (string inputName, string inputType, NodeSide nodeSide, float sidePosition)
+		public NodeInput CreateInput (string inputName, string inputType, NodeSide nodeSide, float sidePosition)
 		{
-			NodeInput.Create (this, inputName, inputType, nodeSide, sidePosition);
+			return NodeInput.Create (this, inputName, inputType, nodeSide, sidePosition);
 		}
 
 		/// <summary>
@@ -392,21 +403,48 @@ namespace NodeEditorFramework
 		}
 
 		/// <summary>
-		/// Returns the input knob that is at the position on this node or null
+		/// Reassigns the type of the given output. This actually recreates it
 		/// </summary>
-		public NodeInput GetInputAtPos (Vector2 pos) 
+		protected static void ReassignOutputType (ref NodeOutput output, Type newOutputType) 
 		{
-			foreach (NodeInput input in Inputs)
-			{ // Search for an input at the position
-				if (input.GetScreenKnob ().Contains (new Vector3 (pos.x, pos.y)))
-					return input;
-			}
-			return null;
+			Node body = output.body;
+			string outputName = output.name;
+			// Store all valid connections that are not affected by the type change
+			IEnumerable<NodeInput> validConnections = output.connections.Where ((NodeInput connection) => connection.typeData.Type.IsAssignableFrom (newOutputType));
+			// Delete the output of the old type
+			output.Delete ();
+			// Create Output with new type
+			NodeEditorCallbacks.IssueOnAddNodeKnob (NodeOutput.Create (body, outputName, newOutputType.AssemblyQualifiedName));
+			output = body.Outputs[body.Outputs.Count-1];
+			// Restore the valid connections
+			foreach (NodeInput input in validConnections)
+				input.ApplyConnection (output);
+		}
+
+		/// <summary>
+		/// Reassigns the type of the given output. This actually recreates it
+		/// </summary>
+		protected static void ReassignInputType (ref NodeInput input, Type newInputType) 
+		{
+			Node body = input.body;
+			string inputName = input.name;
+			// Store the valid connection if it's not affected by the type change
+			NodeOutput validConnection = null;
+			if (input.connection != null && newInputType.IsAssignableFrom (input.connection.typeData.Type))
+				validConnection = input.connection;
+			// Delete the input of the old type
+			input.Delete ();
+			// Create Output with new type
+			NodeEditorCallbacks.IssueOnAddNodeKnob (NodeInput.Create (body, inputName, newInputType.AssemblyQualifiedName));
+			input = body.Inputs[body.Inputs.Count-1];
+			// Restore the valid connections
+			if (validConnection != null)
+				input.ApplyConnection (validConnection);
 		}
 
 		#endregion
 
-		#region Recursive Search Utility
+		#region Node Utility
 
 		/// <summary>
 		/// Recursively checks whether this node is a child of the other node
@@ -416,15 +454,18 @@ namespace NodeEditorFramework
 			if (otherNode == null || otherNode == this)
 				return false;
 			if (BeginRecursiveSearchLoop ()) return false;
-			foreach (NodeInput input in Inputs)
+			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
 			{
-				NodeOutput connection = input.connection;
-				if (connection != null && connection.body != startRecursiveSearchNode)
+				NodeOutput connection = Inputs [cnt].connection;
+				if (connection != null) 
 				{
-					if (connection.body == otherNode || connection.body.isChildOf (otherNode))
+					if (connection.body != startRecursiveSearchNode)
 					{
-						StopRecursiveSearchLoop ();
-						return true;
+						if (connection.body == otherNode || connection.body.isChildOf (otherNode))
+						{
+							StopRecursiveSearchLoop ();
+							return true;
+						}
 					}
 				}
 			}
@@ -438,10 +479,10 @@ namespace NodeEditorFramework
 		internal bool isInLoop ()
 		{
 			if (BeginRecursiveSearchLoop ()) return this == startRecursiveSearchNode;
-			foreach (NodeInput input in Inputs)
+			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
 			{
-				NodeOutput connection = input.connection;
-				if (connection != null && connection.body.isInLoop ())
+				NodeOutput connection = Inputs [cnt].connection;
+				if (connection != null && connection.body.isInLoop ()) 
 				{
 					StopRecursiveSearchLoop ();
 					return true;
@@ -463,16 +504,13 @@ namespace NodeEditorFramework
 			if (otherNode == null)
 				return false;
 			if (BeginRecursiveSearchLoop ()) return false;
-			foreach (NodeInput input in Inputs)
+			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
 			{
-				NodeOutput connection = input.connection;
-				if (connection != null && connection.body != startRecursiveSearchNode)
+				NodeOutput connection = Inputs [cnt].connection;
+				if (connection != null && connection.body.allowsLoopRecursion (otherNode)) 
 				{
-					if (connection.body.allowsLoopRecursion (otherNode))
-					{
-						StopRecursiveSearchLoop ();
-						return true;
-					}
+					StopRecursiveSearchLoop ();
+					return true;
 				}
 			}
 			EndRecursiveSearchLoop ();
@@ -487,18 +525,19 @@ namespace NodeEditorFramework
 		{
 			if (BeginRecursiveSearchLoop ()) return;
 			calculated = false;
-			foreach (NodeOutput output in Outputs)
+			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++)
 			{
-				foreach (NodeInput input in output.connections)
-					input.body.ClearCalculation ();
+				NodeOutput output = Outputs [outCnt];
+				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
+					output.connections [conCnt].body.ClearCalculation ();
 			}
 			EndRecursiveSearchLoop ();
 		}
 
 		#region Recursive Search Helpers
 
-		private List<Node> recursiveSearchSurpassed;
-		private Node startRecursiveSearchNode; // Temporary start node for recursive searches
+		[NonSerialized] private List<Node> recursiveSearchSurpassed;
+		[NonSerialized] private Node startRecursiveSearchNode; // Temporary start node for recursive searches
 
 		/// <summary>
 		/// Begins the recursive search loop and returns whether this node has already been searched

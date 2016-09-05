@@ -22,20 +22,18 @@ namespace NodeEditorFramework
 		{
 			nodes = new Dictionary<Node, NodeData> ();
 
-			List<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where ((Assembly assembly) => assembly.FullName.Contains ("Assembly")).ToList ();
-			if (!scriptAssemblies.Contains (Assembly.GetExecutingAssembly ()))
-				scriptAssemblies.Add (Assembly.GetExecutingAssembly ());
+			IEnumerable<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where ((Assembly assembly) => assembly.FullName.Contains ("Assembly"));
 			foreach (Assembly assembly in scriptAssemblies) 
 			{
-				foreach (Type type in assembly.GetTypes ().Where (T => T.IsClass && !T.IsAbstract && T.IsSubclassOf (typeof (Node)))) 
+				foreach (Type type in assembly.GetTypes().Where(T => T.IsClass && !T.IsAbstract && T.IsSubclassOf(typeof(Node))))
 				{
-					object[] nodeAttributes = type.GetCustomAttributes (typeof (NodeAttribute), false);
-					NodeAttribute attr = nodeAttributes [0] as NodeAttribute;
-					if (attr == null || !attr.hide)
+					object[] nodeAttributes = type.GetCustomAttributes(typeof(NodeAttribute), false);                    
+					NodeAttribute attr = nodeAttributes[0] as NodeAttribute;
+					if(attr == null || !attr.hide)
 					{
 						Node node = ScriptableObject.CreateInstance (type.Name) as Node; // Create a 'raw' instance (not setup using the appropriate Create function)
 						node = node.Create (Vector2.zero); // From that, call the appropriate Create Method to init the previously 'raw' instance
-						nodes.Add (node, new NodeData (attr == null? node.name : attr.contextText));
+						nodes.Add (node, new NodeData (attr == null? node.name : attr.contextText, attr.limitToCanvasTypes));
 					}
 				}
 			}
@@ -66,6 +64,31 @@ namespace NodeEditorFramework
 		{
 			return nodes.Keys.Single<Node> ((Node node) => node.GetType () == typeof (T)) as T;
 		}
+
+		/// <summary>
+		/// Gets the compatible nodes that have atleast one NodeInput that can connect to the given nodeOutput
+		/// </summary>
+		public static List<Node> getCompatibleNodes (NodeOutput nodeOutput)
+		{
+			if (nodeOutput == null)
+				throw new ArgumentNullException ("nodeOutput");
+			List<Node> compatibleNodes = new List<Node> ();
+			foreach (Node node in NodeTypes.nodes.Keys)
+			{ // Check if any of the NodeInputs is able to connect to the given NodeOutput
+				for (int inputCnt = 0; inputCnt < node.Inputs.Count; inputCnt++)
+				{ // Checking for compability, not using CanApplyConnection to leave out unnessecary dependancy checks
+					NodeInput input = node.Inputs[inputCnt];
+					if (input == null)
+						throw new UnityException ("Input " + inputCnt + " is null!");
+					if (input.typeData.Type.IsAssignableFrom (nodeOutput.typeData.Type))
+					{
+						compatibleNodes.Add (node);
+						break;
+					}
+				}
+			}
+			return compatibleNodes;
+		}
 	}
 
 	/// <summary>
@@ -74,10 +97,12 @@ namespace NodeEditorFramework
 	public struct NodeData 
 	{
 		public string adress;
+		public Type[] limitToCanvasTypes;
 
-		public NodeData (string name) 
+		public NodeData (string name, Type[] limitedCanvasTypes)
 		{
 			adress = name;
+			limitToCanvasTypes = limitedCanvasTypes;
 		}
 	}
 
@@ -88,11 +113,20 @@ namespace NodeEditorFramework
 	{
 		public bool hide { get; private set; }
 		public string contextText { get; private set; }
+		public Type[] limitToCanvasTypes { get; private set; }
 
-		public NodeAttribute (bool HideNode, string ReplacedContextText) 
+		public NodeAttribute (bool HideNode, string ReplacedContextText)
 		{
 			hide = HideNode;
 			contextText = ReplacedContextText;
+			limitToCanvasTypes = null;
+		}
+
+		public NodeAttribute (bool HideNode, string ReplacedContextText, Type[] limitedCanvasTypes)
+		{
+			hide = HideNode;
+			contextText = ReplacedContextText;
+			limitToCanvasTypes = limitedCanvasTypes;
 		}
 	}
 }

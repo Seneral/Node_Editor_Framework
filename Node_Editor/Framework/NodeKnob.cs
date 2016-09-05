@@ -43,6 +43,12 @@ namespace NodeEditorFramework
 			ReloadKnobTexture ();
 		}
 
+		public virtual void Delete () 
+		{
+			body.nodeKnobs.Remove (this);
+			DestroyImmediate (this, true);
+		}
+
 		#region Knob Texture Loading
 
 		/// <summary>
@@ -63,7 +69,7 @@ namespace NodeEditorFramework
 		{
 			ReloadTexture ();
 			if (knobTexture == null)
-				throw new UnityException ("Knob texture could not be loaded!");
+				throw new UnityException ("Knob texture of " + name + " could not be loaded!");
 			if (side != defaultSide) 
 			{ // Rotate Knob texture according to the side it's used on
 				ResourceManager.SetDefaultResourcePath (NodeEditor.editorPath + "Resources/");
@@ -113,7 +119,7 @@ namespace NodeEditorFramework
 		/// That means only the actual SOURCES, simple REFERENCES will not be returned
 		/// This means all SciptableObjects returned here do not have it's source elsewhere
 		/// </summary>
-		protected internal virtual ScriptableObject[] GetScriptableObjects () { return new ScriptableObject[0]; }
+		public virtual ScriptableObject[] GetScriptableObjects () { return new ScriptableObject[0]; }
 
 		/// <summary>
 		/// Replaces all REFERENCES aswell as SOURCES of any ScriptableObjects this NodeKnob holds with the cloned versions in the serialization process.
@@ -204,47 +210,46 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Gets the Knob rect in GUI space, NOT ZOOMED
 		/// </summary>
-		internal Rect GetGUIKnob () 
+		public Rect GetGUIKnob () 
 		{
-			Check ();
-			Vector2 knobSize = new Vector2 ((knobTexture.width/knobTexture.height) * NodeEditorGUI.knobSize,
-											(knobTexture.height/knobTexture.width) * NodeEditorGUI.knobSize);
-			Vector2 knobCenter = new Vector2 (body.rect.x + (side == NodeSide.Bottom || side == NodeSide.Top? 
-						/* Top | Bottom */	sidePosition :
-									(side == NodeSide.Left? 
-						/* Left */			-sideOffset-knobSize.x/2 : 
-						/* Right */			body.rect.width+sideOffset+knobSize.x/2
-									)),
-									body.rect.y + (side == NodeSide.Left || side == NodeSide.Right? 
-						/* Left | Right */	sidePosition :
-									(side == NodeSide.Top? 
-						/* Top */			-sideOffset-knobSize.y/2 : 
-						/* Bottom */		body.rect.height+sideOffset+knobSize.y/2
-									)));
-			return new Rect (knobCenter.x - knobSize.x/2 + NodeEditor.curEditorState.zoomPanAdjust.x, 
-							knobCenter.y - knobSize.y/2 + NodeEditor.curEditorState.zoomPanAdjust.y, 
-							knobSize.x, knobSize.y);
+			Rect rect = GetCanvasSpaceKnob ();
+			rect.position += NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
+			return rect;
 		}
 		
 		/// <summary>
 		/// Get the Knob rect in screen space, ZOOMED, for Input detection purposes
 		/// </summary>
-		internal Rect GetScreenKnob () 
+		public Rect GetCanvasSpaceKnob () 
 		{
-			Rect rect = GetGUIKnob ();
-			rect.position -= NodeEditor.curEditorState.zoomPanAdjust; // Remove zoomPanAdjust added in GetGUIKnob
-			return NodeEditor.CanvasGUIToScreenRect (rect);
+			Check ();
+			Vector2 knobSize = new Vector2 ((knobTexture.width/knobTexture.height) * NodeEditorGUI.knobSize,
+											(knobTexture.height/knobTexture.width) * NodeEditorGUI.knobSize);
+			Vector2 knobCenter = GetKnobCenter (knobSize);
+			return new Rect (knobCenter.x - knobSize.x/2, knobCenter.y - knobSize.y/2, knobSize.x, knobSize.y);
+		}
+
+		private Vector2 GetKnobCenter (Vector2 knobSize) 
+		{
+			if (side == NodeSide.Left)
+				return body.rect.position + new Vector2 (-sideOffset-knobSize.x/2, sidePosition);
+			else if (side == NodeSide.Right)
+				return body.rect.position + new Vector2 ( sideOffset+knobSize.x/2 + body.rect.width, sidePosition);
+			else if (side == NodeSide.Bottom)
+				return body.rect.position + new Vector2 (sidePosition,  sideOffset+knobSize.y/2 + body.rect.height);
+			else // Top
+				return body.rect.position + new Vector2 (sidePosition, -sideOffset-knobSize.y/2);
 		}
 
 		/// <summary>
 		/// Gets the direction of the knob (vertical inverted) for connection drawing purposes
 		/// </summary>
-		internal Vector2 GetDirection () 
+		public Vector2 GetDirection () 
 		{
 			return side == NodeSide.Right? 	Vector2.right : 
 					(side == NodeSide.Bottom? Vector2.up : 
-				 	(side == NodeSide.Top? 	Vector2.down : 
-				 			/* Left */		Vector2.left));
+					(side == NodeSide.Top? 	Vector2.down : 
+							/* Left */		Vector2.left));
 		}
 
 		/// <summary>
@@ -255,6 +260,14 @@ namespace NodeEditorFramework
 			return sideB - sideA + (sideA>sideB? 4 : 0);
 		}
 
+		#endregion
+
+		#region Utility
+
+		public virtual Node GetNodeAcrossConnection()
+		{
+			return null;
+		}
 		#endregion
 	}
 }
