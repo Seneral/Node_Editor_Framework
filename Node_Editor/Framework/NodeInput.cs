@@ -197,12 +197,7 @@ namespace NodeEditorFramework
 			}
 			connection = output;
 			output.connections.Add (this);
-
-			if (!output.body.calculated)
-				NodeEditor.RecalculateFrom (output.body);
-			else
-				NodeEditor.RecalculateFrom (body);
-			
+			NodeEditor.Calculator.RecalculateFrom (body);
 			output.body.OnAddOutputConnection (output);
 			body.OnAddInputConnection (this);
 			NodeEditorCallbacks.IssueOnAddConnection (this);
@@ -220,7 +215,7 @@ namespace NodeEditorFramework
 			connection.connections.Remove (this);
 			connection = null;
 
-			NodeEditor.RecalculateFrom (body);
+			NodeEditor.Calculator.RecalculateFrom (body);
 		}
 
 

@@ -13,10 +13,11 @@ namespace NodeEditorFramework
 {
 	/// <summary>
 	/// Central class of NodeEditor providing the GUI to draw the Node Editor Canvas, bundling all other parts of the Framework
-	/// Only Calculation is yet to be split from this
 	/// </summary>
 	public static class NodeEditor 
 	{
+		public static INodeCalculator Calculator;
+
 		public static string editorPath = "Assets/Plugins/Node_Editor/";
 
 		// The NodeCanvas which represents the currently drawn Node Canvas; globally accessed
@@ -67,7 +68,7 @@ namespace NodeEditorFramework
 		private static void setupBaseFramework ()
 		{
 			CheckEditorPath ();
-
+			Calculator = new DefaultNodeCalculator ();
 			// Init Resource system. Can be called anywhere else, too, if it's needed before.
 			ResourceManager.SetDefaultResourcePath (editorPath + "Resources/");
 
@@ -318,106 +319,6 @@ namespace NodeEditorFramework
 			return (screenPos - editorState.canvasRect.position - editorState.zoomPos) * editorState.zoom - editorState.panOffset;
 		}
 
-		#endregion
-
-		#region Calculation
-
-		// A list of Nodes from which calculation originates -> Call StartCalculation
-		public static List<Node> workList;
-		private static int calculationCount;
-
-		/// <summary>
-		/// Recalculate from every Input Node.
-		/// Usually does not need to be called at all, the smart calculation system is doing the job just fine
-		/// </summary>
-		public static void RecalculateAll (NodeCanvas nodeCanvas) 
-		{
-			workList = new List<Node> ();
-			foreach (Node node in nodeCanvas.nodes) 
-			{
-				if (node.isInput ())
-				{ // Add all Inputs
-					node.ClearCalculation ();
-					workList.Add (node);
-				}
-			}
-			StartCalculation ();
-		}
-		
-		/// <summary>
-		/// Recalculate from this node. 
-		/// Usually does not need to be called manually
-		/// </summary>
-		public static void RecalculateFrom (Node node) 
-		{
-			node.ClearCalculation ();
-			workList = new List<Node> { node };
-			StartCalculation ();
-		}
-		
-		/// <summary>
-		/// Iterates through workList and calculates everything, including children
-		/// </summary>
-		public static void StartCalculation () 
-		{
-			checkInit (false);
-			if (InitiationError)
-				return;
-			
-			if (workList == null || workList.Count == 0)
-				return;
-			// this blocks iterates through the worklist and starts calculating
-			// if a node returns false, it stops and adds the node to the worklist
-			// this workList is worked on until it's empty or a limit is reached
-			calculationCount = 0;
-			bool limitReached = false;
-			for (int roundCnt = 0; !limitReached; roundCnt++)
-			{ // Runs until every node possible is calculated
-				limitReached = true;
-				for (int workCnt = 0; workCnt < workList.Count; workCnt++) 
-				{
-					if (ContinueCalculation (workList [workCnt]))
-						limitReached = false;
-				}
-			}
-		}
-		
-		/// <summary>
-		/// Recursive function which continues calculation on this node and all the child nodes
-		/// Returns success/failure of this node only
-		/// </summary>
-		private static bool ContinueCalculation (Node node) 
-		{
-			if (node.calculated)
-				return false;
-			if ((node.descendantsCalculated () || node.isInLoop ()) && node.Calculate ())
-			{ // finished Calculating, continue with the children
-				node.calculated = true;
-				calculationCount++;
-				workList.Remove (node);
-				if (node.ContinueCalculation && calculationCount < 1000) 
-				{
-					for (int outCnt = 0; outCnt < node.Outputs.Count; outCnt++)
-					{
-						NodeOutput output = node.Outputs [outCnt];
-						if (!output.calculationBlockade)
-						{
-							for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-								ContinueCalculation (output.connections [conCnt].body);
-						}
-					}
-				}
-				else if (calculationCount >= 1000)
-					Debug.LogError ("Stopped calculation because of suspected Recursion. Maximum calculation iteration is currently at 1000!");
-				return true;
-			}
-			else if (!workList.Contains (node)) 
-			{ // failed to calculate, add it to check later
-				workList.Add (node);
-			}
-			return false;
-		}
-		
 		#endregion
 	}
 }
