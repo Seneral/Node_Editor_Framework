@@ -18,7 +18,7 @@ This project aims to create an easy-to-use framework for creating graph-based di
 - Documentation and active support:)
 
 ### Documentation and Support
-The documentation can be found at 'Docs/Node Editor Documentation.pdf'. If you spot any mistakes, inconsistencies, or improveable sections in the documentation, please contact [Seneral](http://forum.unity3d.com/members/seneral.638015/). You can also contact him for any type of question regarding the framework, or post on the [project thread](http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738).
+The documentation can be found in the 'Docs' folder as raw markdown files to use with mkdocs and the compiled html version online [here](http://baste-raingames.github.io/Node_Editor/). Please contact [Seneral](http://forum.unity3d.com/members/seneral.638015/) for any type of question regarding the framework, or post on the [project thread](http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738).
 
 ### Community and Contributing
 I encourage anyone in the Community willing to contribute to step up and do so! There are plenty of things to do, with everything from easy to hard, which can be browsed [here](https://github.com/Baste-RainGames/Node_Editor/issues). In most cases it might help to contact the main developer [Seneral](http://forum.unity3d.com/members/seneral.638015/) when you have any questions regarding the framework itself or any of the plans linked above.
