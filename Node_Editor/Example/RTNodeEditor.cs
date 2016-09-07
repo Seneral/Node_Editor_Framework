@@ -20,13 +20,14 @@ namespace NodeEditorFramework.Standard
 
 		public bool screenSize = false;
 		private Rect canvasRect;
-		public Rect specifiedRootRect;
-		public Rect specifiedCanvasRect;
+		public Rect specifiedRootRect = new Rect (0, 0, 1000, 500);
+		public Rect specifiedCanvasRect = new Rect (50, 50, 900, 400);
 
 		// GUI
 		private string sceneCanvasName = "";
 		private Rect loadScenePos;
 		private Rect createCanvasPos;
+		private Rect screenRect { get { return new Rect (0, 0, Screen.width, Screen.height); } }
 
 		public void Start () 
 		{
@@ -58,11 +59,10 @@ namespace NodeEditorFramework.Standard
 
 			try
 			{
-				if (!screenSize && specifiedRootRect.max != specifiedRootRect.min) GUI.BeginGroup (specifiedRootRect, NodeEditorGUI.nodeSkin.box);
-
+				GUI.BeginGroup (screenSize? screenRect : specifiedRootRect, NodeEditorGUI.nodeSkin.box);
 				NodeEditorGUI.StartNodeGUI ();
 
-				canvasRect = screenSize? new Rect (0, 0, Screen.width, Screen.height) : specifiedCanvasRect;
+				canvasRect = screenSize? screenRect : specifiedCanvasRect;
 				canvasRect.width -= 200;
 				cache.editorState.canvasRect = canvasRect;
 				NodeEditor.DrawCanvas (cache.nodeCanvas, cache.editorState);
@@ -72,8 +72,7 @@ namespace NodeEditorFramework.Standard
 				GUILayout.EndArea ();
 
 				NodeEditorGUI.EndNodeGUI ();
-
-				if (!screenSize && specifiedRootRect.max != specifiedRootRect.min) GUI.EndGroup ();
+				GUI.EndGroup ();
 			}
 			catch (UnityException e)
 			{ // on exceptions in drawing flush the canvas to avoid locking the ui.
