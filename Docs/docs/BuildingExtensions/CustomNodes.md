@@ -21,6 +21,7 @@ as described [here](http://docs.unity3d.com/Manual/ScriptCompileOrderFolders.htm
 	- Create a new Node of your type using `CreateInstance` and assign it's property `rect` using the position parameter
 	- Add connections using `CreateInput`/`CreateOutput` or `NodeInput.Create`/`NodeOuput.Create` *[Params: name; type ID; side; position]*
 	- Perform any other additional setup steps and return your created node
+	- **Important:** Setup up your created Node object, NOT `this` object!
 - Method `NodeGUI` *[protected (internal) override]*
 	- Draw your Node's GUI; you may use GUILayout functions
 	- Access the Inputs/Outputs using the respective arrays in the order of creation. 
