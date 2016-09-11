@@ -73,6 +73,11 @@ namespace NodeEditorFramework
 			DestroyImmediate (this, true);
 		}
 
+        public virtual Node CreateInvalid()
+        {
+        	return Create(Vector2.zero);
+        }
+
 		public static Node Create (string nodeID, Vector2 position) 
 		{
 			Node node = NodeTypes.getDefaultNode (nodeID);
