@@ -88,6 +88,10 @@ namespace NodeEditorFramework
 				throw new UnityException ("Cannot create Node with id " + nodeID + " as no such Node type is registered!");
 
 			node = node.Create (position);
+
+			if(node == null)
+				return null;
+
 			node.InitBase ();
 
 			if (connectingOutput != null)
