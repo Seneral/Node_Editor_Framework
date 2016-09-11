@@ -80,7 +80,79 @@ namespace NodeEditorFramework.Utilities
 
 		#endregion
 
-		#region FloatField
+        #region IntField
+        private static int activeIntField = -1;
+        private static int activeIntFieldLastValue = 0;
+        private static string activeFloatIntString = "";
+
+        public static int IntField(GUIContent label, int value, params GUILayoutOption[] fieldOptions)
+        {
+            GUILayout.BeginHorizontal();
+            if (label != GUIContent.none)
+                GUILayout.Label(label, GUILayout.ExpandWidth(true));
+            value = IntField(value, fieldOptions);
+            GUILayout.EndHorizontal();
+            return value;
+        }
+
+        public static int IntField(int value, params GUILayoutOption[] fieldOptions)
+        {
+            // Get rect and control for this float field for identification
+            if (fieldOptions.Length == 0)
+                fieldOptions = new GUILayoutOption[] { GUILayout.ExpandWidth(false), GUILayout.MinWidth(50) };
+            Rect pos = GUILayoutUtility.GetRect(new GUIContent(value.ToString()), GUI.skin.label, fieldOptions);
+
+            int floatFieldID = GUIUtility.GetControlID("FloatField".GetHashCode(), FocusType.Keyboard, pos) + 1;
+            if (floatFieldID == 0)
+                return value;
+
+            bool recorded = activeFloatField == floatFieldID;
+            bool active = floatFieldID == GUIUtility.keyboardControl;
+
+            if (active && recorded && activeIntFieldLastValue != value)
+            { // Value has been modified externally
+                activeFloatFieldLastValue = value;
+                activeFloatFieldString = value.ToString();
+            }
+
+            // Get stored string for the text field if this one is recorded
+            string str = recorded ? activeFloatFieldString : value.ToString();
+
+            string strValue = GUI.TextField(pos, str);
+            if (recorded)
+                activeFloatFieldString = strValue;
+
+            // Try Parse if value got changed. If the string could not be parsed, ignore it and keep last value
+            bool parsed = true;
+            if (strValue == "")
+                value = activeIntFieldLastValue = 0;
+            else if (strValue != value.ToString())
+            {
+                int newValue;
+                parsed = int.TryParse(strValue, out newValue);
+                if (parsed)
+                    value = activeIntFieldLastValue = newValue;
+            }
+
+            if (active && !recorded)
+            { // Gained focus this frame
+                activeFloatField = floatFieldID;
+                activeFloatFieldString = strValue;
+                activeFloatFieldLastValue = value;
+            }
+            else if (!active && recorded)
+            { // Lost focus this frame
+                activeFloatField = -1;
+                if (!parsed)
+                    value = (int)strValue.ForceParse();
+            }
+
+            return value;
+        }
+
+        #endregion
+
+        #region FloatField
 
 		private static int activeFloatField = -1;
 		private static float activeFloatFieldLastValue = 0;
