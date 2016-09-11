@@ -73,10 +73,15 @@ namespace NodeEditorFramework
 			DestroyImmediate (this, true);
 		}
 
-        public virtual Node CreateInvalid()
-        {
-        	return Create(Vector2.zero);
-        }
+
+		/// <summary>
+		/// Creates a node for the node type check
+		/// </summary>
+		public virtual Node CreateForTypeCheck()
+		{
+			return Create(Vector2.zero);
+		}
+
 
 		public static Node Create (string nodeID, Vector2 position) 
 		{
