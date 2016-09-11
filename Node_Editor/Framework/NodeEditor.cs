@@ -623,6 +623,9 @@ namespace NodeEditorFramework
 			default: // Node creation request
 				Node node = Node.Create (callback.message, ScreenToGUIPos (callback.contextClickPos));
 
+                if (node == null)
+                    break;
+
 				// Handle auto-connection
 				if (curEditorState.connectOutput != null)
 				{ // If nodeOutput is defined, link it to the first input of the same type
