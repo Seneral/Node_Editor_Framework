@@ -36,7 +36,7 @@ namespace NodeEditorFramework.Standard
 
 			cache = new NodeEditorUserCache ();
 			if (canvas != null)
-				cache.SetCanvas (canvas);
+				cache.SetCanvas (NodeEditorSaveManager.CreateWorkingCopy (canvas, true));
 		}
 
 		public void Update () 
