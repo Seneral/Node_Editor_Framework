@@ -53,6 +53,13 @@ namespace NodeEditorFramework
 			NodeData data = NodeTypes.getNodeData (node);
 			return data.limitToCanvasTypes == null || data.limitToCanvasTypes.Length == 0 || data.limitToCanvasTypes.Contains (canvasType);
 		}
+
+		public static NodeCanvasTypeData getCanvasTypeData (NodeCanvas canvas)
+		{
+			NodeCanvasTypeData data;
+			CanvasTypes.TryGetValue (canvas.GetType (), out data);
+			return data;
+		}
 	}
 
 	public struct NodeCanvasTypeData

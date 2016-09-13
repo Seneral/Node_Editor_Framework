@@ -47,10 +47,26 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Finds a scene save in the current scene with specified name or null if it does not exist
 		/// </summary>
-		private static NodeCanvasSceneSave FindSceneSave (string saveName)
+		internal static NodeCanvasSceneSave FindSceneSave (string saveName)
 		{
 			FetchSceneSaveHolder ();
-			return sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().ToList ().Find ((NodeCanvasSceneSave save) => save.savedNodeCanvas.name == saveName);
+			NodeCanvasSceneSave sceneSave = sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().ToList ().Find ((NodeCanvasSceneSave save) => save.saveName == saveName || save.savedNodeCanvas.name == saveName);
+			if (sceneSave != null)
+				sceneSave.saveName = saveName;
+			return sceneSave;
+		}
+
+		/// <summary>
+		/// Finds a scene save in the current scene with specified name or null if it does not exist
+		/// </summary>
+		internal static NodeCanvasSceneSave FindOrCreateSceneSave (string saveName)
+		{
+			FetchSceneSaveHolder ();
+			NodeCanvasSceneSave sceneSave = sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().ToList ().Find ((NodeCanvasSceneSave save) => save.saveName == saveName || save.savedNodeCanvas.name == saveName);
+			if (sceneSave == null)
+				sceneSave = sceneSaveHolder.AddComponent<NodeCanvasSceneSave> ();
+			sceneSave.saveName = saveName;
+			return sceneSave;
 		}
 
 		/// <summary>
@@ -88,9 +104,7 @@ namespace NodeEditorFramework
 			ProcessCanvas (ref savedCanvas, createWorkingCopy);
 
 			// Get the saveHolder and store the canvas
-			NodeCanvasSceneSave sceneSave = FindSceneSave (saveName);
-			if (sceneSave == null)
-				sceneSave = sceneSaveHolder.AddComponent<NodeCanvasSceneSave> ();
+			NodeCanvasSceneSave sceneSave = FindOrCreateSceneSave (saveName);
 			sceneSave.savedNodeCanvas = savedCanvas;
 
 		#if UNITY_EDITOR
@@ -120,11 +134,34 @@ namespace NodeEditorFramework
 			// Postprocess the loaded canvas
 			ProcessCanvas (ref savedCanvas, createWorkingCopy);
 
-		#if UNITY_EDITOR
+			#if UNITY_EDITOR
 			UnityEditor.EditorUtility.SetDirty (sceneSaveHolder);
-		#endif
+			#endif
 
 			return savedCanvas;
+		}
+
+		/// <summary>
+		/// Deletes the nodeCanvas and it's editorState stored in the current scene under the specified name
+		/// </summary>
+		public static void DeleteSceneNodeCanvas (string saveName)
+		{
+			if (string.IsNullOrEmpty (saveName))
+			{
+				Debug.LogError ("Cannot delete Canvas from scene: No save name specified!");
+				return;
+			}
+
+			NodeCanvasSceneSave sceneSave = FindSceneSave (saveName);
+			if (sceneSave != null)
+			{
+		#if UNITY_EDITOR
+				Object.DestroyImmediate (sceneSave);
+		#else
+				Object.Destroy (sceneSave);
+		#endif
+				//Debug.Log ("Successfully deleted SceneSave " + saveName);
+			}
 		}
 
 		#endregion
@@ -143,7 +180,7 @@ namespace NodeEditorFramework
 			if (string.IsNullOrEmpty (path)) throw new UnityException ("Cannot save NodeCanvas: No spath specified to save the NodeCanvas " + (nodeCanvas != null? nodeCanvas.name : "") + " to!");
 			if (nodeCanvas == null) throw new UnityException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path " + path + " is null!");
 			if (nodeCanvas.livesInScene)
-				Debug.LogWarning ("Attempting to save scene canvas " + nodeCanvas.name + " to an asset, scene object references will be broken!" + (!createWorkingCopy? " No workingCopy is going to be created, so your scene save is broken, too!" : ""));
+				Debug.LogWarning ("Attempting to save scene canvas " + nodeCanvas.name + " to an asset, scene object references may be broken!" + (!createWorkingCopy? " No workingCopy is going to be created, so your scene save is broken, too!" : ""));
 		#if UNITY_EDITOR
 			if (!createWorkingCopy && UnityEditor.AssetDatabase.Contains (nodeCanvas) && UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas) != path) { Debug.LogError ("Trying to create a duplicate save file for '" + nodeCanvas.name + "'! Forcing to create a working copy!"); createWorkingCopy = true; }
 		#endif

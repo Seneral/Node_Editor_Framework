@@ -165,6 +165,7 @@ namespace NodeEditorFramework.Standard
 		private void DrawSideWindow()
 		{
 			GUILayout.Label (new GUIContent ("Node Editor (" + canvasCache.nodeCanvas.name + ")", "Opened Canvas path: " + canvasCache.openedCanvasPath), NodeEditorGUI.nodeLabelBold);
+			GUILayout.Label (canvasCache.nodeCanvas.name + ": " + (canvasCache.nodeCanvas.livesInScene? "Scene Save" : "Asset Save") + ", Type: " + canvasCache.typeData.DisplayString + "");
 
 //			EditorGUILayout.ObjectField ("Loaded Canvas", canvasCache.nodeCanvas, typeof(NodeCanvas), false);
 //			EditorGUILayout.ObjectField ("Loaded State", canvasCache.editorState, typeof(NodeEditorState), false);
