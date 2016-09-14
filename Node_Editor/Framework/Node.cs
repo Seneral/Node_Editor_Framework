@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace NodeEditorFramework
 {
-	public abstract class Node : ScriptableObject
+	public abstract partial class Node : ScriptableObject
 	{
 		public Rect rect = new Rect ();
 		internal Vector2 contentOffset = Vector2.zero;

@@ -11,7 +11,7 @@ namespace NodeEditorFramework
 	/// <summary>
 	/// Manager handling all save and load operations on NodeCanvases and NodeEditorStates of the Node Editor, both as assets and in the scene
 	/// </summary>
-	public static class NodeEditorSaveManager 
+	public static partial class NodeEditorSaveManager 
 	{
 		#region Scene Saving
 

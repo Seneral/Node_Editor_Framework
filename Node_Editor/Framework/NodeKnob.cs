@@ -15,7 +15,7 @@ namespace NodeEditorFramework
 	/// Abstract knob on the side of an node that handles positioning drawing with a texture and even labeling and positioning calls
 	/// </summary>
 	[System.Serializable]
-	public class NodeKnob : ScriptableObject
+	public partial class NodeKnob : ScriptableObject
 	{
 		// Main
 		public Node body;

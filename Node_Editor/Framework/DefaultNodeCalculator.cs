@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace NodeEditorFramework
 {
-	public class DefaultNodeCalculator : INodeCalculator
+	public partial class DefaultNodeCalculator : INodeCalculator
 	{
 		// A list of Nodes from which calculation originates -> Call StartCalculation
 		public List<Node> workList;

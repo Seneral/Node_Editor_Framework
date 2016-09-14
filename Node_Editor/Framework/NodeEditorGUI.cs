@@ -5,7 +5,7 @@ using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework 
 {
-	public static class NodeEditorGUI 
+	public static partial class NodeEditorGUI 
 	{
 		// static GUI settings, textures and styles
 		public static int knobSize = 16;

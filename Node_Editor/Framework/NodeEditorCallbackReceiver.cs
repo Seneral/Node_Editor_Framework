@@ -6,7 +6,7 @@ using NodeEditorFramework;
 
 namespace NodeEditorFramework 
 {
-	public abstract class NodeEditorCallbackReceiver : MonoBehaviour
+	public abstract partial class NodeEditorCallbackReceiver : MonoBehaviour
 	{
 		// Editor
 		public virtual void OnEditorStartUp () {}
@@ -25,7 +25,7 @@ namespace NodeEditorFramework
 		public virtual void OnRemoveConnection (NodeInput input) {}
 	}
 
-	public static class NodeEditorCallbacks
+	public static partial class NodeEditorCallbacks
 	{
 		private static int receiverCount;
 		private static List<NodeEditorCallbackReceiver> callbackReceiver;

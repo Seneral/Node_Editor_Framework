@@ -8,7 +8,7 @@ namespace NodeEditorFramework
 	/// <summary>
 	/// NodeInput accepts one connection to a NodeOutput by default
 	/// </summary>
-	public class NodeInput : NodeKnob
+	public partial class NodeInput : NodeKnob
 	{
 		// NodeKnob Members
 		protected override NodeSide defaultSide { get { return NodeSide.Left; } }

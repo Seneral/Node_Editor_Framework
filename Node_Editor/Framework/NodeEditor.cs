@@ -14,7 +14,7 @@ namespace NodeEditorFramework
 	/// <summary>
 	/// Central class of NodeEditor providing the GUI to draw the Node Editor Canvas, bundling all other parts of the Framework
 	/// </summary>
-	public static class NodeEditor 
+	public static partial class NodeEditor 
 	{
 		public static INodeCalculator Calculator;
 

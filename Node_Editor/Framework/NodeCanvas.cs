@@ -5,7 +5,7 @@ using System.Linq;
 namespace NodeEditorFramework 
 {
 	[NodeCanvasType("Default")]
-	public class NodeCanvas : ScriptableObject 
+	public partial class NodeCanvas : ScriptableObject 
 	{ // Just contains the nodes and global canvas stuff; an associated NodeEditorState holds the actual state now
 		public virtual string canvasName { get { return "Calculation Canvas"; } }
 

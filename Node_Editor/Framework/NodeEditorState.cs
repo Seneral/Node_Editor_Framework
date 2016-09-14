@@ -5,7 +5,7 @@ using NodeEditorFramework;
 
 namespace NodeEditorFramework 
 {
-	public class NodeEditorState : ScriptableObject 
+	public partial class NodeEditorState : ScriptableObject 
 	{ // holds the state of a NodeCanvas inside a NodeEditor
 		public NodeCanvas canvas;
 		public NodeEditorState parentEditor;
