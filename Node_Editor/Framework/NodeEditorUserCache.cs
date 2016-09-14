@@ -133,6 +133,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		private void RecreateCache () 
 		{
+			if (!useCache)
+				return;
 			DeleteCache ();
 			SaveCache ();
 		}
@@ -199,6 +201,8 @@ namespace NodeEditorFramework
 		
 		private void DeleteCache () 
 		{
+			if (!useCache)
+				return;
 			UnityEditor.AssetDatabase.DeleteAsset (lastSessionPath);
 			UnityEditor.AssetDatabase.Refresh ();
 			//UnityEditor.EditorPrefs.DeleteKey ("NodeEditorLastSession");
@@ -207,6 +211,8 @@ namespace NodeEditorFramework
 
 		private void UpdateCacheFile () 
 		{
+			if (!useCache)
+				return;
 			UnityEditor.EditorUtility.SetDirty (nodeCanvas);
 			UnityEditor.AssetDatabase.SaveAssets ();
 			UnityEditor.AssetDatabase.Refresh ();
