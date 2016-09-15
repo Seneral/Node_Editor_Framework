@@ -60,7 +60,7 @@ namespace NodeEditorFramework.Standard
 			try
 			{
 				GUI.BeginGroup (screenSize? screenRect : specifiedRootRect, NodeEditorGUI.nodeSkin.box);
-				NodeEditorGUI.StartNodeGUI ();
+				NodeEditorGUI.StartNodeGUI ("RTNodeEditor", false);
 
 				canvasRect = screenSize? screenRect : specifiedCanvasRect;
 				canvasRect.width -= 200;

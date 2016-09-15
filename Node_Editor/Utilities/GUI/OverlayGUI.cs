@@ -5,23 +5,27 @@ namespace NodeEditorFramework.Utilities
 {
 	public static class OverlayGUI 
 	{
-		public static PopupMenu currentPopup;
+		private static string currentEditorUser;
+
+		public static string openedPopupUser = "NONE";
+		public static PopupMenu openedPopup;
 
 		/// <summary>
 		/// Returns if any popup currently has control.
 		/// </summary>
 		public static bool HasPopupControl () 
 		{
-			return currentPopup != null;
+			return openedPopup != null && currentEditorUser == openedPopupUser;
 		}
 
 		/// <summary>
 		/// Starts the OverlayGUI (Call before any other GUI code!)
 		/// </summary>
-		public static void StartOverlayGUI () 
+		public static void StartOverlayGUI (string editorUser) 
 		{
-			if (currentPopup != null && Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint)
-				currentPopup.Draw ();
+			currentEditorUser = editorUser;
+			if (HasPopupControl () && Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint)
+				openedPopup.Draw ();
 		}
 
 		/// <summary>
@@ -29,8 +33,29 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static void EndOverlayGUI () 
 		{
-			if (currentPopup != null && (Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint))
-				currentPopup.Draw ();
+			if (HasPopupControl () && (Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint))
+				openedPopup.Draw ();
+		}
+
+		/// <summary>
+		/// Opens the specified popupMenu in the current editor users and closes all other popups
+		/// </summary>
+		public static void OpenPopup (PopupMenu popup)
+		{
+			openedPopup = popup;
+			openedPopupUser = currentEditorUser;
+		}
+
+		/// <summary>
+		/// Closes the popup in the current editor if existant
+		/// </summary>
+		public static void ClosePopup ()
+		{
+			if (HasPopupControl ())
+			{
+				openedPopup = null;
+				openedPopupUser = "NONE";
+			}
 		}
 	}
 
@@ -80,7 +105,7 @@ namespace NodeEditorFramework.Utilities
 			minWidth = MinWidth;
 			position = calculateRect (pos, menuItems, minWidth);
 			selectedPath = "";
-			OverlayGUI.currentPopup = this;
+			OverlayGUI.OpenPopup (this);
 		}
 
 		public Vector2 Position { get { return position.position; } }
@@ -172,9 +197,7 @@ namespace NodeEditorFramework.Utilities
 			}
 			
 			if (!inRect || close) 
-			{
-				OverlayGUI.currentPopup = null;
-			}
+				OverlayGUI.ClosePopup ();
 
 			NodeEditorFramework.NodeEditor.RepaintClients ();
 		}

@@ -33,6 +33,8 @@ namespace NodeEditorFramework.Utilities
 		private static List<Matrix4x4> GUIMatrices;
 		private static List<bool> adjustedGUILayout;
 
+		private static bool isEditorWindow;
+
 		#region Init
 
 		public static void CheckInit () 
@@ -105,15 +107,17 @@ namespace NodeEditorFramework.Utilities
 		/// Returns vector to offset GUI controls with to account for zooming to the pivot. 
 		/// Using adjustGUILayout does that automatically for GUILayout rects. Theoretically can be nested!
 		/// </summary>
-		public static Vector2 BeginScale (ref Rect rect, Vector2 zoomPivot, float zoom, bool adjustGUILayout) 
+		public static Vector2 BeginScale (ref Rect rect, Vector2 zoomPivot, float zoom, bool IsEditorWindow, bool adjustGUILayout) 
 		{
+			isEditorWindow = IsEditorWindow;
+
 			Rect screenRect;
 			if (compabilityMode) 
 			{ // In compability mode, we will assume only one top group and do everything manually, not using reflected calls (-> practically blind)
 				GUI.EndGroup ();
 				screenRect = rect;
 				#if UNITY_EDITOR
-				if (!Application.isPlaying)
+				if (isEditorWindow)
 					screenRect.y += 23;
 				#endif
 			}
@@ -177,7 +181,7 @@ namespace NodeEditorFramework.Utilities
 
 			if (compabilityMode)
 			{ // In compability mode, we don't know the previous group rect, but as we cannot use top groups there either way, we restore the screen group
-				if (!Application.isPlaying) // We're in an editor window
+				if (isEditorWindow) // We're in an editor window
 					GUI.BeginClip (new Rect (0, 23, Screen.width, Screen.height-23));
 				else
 					GUI.BeginClip (new Rect (0, 0, Screen.width, Screen.height));
@@ -386,7 +390,7 @@ namespace NodeEditorFramework.Utilities
 		public static Vector2 GUIToScreenSpace (Vector2 guiPosition) 
 		{
 			#if UNITY_EDITOR
-			if (!Application.isPlaying)
+			if (isEditorWindow)
 				return guiPosition + getTopRectScreenSpace.position - new Vector2 (0, 22);
 			#endif
 			return guiPosition + getTopRectScreenSpace.position;
@@ -401,7 +405,7 @@ namespace NodeEditorFramework.Utilities
 		{
 			guiRect.position += getTopRectScreenSpace.position;
 			#if UNITY_EDITOR
-			if (!Application.isPlaying)
+			if (isEditorWindow)
 				guiRect.y -= 22;
 			#endif
 			return guiRect;

@@ -199,7 +199,7 @@ namespace NodeEditorFramework
 
 			// We're using a custom scale method, as default one is messing up clipping rect
 			Rect canvasRect = curEditorState.canvasRect;
-			curEditorState.zoomPanAdjust = GUIScaleUtility.BeginScale (ref canvasRect, curEditorState.zoomPos, curEditorState.zoom, false);
+			curEditorState.zoomPanAdjust = GUIScaleUtility.BeginScale (ref canvasRect, curEditorState.zoomPos, curEditorState.zoom, NodeEditorGUI.isEditorWindow, false);
 
 			// ---- BEGIN SCALE ----
 

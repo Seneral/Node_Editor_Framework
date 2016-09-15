@@ -38,7 +38,7 @@ namespace NodeEditorFramework.Standard
 		public static NodeEditorWindow OpenNodeEditor () 
 		{
 			_editor = GetWindow<NodeEditorWindow>();
-			_editor.minSize = new Vector2(800, 600);
+			_editor.minSize = new Vector2(400, 200);
 			NodeEditor.ReInit (false);
 
 			Texture iconTexture = ResourceManager.LoadTexture (EditorGUIUtility.isProSkin? "Textures/Icon_Dark.png" : "Textures/Icon_Light.png");
@@ -138,7 +138,7 @@ namespace NodeEditorFramework.Standard
 //			Rect canvasRect = GUILayoutUtility.GetRect (600, 600);
 //			if (Event.current.type != EventType.Layout)
 //				mainEditorState.canvasRect = canvasRect;
-			NodeEditorGUI.StartNodeGUI ();
+			NodeEditorGUI.StartNodeGUI ("NodeEditorWindow", true);
 
 			// Perform drawing with error-handling
 			try

@@ -7,6 +7,9 @@ namespace NodeEditorFramework
 {
 	public static partial class NodeEditorGUI 
 	{
+		internal static string curEditorUser;
+		internal static bool isEditorWindow;
+
 		// static GUI settings, textures and styles
 		public static int knobSize = 16;
 
@@ -70,14 +73,17 @@ namespace NodeEditorFramework
 			return true;
 		}
 
-		public static void StartNodeGUI () 
+		public static void StartNodeGUI (string editorUser, bool IsEditorWindow) 
 		{
 			NodeEditor.checkInit(true);
+
+			curEditorUser = editorUser;
+			isEditorWindow = IsEditorWindow;
 
 			defaultSkin = GUI.skin;
 			if (nodeSkin != null)
 				GUI.skin = nodeSkin;
-			OverlayGUI.StartOverlayGUI ();
+			OverlayGUI.StartOverlayGUI (curEditorUser);
 		}
 
 		public static void EndNodeGUI () 

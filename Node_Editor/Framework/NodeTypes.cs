@@ -32,7 +32,7 @@ namespace NodeEditorFramework
 					if(attr == null || !attr.hide)
 					{
 						Node node = ScriptableObject.CreateInstance (type.Name) as Node; // Create a 'raw' instance (not setup using the appropriate Create function)
-						//node = node.Create (Vector2.zero); // From that, call the appropriate Create Method to init the previously 'raw' instance
+						node = node.Create (Vector2.zero); // From that, call the appropriate Create Method to init the previously 'raw' instance
 						nodes.Add (node, new NodeData (attr == null? node.name : attr.contextText, attr.limitToCanvasTypes));
 					}
 				}
