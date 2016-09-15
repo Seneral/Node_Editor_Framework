@@ -25,9 +25,9 @@ namespace NodeEditorFramework.Standard
 			NodeOutput out3 = node.CreateOutput ("Child 3", "Flow");
 
 			// Creates three child nodes that automatically connect to the respective outputs
-			Node.Create ("flowNode", new Vector2 (pos.x+300, pos.y-200), out1);
-			Node.Create ("flowNode", new Vector2 (pos.x+300, pos.y+  0), out2);
-			Node.Create ("flowNode", new Vector2 (pos.x+300, pos.y+200), out3);
+			//Node.Create ("flowNode", new Vector2 (pos.x+300, pos.y-200), out1);
+			//Node.Create ("flowNode", new Vector2 (pos.x+300, pos.y+  0), out2);
+			//Node.Create ("flowNode", new Vector2 (pos.x+300, pos.y+200), out3);
 
 			return node;
 		}
