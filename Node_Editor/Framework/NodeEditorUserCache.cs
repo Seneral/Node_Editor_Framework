@@ -13,7 +13,7 @@ namespace NodeEditorFramework
 	{
 		public NodeCanvas nodeCanvas;
 		public NodeEditorState editorState;
-		public void AssureCanvas () { if (nodeCanvas == null) NewNodeCanvas (); if (editorState == null) NewEditorState (); }
+		public void AssureCanvas () { if (nodeCanvas == null) LoadCache (); if (nodeCanvas == null) NewNodeCanvas (); if (editorState == null) NewEditorState (); }
 
 		public NodeCanvasTypeData typeData;
 
@@ -60,12 +60,6 @@ namespace NodeEditorFramework
 			if (!useCache)
 				return;
 
-			// Load the cache after the NodeEditor was cleared
-			EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
-			EditorLoadingControl.lateEnteredPlayMode += LoadCache;
-			EditorLoadingControl.justOpenedNewScene -= LoadCache;
-			EditorLoadingControl.justOpenedNewScene += LoadCache;
-
 			// Add new objects to the cache save file
 			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
 			NodeEditorCallbacks.OnAddNode += SaveNewNode;
@@ -77,9 +71,6 @@ namespace NodeEditorFramework
 
 		public void ClearCacheEvents () 
 		{
-			EditorLoadingControl.lateEnteredPlayMode -= LoadCache;
-			EditorLoadingControl.justLeftPlayMode -= LoadCache;
-			EditorLoadingControl.justOpenedNewScene -= LoadCache;
 			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
 			NodeEditorCallbacks.OnAddNodeKnob -= SaveNewNodeKnob;
 		}
