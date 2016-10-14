@@ -78,6 +78,8 @@ namespace NodeEditorFramework
 		[HotkeyAttribute(KeyCode.DownArrow, EventType.KeyDown)]
 		private static void KB_MoveNode(NodeEditorInputInfo inputInfo)
 		{
+			if (GUIUtility.keyboardControl > 0)
+				return;
 			NodeEditorState state = inputInfo.editorState;
 			if (state.selectedNode != null)
 			{ 
@@ -247,12 +249,16 @@ namespace NodeEditorFramework
 		[HotkeyAttribute (KeyCode.N, EventType.KeyDown)]
 		private static void HandleStartNavigating (NodeEditorInputInfo inputInfo) 
 		{
+			if (GUIUtility.keyboardControl > 0)
+				return;
 			inputInfo.editorState.navigate = true;
 		}
 
 		[HotkeyAttribute (KeyCode.N, EventType.KeyUp)]
 		private static void HandleEndNavigating (NodeEditorInputInfo inputInfo) 
 		{
+			if (GUIUtility.keyboardControl > 0)
+				return;
 			inputInfo.editorState.navigate = false;
 		}
 
