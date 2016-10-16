@@ -282,6 +282,8 @@ namespace NodeEditorFramework
 			}
 		}
 
+		#endif
+
 		/// <summary>
 		/// Applies a general process on the canvas for loading/saving operations
 		/// </summary>
@@ -293,8 +295,6 @@ namespace NodeEditorFramework
 			else
 				canvas.Validate ();
 		}
-
-		#endif
 
 		#endregion
 
