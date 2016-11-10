@@ -114,7 +114,7 @@ namespace NodeEditorFramework
 
 		#endregion
 
-		#region Node (3)
+		#region Node (4)
 
 		public static Action<Node> OnAddNode;
 		public static void IssueOnAddNode (Node node) 
@@ -140,11 +140,9 @@ namespace NodeEditorFramework
 				if (callbackReceiver [cnt] == null)
 					callbackReceiver.RemoveAt (cnt--);
 				else 
-				{
-					callbackReceiver [cnt].OnDeleteNode (node);
 					node.OnDelete ();
-				}
 			}
+			callbackReceiver [cnt].OnDeleteNode (node);
 		}
 
 		public static Action<Node> OnMoveNode;
