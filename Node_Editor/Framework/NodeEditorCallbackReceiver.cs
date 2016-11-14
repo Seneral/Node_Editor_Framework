@@ -140,9 +140,9 @@ namespace NodeEditorFramework
 				if (callbackReceiver [cnt] == null)
 					callbackReceiver.RemoveAt (cnt--);
 				else 
-					node.OnDelete ();
+					callbackReceiver [cnt].OnDeleteNode (node);
 			}
-			callbackReceiver [cnt].OnDeleteNode (node);
+			node.OnDelete ();
 		}
 
 		public static Action<Node> OnMoveNode;
