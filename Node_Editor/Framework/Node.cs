@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using NodeEditorFramework.Extensions;
 
 namespace NodeEditorFramework
 {
@@ -20,6 +21,8 @@ namespace NodeEditorFramework
 		[HideInInspector]
 		[NonSerialized]
 		internal bool calculated = true;
+
+		private Color backgroundColor = Color.gray;
 
 		#region General
 
@@ -205,23 +208,22 @@ namespace NodeEditorFramework
 
 		public void SerializeInputsAndOutputs(System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) {}
 
-        #endregion
+		#endregion
 
-        #endregion
+		#endregion
 
-        #region Drawing
+		#region Drawing
 
 #if UNITY_EDITOR
-        public virtual void OnSceneGUI()
-	    {
-	        
-	    }
+		public virtual void OnSceneGUI()
+		{
+			
+		}
 #endif
-
-        /// <summary>
-        /// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
-        /// </summary>
-        protected internal virtual void DrawNode () 
+		/// <summary>
+		/// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
+		/// </summary>
+		protected internal virtual void DrawNode () 
 		{
 			// TODO: Node Editor Feature: Custom Windowing System
 			// Create a rect that is adjusted to the editor zoom
@@ -233,11 +235,15 @@ namespace NodeEditorFramework
 			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, contentOffset.y);
 			GUI.Label (headerRect, name, NodeEditor.curEditorState.selectedNode == this? NodeEditorGUI.nodeBoxBold : NodeEditorGUI.nodeBox);
 
+			// Create a GUI style for the node.
+			GUIStyle nodeGUIStyle = new GUIStyle(GUI.skin.box);
+			nodeGUIStyle.normal.background.CreateTexture(2, 2, backgroundColor);
+
 			// Begin the body frame around the NodeGUI
 			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + contentOffset.y, nodeRect.width, nodeRect.height - contentOffset.y);
-			GUI.BeginGroup (bodyRect, GUI.skin.box);
+			GUI.BeginGroup (bodyRect, nodeGUIStyle);
 			bodyRect.position = Vector2.zero;
-			GUILayout.BeginArea (bodyRect, GUI.skin.box);
+			GUILayout.BeginArea (bodyRect, nodeGUIStyle);
 			// Call NodeGUI
 			GUI.changed = false;
 			NodeGUI ();
@@ -282,10 +288,15 @@ namespace NodeEditorFramework
 			}
 		}
 
+		protected void SetBackgroundColor(Color color)
+		{
+			backgroundColor = color;
+		}
+
 		#endregion
-		
+
 		#region Calculation Utility
-		
+
 		/// <summary>
 		/// Checks if there are no unassigned and no null-value inputs.
 		/// </summary>
