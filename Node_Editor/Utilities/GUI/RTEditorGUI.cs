@@ -961,10 +961,11 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static Texture2D ColorToTex (int pxSize, Color col) 
 		{
+			Color[] texCols = new Color[pxSize*pxSize];
+			for (int px = 0; px < pxSize*pxSize; px++) 
+				texCols[px] = col;
 			Texture2D tex = new Texture2D (pxSize, pxSize);
-			for (int x = 0; x < pxSize; x++) 
-				for (int y = 0; y < pxSize; y++) 
-					tex.SetPixel (x, y, col);
+			tex.SetPixels (texCols);
 			tex.Apply ();
 			return tex;
 		}

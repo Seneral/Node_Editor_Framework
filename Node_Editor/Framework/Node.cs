@@ -2,7 +2,8 @@ using UnityEngine;
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using NodeEditorFramework.Extensions;
+
+using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
 {
@@ -22,7 +23,9 @@ namespace NodeEditorFramework
 		[NonSerialized]
 		internal bool calculated = true;
 
-		private Color backgroundColor = Color.gray;
+		public Color backgroundColor = Color.white;
+		private Color lastBGColor = Color.white;
+		private GUIStyle nodeBGStyle;
 
 		#region General
 
@@ -208,23 +211,26 @@ namespace NodeEditorFramework
 
 		public void SerializeInputsAndOutputs(System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) {}
 
-		#endregion
+        #endregion
 
-		#endregion
+        #endregion
 
-		#region Drawing
+        #region Drawing
 
 #if UNITY_EDITOR
-		public virtual void OnSceneGUI()
-		{
-			
-		}
+        public virtual void OnSceneGUI()
+	    {
+	        
+	    }
 #endif
-		/// <summary>
-		/// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
-		/// </summary>
-		protected internal virtual void DrawNode () 
+
+        /// <summary>
+        /// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
+        /// </summary>
+        protected internal virtual void DrawNode () 
 		{
+			AssureNodeBGStyle ();
+
 			// TODO: Node Editor Feature: Custom Windowing System
 			// Create a rect that is adjusted to the editor zoom
 			Rect nodeRect = rect;
@@ -233,17 +239,14 @@ namespace NodeEditorFramework
 
 			// Create a headerRect out of the previous rect and draw it, marking the selected node as such by making the header bold
 			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, contentOffset.y);
-			GUI.Label (headerRect, name, NodeEditor.curEditorState.selectedNode == this? NodeEditorGUI.nodeBoxBold : NodeEditorGUI.nodeBox);
-
-			// Create a GUI style for the node.
-			GUIStyle nodeGUIStyle = new GUIStyle(GUI.skin.box);
-			nodeGUIStyle.normal.background.CreateTexture(2, 2, backgroundColor);
+			GUI.Box (headerRect, GUIContent.none, nodeBGStyle);
+			GUI.Label (headerRect, name, NodeEditor.curEditorState.selectedNode == this? NodeEditorGUI.nodeLabelBoldCentered : NodeEditorGUI.nodeLabelCentered);
 
 			// Begin the body frame around the NodeGUI
 			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + contentOffset.y, nodeRect.width, nodeRect.height - contentOffset.y);
-			GUI.BeginGroup (bodyRect, nodeGUIStyle);
+			GUI.BeginGroup (bodyRect, nodeBGStyle);
 			bodyRect.position = Vector2.zero;
-			GUILayout.BeginArea (bodyRect, nodeGUIStyle);
+			GUILayout.BeginArea (bodyRect);
 			// Call NodeGUI
 			GUI.changed = false;
 			NodeGUI ();
@@ -288,15 +291,21 @@ namespace NodeEditorFramework
 			}
 		}
 
-		protected void SetBackgroundColor(Color color)
+		private void AssureNodeBGStyle ()
 		{
-			backgroundColor = color;
+			if (nodeBGStyle == null || nodeBGStyle.normal.background == null || lastBGColor != backgroundColor)
+			{
+				lastBGColor = backgroundColor;
+				nodeBGStyle = new GUIStyle (GUI.skin.box);
+				nodeBGStyle.normal.background = ResourceManager.GetTintedTexture ("Textures/NE_Box.png", backgroundColor);
+			}
 		}
 
+
 		#endregion
-
+		
 		#region Calculation Utility
-
+		
 		/// <summary>
 		/// Checks if there are no unassigned and no null-value inputs.
 		/// </summary>
