@@ -124,7 +124,7 @@ namespace NodeEditorFramework.Standard
 		{            
 			// Initiation
 			NodeEditor.checkInit(true);
-			if (NodeEditor.InitiationError)
+			if (NodeEditor.InitiationError || canvasCache == null)
 			{
 				GUILayout.Label("Node Editor Initiation failed! Check console for more information!");
 				return;

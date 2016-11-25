@@ -28,6 +28,8 @@ namespace NodeEditorFramework
 		public static GUIStyle nodeLabel;
 		public static GUIStyle nodeLabelBold;
 		public static GUIStyle nodeLabelSelected;
+		public static GUIStyle nodeLabelCentered;
+		public static GUIStyle nodeLabelBoldCentered;
 
 		public static GUIStyle nodeBox;
 		public static GUIStyle nodeBoxBold;
@@ -66,6 +68,12 @@ namespace NodeEditorFramework
 			// Selected Label
 			nodeLabelSelected = new GUIStyle (nodeLabel);
 			nodeLabelSelected.normal.background = RTEditorGUI.ColorToTex (1, NE_LightColor);
+			// Centered Label
+			nodeLabelCentered = new GUIStyle (nodeLabel);
+			nodeLabelCentered.alignment = TextAnchor.MiddleCenter;
+			// Centered Bold Label
+			nodeLabelBoldCentered = new GUIStyle (nodeLabelBold);
+			nodeLabelBoldCentered.alignment = TextAnchor.MiddleCenter;
 			// Bold Box
 			nodeBoxBold = new GUIStyle (nodeBox);
 			nodeBoxBold.fontStyle = FontStyle.Bold;
