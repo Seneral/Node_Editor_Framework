@@ -70,6 +70,17 @@ namespace NodeEditorFramework
 		}
 
 		/// <summary>
+		/// Finds a scene save in the current scene with specified name or null if it does not exist
+		/// </summary>
+		internal static NodeCanvasSceneSave CreateSceneSave (string saveName)
+		{
+			FetchSceneSaveHolder ();
+			NodeCanvasSceneSave sceneSave = sceneSaveHolder.AddComponent<NodeCanvasSceneSave> ();
+			sceneSave.saveName = saveName;
+			return sceneSave;
+		}
+
+		/// <summary>
 		/// Saves the nodeCanvas in the current scene under the specified name along with the specified editorStates or, if specified, their working copies
 		/// If also stored as an asset, it will loose the reference to the asset first
 		/// </summary>
@@ -104,8 +115,16 @@ namespace NodeEditorFramework
 			ProcessCanvas (ref savedCanvas, createWorkingCopy);
 
 			// Get the saveHolder and store the canvas
-			NodeCanvasSceneSave sceneSave = FindOrCreateSceneSave (saveName);
-			sceneSave.savedNodeCanvas = savedCanvas;
+			NodeCanvasSceneSave sceneSave = FindSceneSave (saveName);
+		#if UNITY_EDITOR
+			if (sceneSave != null) // OVERWRITE
+				OverwriteCanvas (ref sceneSave.savedNodeCanvas, savedCanvas);
+			else
+		#endif
+			{
+				sceneSave = CreateSceneSave (saveName);
+				sceneSave.savedNodeCanvas = savedCanvas;
+			}
 
 		#if UNITY_EDITOR
 			UnityEditor.EditorUtility.SetDirty (sceneSaveHolder);
@@ -171,13 +190,13 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Saves the the given NodeCanvas along with the given NodeEditorStates if specified as a new asset, optionally as working copies
 		/// </summary>
-		public static void SaveNodeCanvas (string path, NodeCanvas nodeCanvas, bool createWorkingCopy) 
+		public static void SaveNodeCanvas (string path, NodeCanvas nodeCanvas, bool createWorkingCopy, bool safeOverwrite = true) 
 		{
 		#if !UNITY_EDITOR
 			throw new System.NotImplementedException ();
 		#endif
 
-			if (string.IsNullOrEmpty (path)) throw new UnityException ("Cannot save NodeCanvas: No spath specified to save the NodeCanvas " + (nodeCanvas != null? nodeCanvas.name : "") + " to!");
+			if (string.IsNullOrEmpty (path)) throw new UnityException ("Cannot save NodeCanvas: No path specified to save the NodeCanvas " + (nodeCanvas != null? nodeCanvas.name : "") + " to!");
 			if (nodeCanvas == null) throw new UnityException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path " + path + " is null!");
 			if (nodeCanvas.livesInScene)
 				Debug.LogWarning ("Attempting to save scene canvas " + nodeCanvas.name + " to an asset, scene object references may be broken!" + (!createWorkingCopy? " No workingCopy is going to be created, so your scene save is broken, too!" : ""));
@@ -192,14 +211,32 @@ namespace NodeEditorFramework
 			ProcessCanvas (ref nodeCanvas, createWorkingCopy);
 			nodeCanvas.livesInScene = false;
 
-			// Write canvas and editorStates
-			UnityEditor.AssetDatabase.CreateAsset (nodeCanvas, path);
-			AddSubAssets (nodeCanvas.editorStates, nodeCanvas);
+			NodeCanvas prevSave = UnityEditor.AssetDatabase.LoadAssetAtPath<NodeCanvas> (path);
+			NodeCanvas canvasSave = nodeCanvas;
+			if (prevSave != null && safeOverwrite) // OVERWRITE
+			{ // Delete contents of old save
+				NodeEditor.BeginEditingCanvas (prevSave);
+				while (prevSave.nodes.Count > 0)
+					prevSave.nodes[0].Delete ();
+				for (int i = 0; i < prevSave.editorStates.Length; i++)
+					Object.DestroyImmediate (prevSave.editorStates[i], true);
+				NodeEditor.EndEditingCanvas ();
+				// Overwrite main canvas
+				OverwriteCanvas (ref prevSave, nodeCanvas);
+				canvasSave = prevSave;
+			}
+			else
+			{ // Write main canvas
+				UnityEditor.AssetDatabase.CreateAsset (nodeCanvas, path);
+			}
+
+			// Write editorStates
+			AddSubAssets (nodeCanvas.editorStates, canvasSave);
 
 			// Write nodes + contents
 			foreach (Node node in nodeCanvas.nodes)
 			{ // Write node and additional scriptable objects
-				AddSubAsset (node, nodeCanvas);
+				AddSubAsset (node, canvasSave);
 				AddSubAssets (node.GetScriptableObjects (), node);
 				foreach (NodeKnob knob in node.nodeKnobs)
 				{ // Write knobs and their additional scriptable objects
@@ -214,7 +251,7 @@ namespace NodeEditorFramework
 			// TODO: Node Editor: Need to implement ingame-saving (Resources, AsssetBundles, ... won't work)
 		#endif
 
-			NodeEditorCallbacks.IssueOnSaveCanvas (nodeCanvas);
+			NodeEditorCallbacks.IssueOnSaveCanvas (canvasSave);
 		}
 
 		/// <summary>
@@ -514,6 +551,23 @@ namespace NodeEditorFramework
 			}
 			state.name = stateName;
 			return state;
+		}
+
+		/// <summary>
+		/// Overwrites canvas with canvasData, so that all references to canvas will be remained, but both canvases are still seperate.
+		/// Only works in the editor!
+		/// </summary>
+		public static void OverwriteCanvas (ref NodeCanvas canvas, NodeCanvas canvasData)
+		{
+		#if UNITY_EDITOR
+			if (canvasData == null)
+				throw new System.ArgumentNullException ("Cannot overwrite canvas as data is null!");
+			if (canvas == null)
+				canvas = ScriptableObject.CreateInstance(canvasData.GetType ()) as NodeCanvas;
+			UnityEditor.EditorUtility.CopySerialized (canvasData, canvas);
+		#else
+			throw new System.NotSupportedException ("Cannot overwrite canvas in player!");
+		#endif
 		}
 
 		#endregion

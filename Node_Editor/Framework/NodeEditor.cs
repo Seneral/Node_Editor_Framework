@@ -30,6 +30,10 @@ namespace NodeEditorFramework
 		public static Action ClientRepaints;
 		public static void RepaintClients () { if (ClientRepaints != null) ClientRepaints (); }
 
+		// Canvas Editing
+		private static Stack<NodeCanvas> editCanvasStack = new Stack<NodeCanvas> (4);
+		private static Stack<NodeEditorState> editEditorStateStack = new Stack<NodeEditorState> (4);
+
 		#region Setup
 
 		private static bool initiatedBase;
@@ -170,12 +174,8 @@ namespace NodeEditorFramework
 		{
 			if (!editorState.drawing)
 				return;
-
-			// Store and restore later on in case of this being a nested Canvas
-			NodeCanvas prevNodeCanvas = curNodeCanvas;
-			NodeEditorState prevEditorState = curEditorState;
-			curNodeCanvas = nodeCanvas;
-			curEditorState = editorState;
+			
+			BeginEditingCanvas (nodeCanvas, editorState);
 
 			if (Event.current.type == EventType.Repaint) 
 			{ // Draw Background when Repainting
@@ -253,8 +253,27 @@ namespace NodeEditorFramework
 			// Handle input events with less priority than node GUI controls
 			NodeEditorInputSystem.HandleLateInputEvents (curEditorState);
 
-			curNodeCanvas = prevNodeCanvas;
-			curEditorState = prevEditorState;
+			EndEditingCanvas ();
+		}
+
+		public static void BeginEditingCanvas (NodeCanvas canvas)
+		{
+			NodeEditorState state = canvas.editorStates.Length >= 1? canvas.editorStates[0] : null;
+			BeginEditingCanvas (canvas, state);
+		}
+
+		public static void BeginEditingCanvas (NodeCanvas canvas, NodeEditorState state)
+		{
+			editCanvasStack.Push (canvas);
+			editEditorStateStack.Push (state);
+			curNodeCanvas = canvas;
+			curEditorState = state;
+		}
+
+		public static void EndEditingCanvas ()
+		{
+			curNodeCanvas = editCanvasStack.Pop ();
+			curEditorState = editEditorStateStack.Pop ();
 		}
 
 		#endregion
