@@ -47,7 +47,7 @@ namespace NodeEditorFramework
 				}
 				else 
 				{
-					typeData = types.Values.Count <= 0? null : types.Values.First ((TypeData data) => data.isValid () && data.Type == type);
+					typeData = types.Values.Count <= 0? null : types.Values.FirstOrDefault ((TypeData data) => data.isValid () && data.Type == type);
 					if (typeData == null)
 						types.Add (typeName, typeData = new TypeData (type));
 				}
@@ -117,17 +117,11 @@ namespace NodeEditorFramework
 			Identifier = type.Name;
 			declaration = null;
 			Type = type;
-			Color = Color.white;//(float)type.GetHashCode() / (int.MaxValue/3);
 
-			// TODO: Experimental: Create colors randomly from hashcode of type
-			// right now everything is roughly the same color unfortunately
-
-			// int -> 3x float
-			int srcInt = type.GetHashCode ();
-			byte[] bytes = BitConverter.GetBytes (srcInt);
-			//Debug.Log ("hash " + srcInt + " from type " + type.FullName + " has byte count of " + bytes.Length);
-			Color = new Color (Mathf.Pow (((float)bytes[0])/255, 0.5f), Mathf.Pow (((float)bytes[1])/255, 0.5f), Mathf.Pow (((float)bytes[2])/255, 0.5f));
-			//Debug.Log ("Color " + col.ToString ());
+			// Generate consistent color for a type - using string because it delivers greater variety of colors than type hashcode
+			int srcInt = (int)(type.AssemblyQualifiedName.GetHashCode ());
+			UnityEngine.Random.InitState (srcInt);
+			Color = UnityEngine.Random.ColorHSV (0, 1, 0.6f, 0.8f, 0.8f, 1.4f);
 
 			InKnobTex = ResourceManager.GetTintedTexture ("Textures/In_Knob.png", Color);
 			OutKnobTex = ResourceManager.GetTintedTexture ("Textures/Out_Knob.png", Color);
