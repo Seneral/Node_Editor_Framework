@@ -41,7 +41,7 @@ namespace NodeEditorFramework
 		public static string[] GetSceneSaves ()
 		{ // Get the saveHolder, find the existing stored saves and return their names
 			FetchSceneSaveHolder ();
-			return sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().Select (((NodeCanvasSceneSave save) => save.savedNodeCanvas.name)).ToArray ();
+			return sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().Select (((NodeCanvasSceneSave save) => save.saveName)).ToArray ();
 		}
 
 		/// <summary>
@@ -50,7 +50,7 @@ namespace NodeEditorFramework
 		internal static NodeCanvasSceneSave FindSceneSave (string saveName)
 		{
 			FetchSceneSaveHolder ();
-			NodeCanvasSceneSave sceneSave = sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().ToList ().Find ((NodeCanvasSceneSave save) => save.saveName == saveName || save.savedNodeCanvas.name == saveName);
+			NodeCanvasSceneSave sceneSave = sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().ToList ().Find ((NodeCanvasSceneSave save) => save.saveName == saveName || (save.savedNodeCanvas != null && save.savedNodeCanvas.name == saveName));
 			if (sceneSave != null)
 				sceneSave.saveName = saveName;
 			return sceneSave;
@@ -84,7 +84,7 @@ namespace NodeEditorFramework
 		/// Saves the nodeCanvas in the current scene under the specified name along with the specified editorStates or, if specified, their working copies
 		/// If also stored as an asset, it will loose the reference to the asset first
 		/// </summary>
-		public static void SaveSceneNodeCanvas (string saveName, ref NodeCanvas nodeCanvas, bool createWorkingCopy)
+		public static void SaveSceneNodeCanvas (string saveName, ref NodeCanvas nodeCanvas, bool createWorkingCopy, bool safeOverwrite = true) 
 		{
 			if (string.IsNullOrEmpty (saveName))
 			{
@@ -115,16 +115,20 @@ namespace NodeEditorFramework
 			ProcessCanvas (ref savedCanvas, createWorkingCopy);
 
 			// Get the saveHolder and store the canvas
-			NodeCanvasSceneSave sceneSave = FindSceneSave (saveName);
+			NodeCanvasSceneSave sceneSave;
 		#if UNITY_EDITOR
-			if (sceneSave != null) // OVERWRITE
+			if ((sceneSave = FindSceneSave (saveName)) != null && safeOverwrite) // OVERWRITE
 				OverwriteCanvas (ref sceneSave.savedNodeCanvas, savedCanvas);
 			else
-		#endif
 			{
-				sceneSave = CreateSceneSave (saveName);
+				if (sceneSave == null) 
+					sceneSave = CreateSceneSave (saveName);
 				sceneSave.savedNodeCanvas = savedCanvas;
 			}
+		#else
+			sceneSave = FindOrCreateSceneSave (saveName);
+			sceneSave.savedNodeCanvas = savedCanvas;
+		#endif
 
 		#if UNITY_EDITOR
 			UnityEditor.EditorUtility.SetDirty (sceneSaveHolder);
@@ -143,7 +147,7 @@ namespace NodeEditorFramework
 			}
 
 			NodeCanvasSceneSave sceneSave = FindSceneSave (saveName);
-			if (sceneSave == null) // No such save file
+			if (sceneSave == null || sceneSave.savedNodeCanvas == null) // No such save file
 				return null;
 
 			// Extract the saved canvas and editorStates
@@ -565,6 +569,7 @@ namespace NodeEditorFramework
 			if (canvas == null)
 				canvas = ScriptableObject.CreateInstance(canvasData.GetType ()) as NodeCanvas;
 			UnityEditor.EditorUtility.CopySerialized (canvasData, canvas);
+			canvas.name = canvasData.name;
 		#else
 			throw new System.NotSupportedException ("Cannot overwrite canvas in player!");
 		#endif
