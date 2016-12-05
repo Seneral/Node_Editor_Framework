@@ -232,6 +232,7 @@ namespace NodeEditorFramework
 		{
 			if (nodeCanvas != canvas)
 			{
+				canvas.Validate ();
 				nodeCanvas = canvas;
 				editorState = NodeEditorSaveManager.ExtractEditorState (nodeCanvas, MainEditorStateIdentifier);
 				RecreateCache ();
@@ -318,6 +319,7 @@ namespace NodeEditorFramework
 			else
 				nodeCanvas = ScriptableObject.CreateInstance<NodeCanvas>();
 			nodeCanvas.name = "New " + nodeCanvas.canvasName;
+			nodeCanvas.Validate ();
 
 			//EditorPrefs.SetString ("NodeEditorLastSession", "New Canvas");
 			NewEditorState ();

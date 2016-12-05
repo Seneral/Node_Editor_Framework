@@ -238,7 +238,7 @@ namespace NodeEditorFramework
 		[EventHandlerAttribute (EventType.ScrollWheel)]
 		private static void HandleZooming (NodeEditorInputInfo inputInfo) 
 		{
-			inputInfo.editorState.zoom = (float)Math.Round (Math.Min (2.0, Math.Max (0.6, inputInfo.editorState.zoom + inputInfo.inputEvent.delta.y / 15)), 2);
+			inputInfo.editorState.zoom = (float)Math.Round (Math.Min (4.0, Math.Max (0.6, inputInfo.editorState.zoom + inputInfo.inputEvent.delta.y / 15)), 2);
 			NodeEditor.RepaintClients ();
 		}
 

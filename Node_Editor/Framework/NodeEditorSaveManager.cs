@@ -109,6 +109,7 @@ namespace NodeEditorFramework
 		#if UNITY_EDITOR
 			nodeCanvas.BeforeSavingCanvas();
 		#endif
+			nodeCanvas.UpdateSource ("SCENE/" + saveName);
 
 			NodeCanvas savedCanvas = nodeCanvas;
 			// Preprocess canvas
@@ -153,6 +154,8 @@ namespace NodeEditorFramework
 			// Extract the saved canvas and editorStates
 			NodeCanvas savedCanvas = sceneSave.savedNodeCanvas;
 			savedCanvas.livesInScene = true;
+
+			savedCanvas.UpdateSource ("SCENE/" + saveName);
 
 			// Postprocess the loaded canvas
 			ProcessCanvas (ref savedCanvas, createWorkingCopy);
@@ -200,7 +203,7 @@ namespace NodeEditorFramework
 			throw new System.NotImplementedException ();
 		#endif
 
-			if (string.IsNullOrEmpty (path)) throw new UnityException ("Cannot save NodeCanvas: No path specified to save the NodeCanvas " + (nodeCanvas != null? nodeCanvas.name : "") + " to!");
+			if (string.IsNullOrEmpty (path) ||!path.StartsWith ("Assets")) throw new UnityException ("Cannot save NodeCanvas: Invalid path specified: '" + path + "'!");
 			if (nodeCanvas == null) throw new UnityException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path " + path + " is null!");
 			if (nodeCanvas.livesInScene)
 				Debug.LogWarning ("Attempting to save scene canvas " + nodeCanvas.name + " to an asset, scene object references may be broken!" + (!createWorkingCopy? " No workingCopy is going to be created, so your scene save is broken, too!" : ""));
@@ -208,14 +211,18 @@ namespace NodeEditorFramework
 			if (!createWorkingCopy && UnityEditor.AssetDatabase.Contains (nodeCanvas) && UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas) != path) { Debug.LogError ("Trying to create a duplicate save file for '" + nodeCanvas.name + "'! Forcing to create a working copy!"); createWorkingCopy = true; }
 		#endif
 
+			path = ResourceManager.PreparePath (path);
+
 		#if UNITY_EDITOR
-			nodeCanvas.BeforeSavingCanvas();
+			nodeCanvas.BeforeSavingCanvas ();
+
+			nodeCanvas.UpdateSource (path);
 
 			// Preprocess the canvas
 			ProcessCanvas (ref nodeCanvas, createWorkingCopy);
 			nodeCanvas.livesInScene = false;
 
-			NodeCanvas prevSave = UnityEditor.AssetDatabase.LoadAssetAtPath<NodeCanvas> (path);
+			NodeCanvas prevSave = ResourceManager.LoadResource<NodeCanvas> (path);
 			NodeCanvas canvasSave = nodeCanvas;
 			if (prevSave != null && safeOverwrite) // OVERWRITE
 			{ // Delete contents of old save
@@ -268,6 +275,10 @@ namespace NodeEditorFramework
 			// Load only the NodeCanvas from the save file
 			NodeCanvas nodeCanvas = ResourceManager.LoadResource<NodeCanvas> (path);
 			if (nodeCanvas == null) throw new UnityException ("Cannot Load NodeCanvas: The file at the specified path '" + path + "' is no valid save file as it does not contain a NodeCanvas!");
+
+			path = ResourceManager.PreparePath (path);
+
+			nodeCanvas.UpdateSource (path);
 
 		#if UNITY_EDITOR
 			if (!Application.isPlaying && (nodeCanvas.editorStates == null || nodeCanvas.editorStates.Length == 0))
