@@ -179,17 +179,14 @@ namespace NodeEditorFramework
 
 			if (Event.current.type == EventType.Repaint) 
 			{ // Draw Background when Repainting
-				// Size in pixels the inividual background tiles will have on screen
-				float width = curEditorState.zoom / NodeEditorGUI.Background.width;
-				float height = curEditorState.zoom / NodeEditorGUI.Background.height;
-				// Offset of the grid relative to the GUI origin
-				Vector2 offset = curEditorState.zoomPos + curEditorState.panOffset/curEditorState.zoom;
-				// Rect in UV space that defines how to tile the background texture
-				Rect uvDrawRect = new Rect (-offset.x * width, 
-					(offset.y - curEditorState.canvasRect.height) * height,
-					curEditorState.canvasRect.width * width,
-					curEditorState.canvasRect.height * height);
-				GUI.DrawTextureWithTexCoords (curEditorState.canvasRect, NodeEditorGUI.Background, uvDrawRect);
+				// Offset from origin in tile units
+				Vector2 tileOffset = new Vector2 (-(curEditorState.zoomPos.x * curEditorState.zoom + curEditorState.panOffset.x) / NodeEditorGUI.Background.width, 
+					((curEditorState.zoomPos.y - curEditorState.canvasRect.height) * curEditorState.zoom + curEditorState.panOffset.y) / NodeEditorGUI.Background.height);
+				// Amount of tiles
+				Vector2 tileAmount = new Vector2 (Mathf.Round (curEditorState.canvasRect.width * curEditorState.zoom) / NodeEditorGUI.Background.width,
+					Mathf.Round (curEditorState.canvasRect.height * curEditorState.zoom) / NodeEditorGUI.Background.height);
+				// Draw tiled background
+				GUI.DrawTextureWithTexCoords (curEditorState.canvasRect, NodeEditorGUI.Background, new Rect (tileOffset, tileAmount));
 			}
 
 			// Handle input events

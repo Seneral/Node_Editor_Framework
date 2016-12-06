@@ -7,7 +7,7 @@ using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
 {
-    public abstract partial class Node : ScriptableObject
+	public abstract partial class Node : ScriptableObject
 	{
 		public Rect rect = new Rect ();
 		internal Vector2 contentOffset = Vector2.zero;
@@ -224,28 +224,27 @@ namespace NodeEditorFramework
 	    }
 #endif
 
-        /// <summary>
-        /// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
-        /// </summary>
-        protected internal virtual void DrawNode () 
+		/// <summary>
+		/// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
+		/// </summary>
+		protected internal virtual void DrawNode () 
 		{
 			AssureNodeBGStyle ();
 
 			// TODO: Node Editor Feature: Custom Windowing System
-			// Create a rect that is adjusted to the editor zoom
-
+			// Create a rect that is adjusted to the editor zoom and pixel perfect
 			Rect nodeRect = rect;
-            Vector2 pos = NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
-            nodeRect.position += new Vector2((int)pos.x, (int)pos.y); 
+			Vector2 pos = NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
+			nodeRect.position = new Vector2((int)(nodeRect.x+pos.x), (int)(nodeRect.y+pos.y));
 			contentOffset = new Vector2 (0, 20);
 
 			// Create a headerRect out of the previous rect and draw it, marking the selected node as such by making the header bold
-			Rect headerRect = new Rect ((int)nodeRect.x, (int)nodeRect.y, nodeRect.width, (int)contentOffset.y);
+			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, contentOffset.y);
 			GUI.Box (headerRect, GUIContent.none, nodeBGStyle);
 			GUI.Label (headerRect, name, NodeEditor.curEditorState.selectedNode == this? NodeEditorGUI.nodeLabelBoldCentered : NodeEditorGUI.nodeLabelCentered);
 
 			// Begin the body frame around the NodeGUI
-			Rect bodyRect = new Rect ((int)nodeRect.x, (int)nodeRect.y + (int)contentOffset.y, nodeRect.width, nodeRect.height - contentOffset.y);
+			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + contentOffset.y, nodeRect.width, nodeRect.height - contentOffset.y);
 			GUI.BeginGroup (bodyRect, nodeBGStyle);
 			bodyRect.position = Vector2.zero;
 			GUILayout.BeginArea (bodyRect);
@@ -255,7 +254,7 @@ namespace NodeEditorFramework
 			// End NodeGUI frame
 			GUILayout.EndArea ();
 			GUI.EndGroup ();
-        }
+		}
 
 		/// <summary>
 		/// Draws the nodeKnobs
