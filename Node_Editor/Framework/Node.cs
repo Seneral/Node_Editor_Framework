@@ -224,17 +224,18 @@ namespace NodeEditorFramework
 	    }
 #endif
 
-        /// <summary>
-        /// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
-        /// </summary>
-        protected internal virtual void DrawNode () 
+		/// <summary>
+		/// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
+		/// </summary>
+		protected internal virtual void DrawNode () 
 		{
 			AssureNodeBGStyle ();
 
 			// TODO: Node Editor Feature: Custom Windowing System
-			// Create a rect that is adjusted to the editor zoom
+			// Create a rect that is adjusted to the editor zoom and pixel perfect
 			Rect nodeRect = rect;
-			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
+			Vector2 pos = NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
+			nodeRect.position = new Vector2((int)(nodeRect.x+pos.x), (int)(nodeRect.y+pos.y));
 			contentOffset = new Vector2 (0, 20);
 
 			// Create a headerRect out of the previous rect and draw it, marking the selected node as such by making the header bold

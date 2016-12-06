@@ -201,14 +201,20 @@ namespace NodeEditorFramework.Standard
 
 			if (GUILayout.Button(new GUIContent("Save Canvas As", "Save the canvas as an asset")))
 			{
-				string path = EditorUtility.SaveFilePanelInProject ("Save Node Canvas", "Node Canvas", "asset", "", NodeEditor.editorPath + "Resources/Saves/");
+				string panelPath = NodeEditor.editorPath + "Resources/Saves/";
+				if (canvasCache.nodeCanvas != null && !string.IsNullOrEmpty(canvasCache.nodeCanvas.savePath))
+					panelPath = canvasCache.nodeCanvas.savePath;
+				string path = EditorUtility.SaveFilePanelInProject ("Save Node Canvas", "Node Canvas", "asset", "", panelPath);
 				if (!string.IsNullOrEmpty (path))
 					canvasCache.SaveNodeCanvas (path);
 			}
 
 			if (GUILayout.Button(new GUIContent("Load Canvas", "Load the Canvas from an asset")))
 			{
-				string path = EditorUtility.OpenFilePanel("Load Node Canvas", NodeEditor.editorPath + "Resources/Saves/", "asset");
+				string panelPath = NodeEditor.editorPath + "Resources/Saves/";
+				if (canvasCache.nodeCanvas != null && !string.IsNullOrEmpty(canvasCache.nodeCanvas.savePath))
+					panelPath = canvasCache.nodeCanvas.savePath;
+				string path = EditorUtility.OpenFilePanel("Load Node Canvas", panelPath, "asset");
 				if (!path.Contains(Application.dataPath))
 				{
 					if (!string.IsNullOrEmpty(path))
