@@ -138,7 +138,7 @@ namespace NodeEditorFramework
 		{
 		#if !UNITY_EDITOR
 			throw new System.NotImplementedException ();
-		#endif
+		#else
 
 			if (string.IsNullOrEmpty (path)) throw new UnityException ("Cannot save NodeCanvas: No spath specified to save the NodeCanvas " + (nodeCanvas != null? nodeCanvas.name : "") + " to!");
 			if (nodeCanvas == null) throw new UnityException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path " + path + " is null!");
@@ -178,6 +178,8 @@ namespace NodeEditorFramework
 		#endif
 
 			NodeEditorCallbacks.IssueOnSaveCanvas (nodeCanvas);
+
+		#endif
 		}
 
 		/// <summary>
@@ -245,6 +247,8 @@ namespace NodeEditorFramework
 			}
 		}
 
+		#endif
+
 		/// <summary>
 		/// Applies a general process on the canvas for loading/saving operations
 		/// </summary>
@@ -256,8 +260,6 @@ namespace NodeEditorFramework
 			else
 				canvas.Validate ();
 		}
-
-		#endif
 
 		#endregion
 
