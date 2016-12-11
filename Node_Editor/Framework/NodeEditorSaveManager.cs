@@ -201,7 +201,7 @@ namespace NodeEditorFramework
 		{
 		#if !UNITY_EDITOR
 			throw new System.NotImplementedException ();
-		#endif
+		#else
 
 			if (string.IsNullOrEmpty (path) ||!path.StartsWith ("Assets")) throw new UnityException ("Cannot save NodeCanvas: Invalid path specified: '" + path + "'!");
 			if (nodeCanvas == null) throw new UnityException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path " + path + " is null!");
@@ -223,7 +223,6 @@ namespace NodeEditorFramework
 			nodeCanvas.livesInScene = false;
 
 			NodeCanvas prevSave = ResourceManager.LoadResource<NodeCanvas> (path);
-			NodeCanvas canvasSave = nodeCanvas;
 			if (prevSave != null && safeOverwrite) // OVERWRITE
 			{ // Delete contents of old save
 				NodeEditor.BeginEditingCanvas (prevSave);
@@ -234,7 +233,7 @@ namespace NodeEditorFramework
 				NodeEditor.EndEditingCanvas ();
 				// Overwrite main canvas
 				OverwriteCanvas (ref prevSave, nodeCanvas);
-				canvasSave = prevSave;
+				nodeCanvas = prevSave;
 			}
 			else
 			{ // Write main canvas
@@ -242,12 +241,12 @@ namespace NodeEditorFramework
 			}
 
 			// Write editorStates
-			AddSubAssets (nodeCanvas.editorStates, canvasSave);
+			AddSubAssets (nodeCanvas.editorStates, nodeCanvas);
 
 			// Write nodes + contents
 			foreach (Node node in nodeCanvas.nodes)
 			{ // Write node and additional scriptable objects
-				AddSubAsset (node, canvasSave);
+				AddSubAsset (node, nodeCanvas);
 				AddSubAssets (node.GetScriptableObjects (), node);
 				foreach (NodeKnob knob in node.nodeKnobs)
 				{ // Write knobs and their additional scriptable objects
@@ -262,7 +261,9 @@ namespace NodeEditorFramework
 			// TODO: Node Editor: Need to implement ingame-saving (Resources, AsssetBundles, ... won't work)
 		#endif
 
-			NodeEditorCallbacks.IssueOnSaveCanvas (canvasSave);
+			NodeEditorCallbacks.IssueOnSaveCanvas (nodeCanvas);
+
+		#endif
 		}
 
 		/// <summary>
