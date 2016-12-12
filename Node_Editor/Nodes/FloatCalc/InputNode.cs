@@ -32,7 +32,7 @@ namespace NodeEditorFramework.Standard
 			OutputKnob (0);
 
 			if (GUI.changed)
-				NodeEditor.Calculator.RecalculateFrom (this);
+				NodeEditor.curNodeCanvas.OnNodeChange (this);
 		}
 
 		public override bool Calculate () 

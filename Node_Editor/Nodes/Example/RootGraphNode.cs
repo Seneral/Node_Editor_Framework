@@ -20,14 +20,9 @@ namespace NodeEditorFramework.Standard
 			node.rect = new Rect (pos.x, pos.y, 150, 100);
 			node.name = "Graph Root Node";
 
-			NodeOutput out1 = node.CreateOutput ("Child 1", "Flow");
-			NodeOutput out2 = node.CreateOutput ("Child 2", "Flow");
-			NodeOutput out3 = node.CreateOutput ("Child 3", "Flow");
-
-			// Creates three child nodes that automatically connect to the respective outputs
-			//Node.Create ("flowNode", new Vector2 (pos.x+300, pos.y-200), out1);
-			//Node.Create ("flowNode", new Vector2 (pos.x+300, pos.y+  0), out2);
-			//Node.Create ("flowNode", new Vector2 (pos.x+300, pos.y+200), out3);
+			node.CreateOutput ("Child 1", "Flow");
+			node.CreateOutput ("Child 2", "Flow");
+			node.CreateOutput ("Child 3", "Flow");
 
 			return node;
 		}
@@ -36,7 +31,7 @@ namespace NodeEditorFramework.Standard
 		{
 			name = GUILayout.TextField (name);
 
-			foreach (NodeOutput output in Outputs)
+			foreach (NodeOutput output in Outputs) 
 				output.DisplayLayout ();
 		}
 

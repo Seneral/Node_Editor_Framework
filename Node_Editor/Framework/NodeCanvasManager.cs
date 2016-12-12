@@ -19,12 +19,13 @@ namespace NodeEditorFramework
 			CanvasTypes = new Dictionary<Type, NodeCanvasTypeData>();
 
 			IEnumerable<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies()
-					.Where((Assembly assembly) => assembly.FullName.Contains("Assembly"));
+				.Where((Assembly assembly) => assembly.FullName.Contains("Assembly"));
 			foreach (Assembly assembly in scriptAssemblies)
 			{
 				foreach (Type type in assembly.GetTypes()
-							.Where( T => T.IsClass && !T.IsAbstract &&
-									T.GetCustomAttributes(typeof (NodeCanvasTypeAttribute), false).Length > 0))
+					.Where( T => T.IsClass && !T.IsAbstract && 
+						(T != typeof(NodeCanvas) && T.IsSubclassOf (typeof(NodeCanvas))) &&
+							T.GetCustomAttributes(typeof (NodeCanvasTypeAttribute), false).Length > 0))
 				{
 					object[] nodeAttributes = type.GetCustomAttributes(typeof (NodeCanvasTypeAttribute), false);
 					NodeCanvasTypeAttribute attr = nodeAttributes[0] as NodeCanvasTypeAttribute;
@@ -33,7 +34,7 @@ namespace NodeEditorFramework
 			}
 		}
 
-		private static void CreateNewCanvas(object userdata)
+		private static void unwrapTypeCallback(object userdata)
 		{
 			NodeCanvasTypeData data = (NodeCanvasTypeData)userdata;
 			_callBack(data.CanvasType);
@@ -44,14 +45,14 @@ namespace NodeEditorFramework
 			_callBack = newNodeCanvas;
 			foreach (KeyValuePair<Type, NodeCanvasTypeData> data in CanvasTypes)
 			{
-				menu.AddItem(new GUIContent(data.Value.DisplayString), false, CreateNewCanvas, (object)data.Value);
+				menu.AddItem(new GUIContent(data.Value.DisplayString), false, unwrapTypeCallback, (object)data.Value);
 			}
 		}
 
-		public static bool CheckCanvasCompability (Node node, Type canvasType) 
+		public static bool CheckCanvasCompability (string nodeID, NodeCanvas canvas) 
 		{
-			NodeData data = NodeTypes.getNodeData (node);
-			return data.limitToCanvasTypes == null || data.limitToCanvasTypes.Length == 0 || data.limitToCanvasTypes.Contains (canvasType);
+			NodeData data = NodeTypes.getNodeData (nodeID);
+			return data.limitToCanvasTypes == null || data.limitToCanvasTypes.Length == 0 || data.limitToCanvasTypes.Contains (canvas.GetType ());
 		}
 
 		public static NodeCanvasTypeData getCanvasTypeData (NodeCanvas canvas)
@@ -59,6 +60,23 @@ namespace NodeEditorFramework
 			NodeCanvasTypeData data;
 			CanvasTypes.TryGetValue (canvas.GetType (), out data);
 			return data;
+		}
+
+		/// <summary>
+		/// Converts the type of the canvas to the specified type.
+		/// </summary>
+		public static NodeCanvas ConvertCanvasType (NodeCanvas canvas, Type newType)
+		{
+			NodeCanvas convertedCanvas = canvas;
+			if (canvas.GetType () != newType && newType != typeof(NodeCanvas) && newType.IsSubclassOf (typeof(NodeCanvas)))
+			{
+				canvas = NodeEditorSaveManager.CreateWorkingCopy (canvas, true);
+				convertedCanvas = NodeCanvas.CreateCanvas(newType);
+				convertedCanvas.nodes = canvas.nodes;
+				convertedCanvas.editorStates = canvas.editorStates;
+				convertedCanvas.Validate ();
+			}
+			return convertedCanvas;
 		}
 	}
 

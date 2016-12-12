@@ -42,9 +42,9 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Returns the NodeData for the given Node
 		/// </summary>
-		public static NodeData getNodeData (Node node)
+		public static NodeData getNodeData (string nodeID)
 		{
-			return nodes [getDefaultNode (node.GetID)];
+			return nodes [getDefaultNode (nodeID)];
 		}
 
 		/// <summary>

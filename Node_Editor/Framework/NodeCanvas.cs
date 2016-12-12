@@ -1,99 +1,163 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using NodeEditorFramework.Standard;
+
 namespace NodeEditorFramework 
 {
-	[NodeCanvasType("Default")]
-	public partial class NodeCanvas : ScriptableObject 
-	{ // Just contains the nodes and global canvas stuff; an associated NodeEditorState holds the actual state now
-		public virtual string canvasName { get { return "Calculation Canvas"; } }
+	/// <summary>
+	/// NodeCanvas base class
+	/// </summary>
+	public class NodeCanvas : ScriptableObject 
+	{
+		public virtual string canvasName { get { return "DEFAULT"; } }
+
+		public NodeCanvasTraversal Traversal;
+
+		public List<Node> nodes = new List<Node> ();
+
+		public NodeEditorState[] editorStates = new NodeEditorState[0];
 
 		public string saveName;
 		public string savePath;
 
 		public bool livesInScene = false;
 
-		public List<Node> nodes = new List<Node> ();
 
-		public NodeEditorState[] editorStates = new NodeEditorState[0];
+		#region Constructors
 
-		public virtual void BeforeSavingCanvas () { }
+		public static T CreateCanvas<T> () where T : NodeCanvas
+		{
+			if (typeof(T) == typeof(NodeCanvas))
+				throw new Exception ("Cannot create canvas of type 'NodeCanvas' as that is only the base class. Please specify a valid subclass!");
+			T canvas = ScriptableObject.CreateInstance<T>();
+			canvas.name = canvas.saveName = "New " + canvas.canvasName;
+
+			NodeEditor.BeginEditingCanvas (canvas);
+			canvas.OnCreate ();
+			NodeEditor.EndEditingCanvas ();
+			return canvas;
+		}
+
+		public static NodeCanvas CreateCanvas (Type canvasType)
+		{
+			NodeCanvas canvas;
+			if (canvasType != null && canvasType.IsSubclassOf (typeof(NodeCanvas)))
+				canvas = ScriptableObject.CreateInstance (canvasType) as NodeCanvas;
+			else
+				canvas = ScriptableObject.CreateInstance<CalculationCanvasType>();
+			canvas.name = canvas.saveName = "New " + canvas.canvasName;
+
+			NodeEditor.BeginEditingCanvas (canvas);
+			canvas.OnCreate ();
+			NodeEditor.EndEditingCanvas ();
+			return canvas;
+		}
+
+		#endregion
+
+		#region Callbacks
+
+		protected virtual void OnCreate () {}
+
+		protected virtual void OnValidate () { }
+
+		public virtual void OnBeforeSavingCanvas () { }
+
+		public virtual bool CanAddNode (string nodeID) { return true; }
+
+		#endregion
+
+		#region Traversal
+
+		public void TraverseAll ()
+		{
+			if (Traversal != null)
+				Traversal.TraverseAll ();
+		}
+
+		public void OnNodeChange (Node node)
+		{
+			if (Traversal != null && node != null)
+				Traversal.OnChange (node);
+		}
+
+		#endregion
+
+		#region Methods
 
 		/// <summary>
-		/// Will validate this canvas for any broken nodes or references and cleans them.
+		/// Validates this canvas, checking for any broken nodes or references and cleans them.
 		/// </summary>
-		public void Validate () 
+		public void Validate (bool deepValidate = false) 
 		{
-			if (string.IsNullOrEmpty (saveName))
-			{
-				if (name != "LastSession")
-					saveName = name;
-				else
-					saveName = "New " + canvasName;
-			}
 			if (nodes == null)
 			{
 				Debug.LogWarning ("NodeCanvas '" + name + "' nodes were erased and set to null! Automatically fixed!");
 				nodes = new List<Node> ();
 			}
-			for (int nodeCnt = 0; nodeCnt < nodes.Count; nodeCnt++) 
+			if (deepValidate)
 			{
-				Node node = nodes[nodeCnt];
-				if (node == null)
+				for (int nodeCnt = 0; nodeCnt < nodes.Count; nodeCnt++) 
 				{
-					Debug.LogWarning ("NodeCanvas '" + name + "' contained broken (null) nodes! Automatically fixed!");
-					nodes.RemoveAt (nodeCnt);
-					nodeCnt--;
-					continue;
-				}
-				for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++) 
-				{
-					NodeKnob nodeKnob = node.nodeKnobs[knobCnt];
-					if (nodeKnob == null)
+					Node node = nodes[nodeCnt];
+					if (node == null)
 					{
-						Debug.LogWarning ("NodeCanvas '" + name + "' Node '" + node.name + "' contained broken (null) NodeKnobs! Automatically fixed!");
-						node.nodeKnobs.RemoveAt (knobCnt);
-						knobCnt--;
+						Debug.LogWarning ("NodeCanvas '" + name + "' contained broken (null) nodes! Automatically fixed!");
+						nodes.RemoveAt (nodeCnt);
+						nodeCnt--;
 						continue;
 					}
-
-					if (nodeKnob is NodeInput)
+					for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++) 
 					{
-						NodeInput input = nodeKnob as NodeInput;
-						if (input.connection != null && input.connection.body == null)
-						{ // References broken node; Clear connection
-							input.connection = null;
-						}
-//						for (int conCnt = 0; conCnt < (nodeKnob as NodeInput).connection.Count; conCnt++)
-					}
-					else if (nodeKnob is NodeOutput)
-					{
-						NodeOutput output = nodeKnob as NodeOutput;
-						for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
+						NodeKnob nodeKnob = node.nodeKnobs[knobCnt];
+						if (nodeKnob == null)
 						{
-							NodeInput con = output.connections[conCnt];
-							if (con == null || con.body == null)
-							{ // Broken connection; Clear connection
-								output.connections.RemoveAt (conCnt);
-								conCnt--;
+							Debug.LogWarning ("NodeCanvas '" + name + "' Node '" + node.name + "' contained broken (null) NodeKnobs! Automatically fixed!");
+							node.nodeKnobs.RemoveAt (knobCnt);
+							knobCnt--;
+							continue;
+						}
+
+						if (nodeKnob is NodeInput)
+						{
+							NodeInput input = nodeKnob as NodeInput;
+							if (input.connection != null && input.connection.body == null)
+							{ // References broken node; Clear connection
+								input.connection = null;
+							}
+							//						for (int conCnt = 0; conCnt < (nodeKnob as NodeInput).connection.Count; conCnt++)
+						}
+						else if (nodeKnob is NodeOutput)
+						{
+							NodeOutput output = nodeKnob as NodeOutput;
+							for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
+							{
+								NodeInput con = output.connections[conCnt];
+								if (con == null || con.body == null)
+								{ // Broken connection; Clear connection
+									output.connections.RemoveAt (conCnt);
+									conCnt--;
+								}
 							}
 						}
 					}
 				}
+				if (editorStates == null)
+				{
+					Debug.LogWarning ("NodeCanvas '" + name + "' editorStates were erased! Automatically fixed!");
+					editorStates = new NodeEditorState[0];
+				}
+				editorStates = editorStates.Where ((NodeEditorState state) => state != null).ToArray ();
+				foreach (NodeEditorState state in editorStates)
+				{
+					if (!nodes.Contains (state.selectedNode))
+						state.selectedNode = null;
+				}
 			}
-
-			if (editorStates == null)
-			{
-				Debug.LogWarning ("NodeCanvas '" + name + "' editorStates were erased! Automatically fixed!");
-				editorStates = new NodeEditorState[0];
-			}
-			editorStates = editorStates.Where ((NodeEditorState state) => state != null).ToArray ();
-			foreach (NodeEditorState state in editorStates)
-			{
-				if (!nodes.Contains (state.selectedNode))
-					state.selectedNode = null;
-			}
+			OnValidate ();
 		}
 
 		public void UpdateSource (string path) 
@@ -114,5 +178,7 @@ namespace NodeEditorFramework
 				saveName = newName;
 			}
 		}
+
+		#endregion
 	}
 }
