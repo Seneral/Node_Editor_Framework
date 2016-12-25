@@ -216,15 +216,10 @@ namespace NodeEditorFramework
 				Vector2 startPos = output.GetGUIKnob ().center;
 				Vector2 startDir = output.GetDirection ();
 				Vector2 endPos = Event.current.mousePosition;
-				Vector2 offset = endPos - startPos;
-				// There is no specific direction of the end knob so we pick the best according to the relative position
-				// Disabled because it causes the connection we are drawing to snap to a different curve when you pass it parallel to the
-				// source knob, which is slightly unpleasent. Replaced with a negative startdir.
-				//Vector2 endDir = NodeEditorGUI.GetSecondConnectionVector (startPos, endPos, startDir);
+				Vector2 endDir = -startDir; // NodeEditorGUI.GetSecondConnectionVector (startPos, endPos, startDir); <- causes unpleasant jumping when switching polarity
 
-				//TODO Move 100f to somewhere to follow D.R.Y. Principles. Also used in Node.cs' DrawConnections()
-				startDir = new Vector2(startDir.x*Mathf.Abs (offset.x),startDir.y*Mathf.Abs (offset.y)) / 100f;
-				NodeEditorGUI.DrawConnection (startPos, startDir, endPos, -startDir, output.typeData.Color);
+				NodeEditorGUI.OptimiseBezierDirections (startPos, ref startDir, endPos, ref endDir);
+				NodeEditorGUI.DrawConnection (startPos, startDir, endPos, endDir, output.typeData.Color);
 				RepaintClients ();
 			}
 

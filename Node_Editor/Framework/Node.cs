@@ -283,14 +283,10 @@ namespace NodeEditorFramework
 				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
 				{
 					NodeInput input = output.connections [conCnt];
-					//TODO Move 100f to somewhere to follow D.R.Y. Principles. (also used in NodeEditor.cs' "Draw the currently drawn connection" if statement, inside DrawSubCanvas())
-					Vector2 offset = (input.GetGUIKnob ().center - startPos) / 100f;
-					offset = new Vector2 (Mathf.Abs (offset.x), Mathf.Abs (offset.y));
-					NodeEditorGUI.DrawConnection (startPos,
-													Vector2.Scale(startDir, offset),
-													input.GetGUIKnob ().center,
-													Vector2.Scale(input.GetDirection(), offset),
-													output.typeData.Color);
+					Vector2 endPos = input.GetGUIKnob ().center;
+					Vector2 endDir = input.GetDirection();
+					NodeEditorGUI.OptimiseBezierDirections (startPos, ref startDir, endPos, ref endDir);
+					NodeEditorGUI.DrawConnection (startPos, startDir, endPos, endDir, output.typeData.Color);
 				}
 			}
 		}
