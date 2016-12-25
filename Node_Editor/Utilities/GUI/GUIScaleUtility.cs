@@ -33,6 +33,8 @@ namespace NodeEditorFramework.Utilities
 		private static List<Matrix4x4> GUIMatrices;
 		private static List<bool> adjustedGUILayout;
 
+		private static bool isEditorWindow;
+
 		#region Init
 
 		public static void CheckInit () 
@@ -46,24 +48,6 @@ namespace NodeEditorFramework.Utilities
 			// Fetch rect acessors using Reflection
 			Assembly UnityEngine = Assembly.GetAssembly (typeof (UnityEngine.GUI));
 			Type GUIClipType = UnityEngine.GetType ("UnityEngine.GUIClip", true);
-
-//			string log = "Members without Bindflags: ";
-//			foreach (MemberInfo member in GUIClipType.GetMembers ())
-//				log += member.MemberType + "-" + member.Name + " |-| ";
-//
-//			log += Environment.NewLine + "Both NonPublic and Public Instance Members: ";
-//			foreach (MemberInfo member in GUIClipType.GetMembers (BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
-//				log += member.MemberType + "-" + member.Name + " |-| ";
-//
-//			log += Environment.NewLine + "Nonpublic Static Members: ";
-//			foreach (MemberInfo member in GUIClipType.GetMembers (BindingFlags.Static | BindingFlags.NonPublic))
-//				log += member.MemberType + "-" + member.Name + " |-| ";
-//
-//			log += Environment.NewLine + "Public Static Members: ";
-//			foreach (MemberInfo member in GUIClipType.GetMembers (BindingFlags.Static | BindingFlags.Public))
-//				log += member.MemberType + "-" + member.Name + " |-| ";
-//			
-//			Debug.Log (log);
 
 			PropertyInfo topmostRect = GUIClipType.GetProperty ("topmostRect", BindingFlags.Static | BindingFlags.Public);
 			MethodInfo GetTopRect = GUIClipType.GetMethod ("GetTopRect", BindingFlags.Static | BindingFlags.NonPublic);
@@ -82,6 +66,15 @@ namespace NodeEditorFramework.Utilities
 			GetTopRectDelegate = (Func<Rect>)Delegate.CreateDelegate (typeof(Func<Rect>), GetTopRect);
 			topmostRectDelegate = (Func<Rect>)Delegate.CreateDelegate (typeof(Func<Rect>), topmostRect.GetGetMethod ());
 
+			if (GetTopRectDelegate == null || topmostRectDelegate == null)
+			{
+				Debug.LogWarning ("GUIScaleUtility cannot run on this system! Compability mode enabled. For you that means you're not able to use the Node Editor inside more than one group:( Please PM me (Seneral @UnityForums) so I can figure out what causes this! Thanks!");
+				Debug.LogWarning ((GUIClipType == null? "GUIClipType is Null, " : "") + (topmostRect == null? "topmostRect is Null, " : "") + (GetTopRect == null? "GetTopRect is Null, " : "") + (ClipRect == null? "ClipRect is Null, " : ""));
+				compabilityMode = true;
+				initiated = true;
+				return;
+			}
+
 			// As we can call Begin/Ends inside another, we need to save their states hierarchial in Lists (not Stack, as we need to iterate over them!):
 			currentRectStack = new List<Rect> ();
 			rectStackGroups = new List<List<Rect>> ();
@@ -89,7 +82,7 @@ namespace NodeEditorFramework.Utilities
 			adjustedGUILayout = new List<bool> ();
 
 			// Sometimes, strange errors pop up (related to Mac?), which we try to catch and enable a compability Mode no supporting zooming in groups
-			try
+			/*try
 			{
 				topmostRectDelegate.Invoke ();
 			}
@@ -98,26 +91,14 @@ namespace NodeEditorFramework.Utilities
 				Debug.LogWarning ("GUIScaleUtility cannot run on this system! Compability mode enabled. For you that means you're not able to use the Node Editor inside more than one group:( Please PM me (Seneral @UnityForums) so I can figure out what causes this! Thanks!");
 				Debug.Log (e.Message);
 				compabilityMode = true;
-			}
-
+			}*/
+		
 			initiated = true;
 		}
 
 		#endregion
 
 		#region Scale Area
-
-		//		public static Vector2 secondaryGroupOffset;
-		//
-		//		public static Vector2 primaryScale;
-		//		public static Vector2 primaryZoomPanAdjust;
-		//		public static Rect primaryInitialRect;
-		//		public static Rect primaryScaledRect;
-		//
-		//		public static Vector2 secondaryScale;
-		//		public static Vector2 secondaryZoomPanAdjust;
-		//		public static Rect secondaryInitialRect;
-		//		public static Rect secondaryScaledRect;
 
 		public static Vector2 getCurrentScale { get { return new Vector2 (1/GUI.matrix.GetColumn (0).magnitude, 1/GUI.matrix.GetColumn (1).magnitude); } } 
 
@@ -126,15 +107,17 @@ namespace NodeEditorFramework.Utilities
 		/// Returns vector to offset GUI controls with to account for zooming to the pivot. 
 		/// Using adjustGUILayout does that automatically for GUILayout rects. Theoretically can be nested!
 		/// </summary>
-		public static Vector2 BeginScale (ref Rect rect, Vector2 zoomPivot, float zoom, bool adjustGUILayout) 
+		public static Vector2 BeginScale (ref Rect rect, Vector2 zoomPivot, float zoom, bool IsEditorWindow, bool adjustGUILayout) 
 		{
+			isEditorWindow = IsEditorWindow;
+
 			Rect screenRect;
 			if (compabilityMode) 
 			{ // In compability mode, we will assume only one top group and do everything manually, not using reflected calls (-> practically blind)
 				GUI.EndGroup ();
 				screenRect = rect;
 				#if UNITY_EDITOR
-				if (!Application.isPlaying)
+				if (isEditorWindow)
 					screenRect.y += 23;
 				#endif
 			}
@@ -144,25 +127,7 @@ namespace NodeEditorFramework.Utilities
 				screenRect = GUIScaleUtility.GUIToScaledSpace (rect);
 			}
 
-//			Vector2 GUIScale = getCurrentScale;
-
 			rect = Scale (screenRect, screenRect.position + zoomPivot, new Vector2 (zoom, zoom));
-
-//			bool primary = adjustedGUILayout.Count == 0;
-//			if (!primary) 
-//			{
-//				rect.position += secondaryGroupOffset;
-//
-//				secondaryScale = new Vector2 (zoom, zoom);
-//				secondaryInitialRect = screenRect;
-//				secondaryScaledRect = rect;
-//			}
-//			else 
-//			{
-//				primaryScale = new Vector2 (zoom, zoom);
-//				primaryInitialRect = screenRect;
-//				primaryScaledRect = rect;
-//			}
 
 			// Now continue drawing using the new clipping group
 			GUI.BeginGroup (rect);
@@ -188,15 +153,6 @@ namespace NodeEditorFramework.Utilities
 
 			// Scale GUI.matrix. After that we have the correct clipping group again.
 			GUIUtility.ScaleAroundPivot (new Vector2 (1/zoom, 1/zoom), zoomPosAdjust);
-
-//			if (!primary) 
-//			{
-//				secondaryZoomPanAdjust = zoomPosAdjust;
-//			}
-//			else 
-//			{
-//				primaryZoomPanAdjust = zoomPosAdjust;
-//			}
 
 			return zoomPosAdjust;
 		}
@@ -225,7 +181,7 @@ namespace NodeEditorFramework.Utilities
 
 			if (compabilityMode)
 			{ // In compability mode, we don't know the previous group rect, but as we cannot use top groups there either way, we restore the screen group
-				if (!Application.isPlaying) // We're in an editor window
+				if (isEditorWindow) // We're in an editor window
 					GUI.BeginClip (new Rect (0, 23, Screen.width, Screen.height-23));
 				else
 					GUI.BeginClip (new Rect (0, 0, Screen.width, Screen.height));
@@ -434,11 +390,12 @@ namespace NodeEditorFramework.Utilities
 		public static Vector2 GUIToScreenSpace (Vector2 guiPosition) 
 		{
 			#if UNITY_EDITOR
-			if (!Application.isPlaying)
+			if (isEditorWindow)
 				return guiPosition + getTopRectScreenSpace.position - new Vector2 (0, 22);
 			#endif
 			return guiPosition + getTopRectScreenSpace.position;
 		}
+
 		/// <summary>
 		/// Transforms the rect to screen space.
 		/// You can use GUIToScaledSpace when you want to transform an old rect to the new space aquired with BeginNoClip or MoveClipsUp (slower, try to call this function before any of these two)!
@@ -448,7 +405,7 @@ namespace NodeEditorFramework.Utilities
 		{
 			guiRect.position += getTopRectScreenSpace.position;
 			#if UNITY_EDITOR
-			if (!Application.isPlaying)
+			if (isEditorWindow)
 				guiRect.y -= 22;
 			#endif
 			return guiRect;

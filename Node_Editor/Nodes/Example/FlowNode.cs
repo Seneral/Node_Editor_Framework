@@ -66,12 +66,12 @@ namespace NodeEditorFramework.Standard
 	}
 
 	// Connection Type only for visual purposes
-	public class FlowType : ITypeDeclaration 
+	public class FlowType : IConnectionTypeDeclaration 
 	{
-		public string name { get { return "Flow"; } }
-		public Color col { get { return Color.red; } }
-		public string InputKnob_TexPath { get { return "Textures/In_Knob.png"; } }
-		public string OutputKnob_TexPath { get { return "Textures/Out_Knob.png"; } }
+		public string Identifier { get { return "Flow"; } }
 		public Type Type { get { return typeof(void); } }
+		public Color Color { get { return Color.red; } }
+		public string InKnobTex { get { return "Textures/In_Knob.png"; } }
+		public string OutKnobTex { get { return "Textures/Out_Knob.png"; } }
 	}
 }

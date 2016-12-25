@@ -10,77 +10,398 @@ namespace NodeEditorFramework.Utilities
 {
 	public static class RTEditorGUI 
 	{
+
+		#region GUI Proportioning Utilities
+
+		public static float labelWidth = 150;
+		public static float fieldWidth = 50;
+		public static float indent = 0;
+		private static float textFieldHeight { get { return GUI.skin.textField.CalcHeight (new GUIContent ("i"), 10); } }
+
+		public static Rect PrefixLabel (Rect totalPos, GUIContent label, GUIStyle style)
+		{
+			if (label == GUIContent.none)
+				return totalPos;//IndentedRect (totalPos);
+
+			Rect labelPos = new Rect (totalPos.x + indent, totalPos.y, Mathf.Min (getLabelWidth () - indent, totalPos.width/2), totalPos.height);
+			GUI.Label (labelPos, label, style);
+
+			return new Rect (totalPos.x + getLabelWidth (), totalPos.y, totalPos.width - getLabelWidth (), totalPos.height);
+		}
+
+		public static Rect PrefixLabel (Rect totalPos, float percentage, GUIContent label, GUIStyle style)
+		{
+			if (label == GUIContent.none)
+				return totalPos;
+
+			Rect labelPos = new Rect (totalPos.x + indent, totalPos.y, totalPos.width*percentage, totalPos.height);
+			GUI.Label (labelPos, label, style);
+
+			return new Rect (totalPos.x + totalPos.width*percentage, totalPos.y, totalPos.width*(1-percentage), totalPos.height);
+		}
+
+		private static Rect IndentedRect (Rect source)
+		{
+			return new Rect (source.x + indent, source.y, source.width - indent, source.height);
+		}
+
+		private static float getLabelWidth () 
+		{
+			#if UNITY_EDITOR
+			return UnityEditor.EditorGUIUtility.labelWidth;
+			#else
+			if (labelWidth == 0)
+			return 150;
+			return labelWidth;
+			#endif
+		}
+
+		private static float getFieldWidth () 
+		{
+			#if UNITY_EDITOR
+			return UnityEditor.EditorGUIUtility.fieldWidth;
+			#else
+			if (fieldWidth == 0)
+			return 50;
+			return fieldWidth;
+			#endif
+		}
+
+		private static Rect GetFieldRect (GUIContent label, GUIStyle style, params GUILayoutOption[] options)
+		{
+			float minLabelW = 0, maxLabelW = 0;
+			if (label != GUIContent.none)
+				style.CalcMinMaxWidth (label, out minLabelW, out maxLabelW);
+			return GUILayoutUtility.GetRect (getFieldWidth() + minLabelW + 5, getFieldWidth() + maxLabelW + 5, textFieldHeight, textFieldHeight, options);
+		}
+
+		private static Rect GetSliderRect (GUIContent label, GUIStyle style, params GUILayoutOption[] options)
+		{
+			float minLabelW = 0, maxLabelW = 0;
+			if (label != GUIContent.none)
+				style.CalcMinMaxWidth (label, out minLabelW, out maxLabelW);
+			return GUILayoutUtility.GetRect (getFieldWidth() + minLabelW + 5, getFieldWidth() + maxLabelW + 5 + 100, textFieldHeight, textFieldHeight, options);
+		}
+
+		private static Rect GetSliderRect (Rect sliderRect)
+		{
+			return new Rect (sliderRect.x, sliderRect.y, sliderRect.width - getFieldWidth() - 5, sliderRect.height);
+		}
+
+		private static Rect GetSliderFieldRect (Rect sliderRect)
+		{
+			return new Rect (sliderRect.x + sliderRect.width - getFieldWidth(), sliderRect.y, getFieldWidth(), sliderRect.height);
+		}
+
+		#endregion
+
+		#region Seperator
+
 		/// <summary>
-		/// Float Field with label for ingame purposes. Behaves like UnityEditor.EditorGUILayout.TextField
+		/// Efficient space like EditorGUILayout.Space
 		/// </summary>
-		public static string TextField (GUIContent label, string text)
+		public static void Space ()
+		{
+			Space (6);
+		}
+		/// <summary>
+		/// Space like GUILayout.Space but more efficient
+		/// </summary>
+		public static void Space (float pixels)
+		{
+			GUILayoutUtility.GetRect (pixels, pixels);
+		}
+
+
+		/// <summary>
+		/// A GUI Function which simulates the default seperator
+		/// </summary>
+		public static void Seperator () 
+		{
+			setupSeperator ();
+			GUILayout.Box (GUIContent.none, seperator, new GUILayoutOption[] { GUILayout.Height (1) });
+		}
+
+		/// <summary>
+		/// A GUI Function which simulates the default seperator
+		/// </summary>
+		public static void Seperator (Rect rect) 
+		{
+			setupSeperator ();
+			GUI.Box (new Rect (rect.x, rect.y, rect.width, 1), GUIContent.none, seperator);
+		}
+
+		private static GUIStyle seperator;
+		private static void setupSeperator () 
+		{
+			if (seperator == null) 
+			{
+				seperator = new GUIStyle();
+				seperator.normal.background = ColorToTex (1, new Color (0.6f, 0.6f, 0.6f));
+				seperator.stretchWidth = true;
+				seperator.margin = new RectOffset(0, 0, 7, 7);
+			}
+		}
+
+		#endregion
+
+		#region Change Check
+
+		private static Stack<bool> changeStack = new Stack<bool> ();
+
+		public static void BeginChangeCheck () 
+		{
+			changeStack.Push (GUI.changed);
+			GUI.changed = false;
+		}
+
+		public static bool EndChangeCheck () 
+		{
+			bool changed = GUI.changed;
+			if (changeStack.Count > 0)
+			{
+				GUI.changed = changeStack.Pop ();
+				if (changed && changeStack.Count > 0 && !changeStack.Peek ())
+				{ // Update parent change check
+					changeStack.Pop ();
+					changeStack.Push (changed);
+				}
+			}
+			else
+				Debug.LogWarning ("Requesting more EndChangeChecks than issuing BeginChangeChecks!");
+			return changed;
+		}
+
+		#endregion
+
+
+		#region Foldout and Toggle Wrappers
+
+		public static bool Foldout (bool foldout, string content, params GUILayoutOption[] options)
+		{
+			return Foldout (foldout, new GUIContent (content), options);
+		}
+
+		public static bool Foldout (bool foldout, string content, GUIStyle style, params GUILayoutOption[] options)
+		{
+			return Foldout (foldout, new GUIContent (content), style, options);
+		}
+
+		public static bool Foldout (bool foldout, GUIContent content, params GUILayoutOption[] options)
+		{
+			#if UNITY_EDITOR 
+			if (!Application.isPlaying)
+				return UnityEditor.EditorGUILayout.Foldout (foldout, content);
+			#endif
+			return Foldout (foldout, content, GUI.skin.toggle, options);
+		}
+
+		public static bool Foldout (bool foldout, GUIContent content, GUIStyle style, params GUILayoutOption[] options)
+		{
+			#if UNITY_EDITOR 
+			if (!Application.isPlaying)
+				return UnityEditor.EditorGUILayout.Foldout (foldout, content, style);
+			#endif
+			return GUILayout.Toggle (foldout, content, style, options);
+		}
+
+
+		public static bool Toggle (bool toggle, string content, params GUILayoutOption[] options)
+		{
+			return Toggle (toggle, new GUIContent (content), options);
+		}
+
+		public static bool Toggle (bool toggle, string content, GUIStyle style, params GUILayoutOption[] options)
+		{
+			return Toggle (toggle, new GUIContent (content), style, options);
+		}
+
+		public static bool Toggle (bool toggle, GUIContent content, params GUILayoutOption[] options)
+		{
+			#if UNITY_EDITOR 
+			if (!Application.isPlaying)
+				return UnityEditor.EditorGUILayout.ToggleLeft (content, toggle, options);
+			#endif
+			return Toggle (toggle, content, GUI.skin.toggle, options);
+		}
+
+		public static bool Toggle (bool toggle, GUIContent content, GUIStyle style, params GUILayoutOption[] options)
+		{
+			#if UNITY_EDITOR 
+			if (!Application.isPlaying)
+				return UnityEditor.EditorGUILayout.ToggleLeft (content, toggle, style, options);
+			#endif
+			return GUILayout.Toggle (toggle, content, style, options);
+		}
+
+		#endregion
+
+		#region Fields and Sliders
+
+		#region Extra
+
+		/// <summary>
+		/// Text Field with label for ingame purposes. Behaves like UnityEditor.EditorGUILayout.TextField
+		/// </summary>
+		public static string TextField (GUIContent label, string text, GUIStyle style, params GUILayoutOption[] options)
 		{
 			#if UNITY_EDITOR
 			if (!Application.isPlaying)
 				return UnityEditor.EditorGUILayout.TextField (label, text);
 			#endif
-			GUILayout.BeginHorizontal ();
-			GUILayout.Label (label, label != GUIContent.none? GUILayout.ExpandWidth (true) : GUILayout.ExpandWidth (false));
-			text = GUILayout.TextField (text);
-			GUILayout.EndHorizontal ();
+			if (style == null) style = GUI.skin.textField;
+			Rect totalPos = GetFieldRect (label, style, options);
+			Rect fieldPos = PrefixLabel (totalPos, 0.5f, label, style);
+			text = GUI.TextField (fieldPos, text);
 			return text;
 		}
 
-		#region Slider Extended
+
+		/// <summary>
+		/// Slider to select between the given options
+		/// </summary>
+		public static int OptionSlider (GUIContent label, int selected, string[] selectableOptions, params GUILayoutOption[] options)
+		{
+			return OptionSlider (label, selected, selectableOptions, GUI.skin.label, options);
+		}
+		/// <summary>
+		/// Slider to select between the given options
+		/// </summary>
+		public static int OptionSlider (GUIContent label, int selected, string[] selectableOptions, GUIStyle style, params GUILayoutOption[] options)
+		{
+			if (style == null) style = GUI.skin.textField;
+			Rect totalPos = GetSliderRect (label, style, options);
+			Rect sliderFieldPos = PrefixLabel (totalPos, 0.5f, label, style);
+
+			selected = Mathf.RoundToInt (GUI.HorizontalSlider (GetSliderRect (sliderFieldPos), selected, 0, selectableOptions.Length-1));
+			GUI.Label (GetSliderFieldRect (sliderFieldPos), selectableOptions[selected]);
+			return selected;
+		}
+
+
+		/// <summary>
+		/// Slider to select from a set range of powers for a given base value. 
+		/// Operates on the final value, rounds it to the next power and displays it.
+		/// </summary>
+		public static int MathPowerSlider (GUIContent label, int baseValue, int value, int minPow, int maxPow, params GUILayoutOption[] options)
+		{
+			int power = (int)Math.Floor (Math.Log (value) / Math.Log (baseValue));
+			power = MathPowerSliderRaw (label, baseValue, power, minPow, maxPow, options);
+			return (int)Math.Pow (baseValue, power);
+		}
+		/// <summary>
+		/// Slider to select from a set range of powers for a given base value. 
+		/// Operates on the raw power but displays the final calculated value.
+		/// </summary>
+		public static int MathPowerSliderRaw (GUIContent label, int baseValue, int power, int minPow, int maxPow, params GUILayoutOption[] options)
+		{
+			Rect totalPos = GetSliderRect (label, GUI.skin.label, options);
+			Rect sliderFieldPos = PrefixLabel (totalPos, 0.5f, label, GUI.skin.label);
+
+			power = Mathf.RoundToInt (GUI.HorizontalSlider (GetSliderRect (sliderFieldPos), power, minPow, maxPow));
+			GUI.Label (GetSliderFieldRect (sliderFieldPos), Mathf.Pow (baseValue, power).ToString ());
+			return power;
+		}
+
+		#endregion
+
+		#region Int Fields and Slider Wrappers
+
+		/// <summary>
+		/// An integer slider that emulates the EditorGUILayout version. 
+		/// HorizontalSlider with a label prefixed and an additional int field thereafter if desired.
+		/// </summary>
+		public static int IntSlider (string label, int value, int minValue, int maxValue, params GUILayoutOption[] options) 
+		{
+			return (int)Slider (new GUIContent (label), value, minValue, maxValue, options);
+		}
+
+		/// <summary>
+		/// An integer slider that emulates the EditorGUILayout version. 
+		/// HorizontalSlider with a label prefixed and an additional int field thereafter if desired.
+		/// </summary>
+		public static int IntSlider (GUIContent label, int value, int minValue, int maxValue, params GUILayoutOption[] options) 
+		{
+			return (int)Slider (label, value, minValue, maxValue, options);
+		}
+
+		/// <summary>
+		/// An integer slider that emulates the EditorGUILayout version. 
+		/// HorizontalSlider with a label prefixed and an additional int field thereafter if desired.
+		/// </summary>
+		public static int IntSlider (int value, int minValue, int maxValue, params GUILayoutOption[] options) 
+		{
+			return (int)Slider (GUIContent.none, value, minValue, maxValue, options);
+		}
+
+		/// <summary>
+		/// Int Field for ingame purposes. Behaves exactly like UnityEditor.EditorGUILayout.IntField, besides the label slide field
+		/// </summary>
+		public static int IntField (string label, int value, params GUILayoutOption[] options)
+		{
+			return (int)FloatField (new GUIContent (label), value, options);
+		}
+
+		/// <summary>
+		/// Int Field for ingame purposes. Behaves exactly like UnityEditor.EditorGUILayout.IntField, besides the label slide field
+		/// </summary>
+		public static int IntField (GUIContent label, int value, params GUILayoutOption[] options)
+		{
+			return (int)FloatField (label, value, options);
+		}
+
+		/// <summary>
+		/// Int Field for ingame purposes. Behaves exactly like UnityEditor.EditorGUILayout.IntField
+		/// </summary>
+		public static int IntField (int value, params GUILayoutOption[] options)
+		{
+			return (int)FloatField (value, options);
+		}
+
+		#endregion
+
+		#region Float Slider
 
 		/// <summary>
 		/// A slider that emulates the EditorGUILayout version. 
 		/// HorizontalSlider with an additional float field thereafter.
 		/// </summary>
-		public static float Slider (float value, float minValue, float maxValue, params GUILayoutOption[] sliderOptions) 
+		public static float Slider (float value, float minValue, float maxValue, params GUILayoutOption[] options) 
 		{
-			#if UNITY_EDITOR
-			if (!Application.isPlaying)
-				return UnityEditor.EditorGUILayout.Slider (value, minValue, maxValue, sliderOptions);
-			#endif
-			return Slider (GUIContent.none, value, minValue, maxValue, sliderOptions);
+			return Slider (GUIContent.none, value, minValue, maxValue, options);
 		}
 
 		/// <summary>
 		/// A slider that emulates the EditorGUILayout version. 
 		/// HorizontalSlider with a label prefixed and an additional float field thereafter if desired.
 		/// </summary>
-		public static float Slider (GUIContent label, float value, float minValue, float maxValue, params GUILayoutOption[] sliderOptions) 
+		public static float Slider (string label, float value, float minValue, float maxValue, params GUILayoutOption[] options) 
+		{
+			return Slider (new GUIContent (label), value, minValue, maxValue, options);
+		}
+
+		/// <summary>
+		/// A slider that emulates the EditorGUILayout version. 
+		/// HorizontalSlider with a label prefixed and an additional float field thereafter if desired.
+		/// </summary>
+		public static float Slider (GUIContent label, float value, float minValue, float maxValue, params GUILayoutOption[] options) 
 		{
 			#if UNITY_EDITOR
 			if (!Application.isPlaying)
-				return UnityEditor.EditorGUILayout.Slider (label, value, minValue, maxValue, sliderOptions);
+				return UnityEditor.EditorGUILayout.Slider (label, value, minValue, maxValue, options);
 			#endif
-			GUILayout.BeginHorizontal ();
-			if (label != GUIContent.none)
-				GUILayout.Label (label, GUILayout.ExpandWidth (true));
-			value = GUILayout.HorizontalSlider (value, minValue, maxValue, sliderOptions);
-			value = Mathf.Min (maxValue, Mathf.Max (minValue, FloatField (value)));
-			GUILayout.EndHorizontal ();
+
+			Rect totalPos = GetSliderRect (label, GUI.skin.label, options);
+			Rect sliderFieldPos = PrefixLabel (totalPos, 0.5f, label, GUI.skin.label);
+
+			value = GUI.HorizontalSlider (GetSliderRect (sliderFieldPos), value, minValue, maxValue);
+			value = Mathf.Min (maxValue, Mathf.Max (minValue, FloatField (GetSliderFieldRect (sliderFieldPos), value, GUILayout.Width (60))));
 			return value;
-		}
-
-		/// <summary>
-		/// An integer slider that emulates the EditorGUILayout version. 
-		/// HorizontalSlider with a label prefixed and an additional int field thereafter if desired.
-		/// </summary>
-		public static int IntSlider (GUIContent label, int value, int minValue, int maxValue, params GUILayoutOption[] sliderOptions) 
-		{
-			return (int)Slider (label, value, minValue, maxValue, sliderOptions);
-		}
-
-		/// <summary>
-		/// An integer slider that emulates the EditorGUILayout version. 
-		/// HorizontalSlider with a label prefixed and an additional int field thereafter if desired.
-		/// </summary>
-		public static int IntSlider (int value, int minValue, int maxValue, params GUILayoutOption[] sliderOptions) 
-		{
-			return (int)Slider (GUIContent.none, value, minValue, maxValue, sliderOptions);
 		}
 
 		#endregion
 
-		#region FloatField
+		#region Float Field
 
 		private static int activeFloatField = -1;
 		private static float activeFloatFieldLastValue = 0;
@@ -89,26 +410,35 @@ namespace NodeEditorFramework.Utilities
 		/// <summary>
 		/// Float Field for ingame purposes. Behaves exactly like UnityEditor.EditorGUILayout.FloatField, besides the label slide field
 		/// </summary>
-		public static float FloatField (GUIContent label, float value, params GUILayoutOption[] fieldOptions)
+		public static float FloatField (string label, float value, params GUILayoutOption[] fieldOptions)
 		{
-			GUILayout.BeginHorizontal ();
-			if (label != GUIContent.none)
-				GUILayout.Label (label, GUILayout.ExpandWidth (true));
-			value = FloatField (value, fieldOptions);
-			GUILayout.EndHorizontal ();
-			return value;
+			return FloatField (new GUIContent (label), value, fieldOptions);
+		}
+
+		/// <summary>
+		/// Float Field for ingame purposes. Behaves exactly like UnityEditor.EditorGUILayout.FloatField, besides the label slide field
+		/// </summary>
+		public static float FloatField (GUIContent label, float value, params GUILayoutOption[] options)
+		{
+			Rect totalPos = GetFieldRect (label, GUI.skin.label, options);
+			Rect fieldPos = PrefixLabel (totalPos, 0.5f, label, GUI.skin.label);
+			return FloatField (fieldPos, value, options);
 		}
 
 		/// <summary>
 		/// Float Field for ingame purposes. Behaves exactly like UnityEditor.EditorGUILayout.FloatField
 		/// </summary>
-		public static float FloatField (float value, params GUILayoutOption[] fieldOptions)
+		public static float FloatField (float value, params GUILayoutOption[] options)
 		{
-			// Get rect and control for this float field for identification
-			if (fieldOptions.Length == 0)
-				fieldOptions = new GUILayoutOption[] { GUILayout.ExpandWidth (false), GUILayout.MinWidth (50) };
-			Rect pos = GUILayoutUtility.GetRect (new GUIContent (value.ToString ()), GUI.skin.label, fieldOptions);
+			Rect pos = GetFieldRect (GUIContent.none, null, options);
+			return FloatField (pos, value, options);
+		}
 
+		/// <summary>
+		/// Float Field for ingame purposes. Behaves exactly like UnityEditor.EditorGUILayout.FloatField
+		/// </summary>
+		public static float FloatField (Rect pos, float value, params GUILayoutOption[] options)
+		{
 			int floatFieldID = GUIUtility.GetControlID ("FloatField".GetHashCode (), FocusType.Keyboard, pos) + 1;
 			if (floatFieldID == 0)
 				return value;
@@ -200,7 +530,9 @@ namespace NodeEditorFramework.Utilities
 
 		#endregion
 
-		#region ObjectField
+		#endregion
+
+		#region Object Field
 
 		/// <summary>
 		/// Provides an object field both for editor (using default) and for runtime (not yet implemented other that displaying object)
@@ -213,34 +545,38 @@ namespace NodeEditorFramework.Utilities
 		/// <summary>
 		/// Provides an object field both for editor (using default) and for runtime (not yet implemented other that displaying object)
 		/// </summary>
-		public static T ObjectField<T> (GUIContent label, T obj, bool allowSceneObjects) where T : Object
+		public static T ObjectField<T> (string label, T obj, bool allowSceneObjects) where T : Object
+		{
+			return ObjectField<T> (new GUIContent (label), obj, allowSceneObjects);
+		}
+
+		/// <summary>
+		/// Provides an object field both for editor (using default) and for runtime (not yet implemented other that displaying object)
+		/// </summary>
+		public static T ObjectField<T> (GUIContent label, T obj, bool allowSceneObjects, params GUILayoutOption[] options) where T : Object
 		{
 			#if UNITY_EDITOR
-			//if (!Application.isPlaying)
-			return UnityEditor.EditorGUILayout.ObjectField (label, obj, typeof (T), allowSceneObjects) as T;
-			#else
-			if (Application.isPlaying)
+			if (!Application.isPlaying)
+				return UnityEditor.EditorGUILayout.ObjectField (label, obj, typeof (T), allowSceneObjects) as T;
+			#endif
+			bool open = false;
+			if (obj.GetType () == typeof(Texture2D)) 
 			{
-				bool open = false;
-				if (typeof(T) == typeof (Texture2D)) 
-				{
-					label.image = obj as Texture2D;
-					GUIStyle style = new GUIStyle (GUI.skin.box);
-					style.imagePosition = ImagePosition.ImageAbove;
-					open = GUILayout.Button (label, style);
-				}
-				else
-				{
-					GUIStyle style = new GUIStyle (GUI.skin.box);
-					open = GUILayout.Button (label, style);
-				}
-				if (open)
-				{
-					//Debug.Log ("Selecting Object!");
-				}
+				GUILayout.BeginHorizontal ();
+				GUILayout.Label (label);
+				open = GUILayout.Button (obj as Texture2D, new GUILayoutOption[] { GUILayout.MaxWidth (64), GUILayout.MaxHeight (64) });
+				GUILayout.EndHorizontal ();
+			}
+			else
+			{
+				GUIStyle style = new GUIStyle (GUI.skin.box);
+				open = GUILayout.Button (label, style);
+			}
+			if (open)
+			{
+				//Debug.Log ("Selecting Object!");
 			}
 			return obj;
-			#endif
 		}
 
 		#endregion
@@ -249,47 +585,43 @@ namespace NodeEditorFramework.Utilities
 
 		// TODO: Implement RT Popup
 
-		public static System.Enum EnumPopup (GUIContent label, System.Enum selected) 
+		public static System.Enum EnumPopup (System.Enum selected) 
 		{
-			#if UNITY_EDITOR
-			selected = UnityEditor.EditorGUILayout.EnumPopup (label, selected);
-			#else
-			label.text += ": " + selected.ToString ();
-			GUILayout.Label (label);
-			#endif
-			return selected;
+			return EnumPopup (GUIContent.none, selected);
 		}
 
 		public static System.Enum EnumPopup (string label, System.Enum selected) 
 		{
-			#if UNITY_EDITOR
-			selected = UnityEditor.EditorGUILayout.EnumPopup (label, selected);
-			#else
-			GUILayout.Label (label + ": " + selected.ToString ());
-			#endif
-			return selected;
+			return EnumPopup (new GUIContent (label), selected);
 		}
 
-		public static System.Enum EnumPopup (System.Enum selected) 
+		public static System.Enum EnumPopup (GUIContent label, System.Enum selected) 
 		{
 			#if UNITY_EDITOR
-			selected = UnityEditor.EditorGUILayout.EnumPopup (selected);
-			#else
-			GUILayout.Label (selected.ToString ());
+			if (!Application.isPlaying)
+				return UnityEditor.EditorGUILayout.EnumPopup (label, selected);
 			#endif
+			label.text += ": " + selected.ToString ();
+			GUILayout.Label (label);
 			return selected;
 		}
 
 		public static int Popup (GUIContent label, int selected, string[] displayedOptions) 
 		{
-			GUILayout.BeginHorizontal ();
 			#if UNITY_EDITOR
-			GUILayout.Label (label);
-			selected = UnityEditor.EditorGUILayout.Popup (selected, displayedOptions);
-			#else
+			if (!Application.isPlaying)
+			{
+				GUILayout.BeginHorizontal ();
+				GUILayout.Label (label);
+				selected = UnityEditor.EditorGUILayout.Popup (selected, displayedOptions);
+				GUILayout.EndHorizontal ();
+				return selected;
+			}
+			#endif
+
+			GUILayout.BeginHorizontal ();
 			label.text += ": " + selected.ToString ();
 			GUILayout.Label (label);
-			#endif
 			GUILayout.EndHorizontal ();
 			return selected;
 		}
@@ -297,58 +629,48 @@ namespace NodeEditorFramework.Utilities
 		public static int Popup (string label, int selected, string[] displayedOptions) 
 		{
 			#if UNITY_EDITOR
-			selected = UnityEditor.EditorGUILayout.Popup (label, selected, displayedOptions);
-			#else
-			GUILayout.Label (label + ": " + selected.ToString ());
+			if (!Application.isPlaying)
+				return UnityEditor.EditorGUILayout.Popup (label, selected, displayedOptions);
 			#endif
+			GUILayout.Label (label + ": " + selected.ToString ());
 			return selected;
 		}
 
 		public static int Popup (int selected, string[] displayedOptions) 
 		{
-			#if UNITY_EDITOR
-			selected = UnityEditor.EditorGUILayout.Popup (selected, displayedOptions);
-			#else
-			GUILayout.Label (selected.ToString ());
-			#endif
-			return selected;
+			return Popup ("", selected, displayedOptions);
 		}
 
 		#endregion
 
-		#region Seperator
+		#region Extended GUI Texture Drawing
 
-		/// <summary>
-		/// A GUI Function which simulates the default seperator
-		/// </summary>
-		public static void Seperator () 
+		private static Material texVizMat;
+
+		public static void DrawTexture (Texture texture, int texSize, GUIStyle style, params GUILayoutOption[] options) 
 		{
-			setupSeperator ();
-			GUILayout.Box (GUIContent.none, seperator, new GUILayoutOption[] { GUILayout.Height (1) });
+			DrawTexture (texture, texSize, style, 1, 2, 3, 4, options);
 		}
 
-		/// <summary>
-		/// A GUI Function which simulates the default seperator
-		/// </summary>
-		public static void Seperator (Rect rect) 
+		public static void DrawTexture (Texture texture, int texSize, GUIStyle style, int shuffleRed, int shuffleGreen, int shuffleBlue, int shuffleAlpha, params GUILayoutOption[] options) 
 		{
-			setupSeperator ();
-			GUI.Box (new Rect (rect.x, rect.y, rect.width, 1), GUIContent.none, seperator);
-		}
+			if (texVizMat == null)
+				texVizMat = new Material (Shader.Find ("Hidden/GUITextureClip_ChannelControl"));
+			texVizMat.SetInt ("shuffleRed", shuffleRed);
+			texVizMat.SetInt ("shuffleGreen", shuffleGreen);
+			texVizMat.SetInt ("shuffleBlue", shuffleBlue);
+			texVizMat.SetInt ("shuffleAlpha", shuffleAlpha);
 
-		private static GUIStyle seperator;
-		private static void setupSeperator () 
-		{
-			if (seperator == null) 
-			{
-				seperator = new GUIStyle();
-				seperator.normal.background = ColorToTex (1, new Color (0.6f, 0.6f, 0.6f));
-				seperator.stretchWidth = true;
-				seperator.margin = new RectOffset(0, 0, 7, 7);
-			}
+			if (options == null || options.Length == 0)
+				options = new GUILayoutOption[] { GUILayout.ExpandWidth (false) };
+			Rect rect = style == null? GUILayoutUtility.GetRect (texSize, texSize, options) : GUILayoutUtility.GetRect (texSize, texSize, style, options);
+			if (Event.current.type == EventType.Repaint)
+				Graphics.DrawTexture (rect, texture, texVizMat);
 		}
 
 		#endregion
+
+
 
 		#region Low-Level Drawing
 
@@ -639,10 +961,11 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static Texture2D ColorToTex (int pxSize, Color col) 
 		{
+			Color[] texCols = new Color[pxSize*pxSize];
+			for (int px = 0; px < pxSize*pxSize; px++) 
+				texCols[px] = col;
 			Texture2D tex = new Texture2D (pxSize, pxSize);
-			for (int x = 0; x < pxSize; x++) 
-				for (int y = 0; y < pxSize; y++) 
-					tex.SetPixel (x, y, col);
+			tex.SetPixels (texCols);
 			tex.Apply ();
 			return tex;
 		}

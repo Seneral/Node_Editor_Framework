@@ -15,7 +15,7 @@ namespace NodeEditorFramework
 	/// Abstract knob on the side of an node that handles positioning drawing with a texture and even labeling and positioning calls
 	/// </summary>
 	[System.Serializable]
-	public class NodeKnob : ScriptableObject
+	public partial class NodeKnob : ScriptableObject
 	{
 		// Main
 		public Node body;
@@ -69,7 +69,7 @@ namespace NodeEditorFramework
 		{
 			ReloadTexture ();
 			if (knobTexture == null)
-				throw new UnityException ("Knob texture could not be loaded!");
+				throw new UnityException ("Knob texture of " + name + " could not be loaded!");
 			if (side != defaultSide) 
 			{ // Rotate Knob texture according to the side it's used on
 				ResourceManager.SetDefaultResourcePath (NodeEditor.editorPath + "Resources/");
@@ -248,8 +248,8 @@ namespace NodeEditorFramework
 		{
 			return side == NodeSide.Right? 	Vector2.right : 
 					(side == NodeSide.Bottom? Vector2.up : 
-				 	(side == NodeSide.Top? 	Vector2.down : 
-				 			/* Left */		Vector2.left));
+					(side == NodeSide.Top? 	Vector2.down : 
+							/* Left */		Vector2.left));
 		}
 
 		/// <summary>
@@ -260,6 +260,14 @@ namespace NodeEditorFramework
 			return sideB - sideA + (sideA>sideB? 4 : 0);
 		}
 
+		#endregion
+
+		#region Utility
+
+		public virtual Node GetNodeAcrossConnection()
+		{
+			return null;
+		}
 		#endregion
 	}
 }

@@ -65,7 +65,7 @@ namespace NodeEditorFramework.Standard
 	#endif
 
 			if (GUI.changed)
-				NodeEditor.RecalculateFrom (this);
+				NodeEditor.Calculator.RecalculateFrom (this);
 		}
 
 		public override bool Calculate () 

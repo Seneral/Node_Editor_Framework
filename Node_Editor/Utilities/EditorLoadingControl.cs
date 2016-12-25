@@ -41,7 +41,7 @@ namespace NodeEditorFramework.Utilities
 		}
 
 		private static void OnHierarchyChange () 
-		{
+		{ // TODO: OnGUI might be called before this function and migth cause problems. Find a better way to detect scene change!
 #if UNITY_5_3_OR_NEWER || UNITY_5_3
 			Scene currentScene = EditorSceneManager.GetActiveScene ();
 #else

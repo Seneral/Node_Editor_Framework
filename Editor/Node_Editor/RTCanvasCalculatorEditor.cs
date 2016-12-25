@@ -19,18 +19,12 @@ namespace NodeEditorFramework.Standard
 
 		public override void OnInspectorGUI () 
 		{
-			NodeCanvas canvas = EditorGUILayout.ObjectField ("Canvas", RTCalc.canvas, typeof(NodeCanvas), false) as NodeCanvas;
-			if (canvas != RTCalc.canvas)
-			{ // Need it to reload so it creates a copy
-				string canvasPath = canvas == null? "" : AssetDatabase.GetAssetPath (canvas);
-				RTCalc.LoadCanvas (canvasPath);
-				inputNodes = null;
-			}
+			RTCalc.canvas = EditorGUILayout.ObjectField ("Canvas", RTCalc.canvas, typeof(NodeCanvas), false) as NodeCanvas;
+			if (RTCalc.canvas == null)
+				return;
 
 			if (GUILayout.Button ("Calculate and debug Output")) 
-			{
 				RTCalc.CalculateCanvas ();
-			}
 
 			if (inputNodes == null)
 				inputNodes = RTCalc.getInputNodes ();

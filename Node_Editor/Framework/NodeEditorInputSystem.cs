@@ -115,6 +115,8 @@ namespace NodeEditorFramework
 					(late? eventHandler.Key.priority >= 100 : eventHandler.Key.priority < 100))
 				{ // Event is happening and specified priority is ok with the late-state
 					eventHandler.Value.DynamicInvoke (parameter);
+					if (inputInfo.inputEvent.type == EventType.Used)
+						return;
 				}
 			}
 		}
@@ -132,6 +134,8 @@ namespace NodeEditorFramework
 					(hotKey.Key.limitingEventType == null || hotKey.Key.limitingEventType == inputInfo.inputEvent.type))
 				{
 					hotKey.Value.DynamicInvoke (parameter);
+					if (inputInfo.inputEvent.type == EventType.Used)
+						return;
 				}
 			}
 		}
@@ -216,7 +220,7 @@ namespace NodeEditorFramework
 
 		private static NodeEditorState unfocusControlsForState;
 
-		[EventHandlerAttribute (priority = -4)] // Absolute first to call!
+		[EventHandlerAttribute (-4)] // Absolute first to call!
 		private static void HandleFocussing (NodeEditorInputInfo inputInfo) 
 		{
 			NodeEditorState state = inputInfo.editorState;
@@ -231,7 +235,7 @@ namespace NodeEditorFramework
 			}
 		}
 
-		[EventHandlerAttribute (EventType.MouseDown, priority = -2)] // Absolute second to call!
+		[EventHandlerAttribute (EventType.MouseDown, -2)] // Absolute second to call!
 		private static void HandleSelecting (NodeEditorInputInfo inputInfo) 
 		{
 			NodeEditorState state = inputInfo.editorState;
@@ -249,7 +253,7 @@ namespace NodeEditorFramework
 
 		// CONTEXT CLICKS
 
-		[EventHandlerAttribute (EventType.MouseDown, priority = 0)] // One of the highest priorities after node selection
+		[EventHandlerAttribute (EventType.MouseDown, 0)] // One of the highest priorities after node selection
 		private static void HandleContextClicks (NodeEditorInputInfo inputInfo) 
 		{
 			if (Event.current.button == 1) 
@@ -315,6 +319,24 @@ namespace NodeEditorFramework
 	{
 		public EventType? handledEvent { get; private set; }
 		public int priority { get; private set; }
+
+		/// <summary>
+		/// Handle all events of the specified eventType
+		/// </summary>
+		public EventHandlerAttribute(EventType eventType, int priorityValue)
+		{
+			handledEvent = eventType;
+			priority = priorityValue;
+		}
+
+		/// <summary>
+		/// Handle all events of the specified eventType
+		/// </summary>
+		public EventHandlerAttribute(int priorityValue)
+		{
+			handledEvent = null;
+			priority = priorityValue;
+		}
 
 		/// <summary>
 		/// Handle all events of the specified eventType
@@ -394,6 +416,18 @@ namespace NodeEditorFramework
 		}
 
 		/// <summary>
+		/// Handle the specified hotkey limited to the specified eventType
+		/// </summary>
+		public HotkeyAttribute(KeyCode handledKey, EventType LimitEventType, int priorityValue)
+		{
+			handledHotKey = handledKey;
+			modifiers = null;
+			limitingEventType = LimitEventType;
+			priority = priorityValue;
+		}
+
+
+		/// <summary>
 		/// Handle the specified hotkey with modifiers limited to the specified eventType
 		/// </summary>
 		public HotkeyAttribute (KeyCode handledKey, EventModifiers eventModifiers, EventType LimitEventType) 
@@ -402,6 +436,17 @@ namespace NodeEditorFramework
 			modifiers = eventModifiers;
 			limitingEventType = LimitEventType;
 			priority = 50;
+		}
+
+		/// <summary>
+		/// Handle the specified hotkey with modifiers limited to the specified eventType with specified priority
+		/// </summary>
+		public HotkeyAttribute (KeyCode handledKey, EventModifiers eventModifiers, EventType LimitEventType, int priorityValue) 
+		{
+			handledHotKey = handledKey;
+			modifiers = eventModifiers;
+			limitingEventType = LimitEventType;
+			priority = priorityValue;
 		}
 
 		internal static bool AssureValidity (MethodInfo method, HotkeyAttribute attr) 

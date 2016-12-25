@@ -5,23 +5,27 @@ namespace NodeEditorFramework.Utilities
 {
 	public static class OverlayGUI 
 	{
-		public static PopupMenu currentPopup;
+		private static string currentEditorUser;
+
+		public static string openedPopupUser = "NONE";
+		public static PopupMenu openedPopup;
 
 		/// <summary>
 		/// Returns if any popup currently has control.
 		/// </summary>
 		public static bool HasPopupControl () 
 		{
-			return currentPopup != null;
+			return openedPopup != null && currentEditorUser == openedPopupUser;
 		}
 
 		/// <summary>
 		/// Starts the OverlayGUI (Call before any other GUI code!)
 		/// </summary>
-		public static void StartOverlayGUI () 
+		public static void StartOverlayGUI (string editorUser) 
 		{
-			if (currentPopup != null && Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint)
-				currentPopup.Draw ();
+			currentEditorUser = editorUser;
+			if (HasPopupControl () && Event.current.type != EventType.Layout && Event.current.type != EventType.Repaint)
+				openedPopup.Draw ();
 		}
 
 		/// <summary>
@@ -29,8 +33,29 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static void EndOverlayGUI () 
 		{
-			if (currentPopup != null && (Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint))
-				currentPopup.Draw ();
+			if (HasPopupControl () && (Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint))
+				openedPopup.Draw ();
+		}
+
+		/// <summary>
+		/// Opens the specified popupMenu in the current editor users and closes all other popups
+		/// </summary>
+		public static void OpenPopup (PopupMenu popup)
+		{
+			openedPopup = popup;
+			openedPopupUser = currentEditorUser;
+		}
+
+		/// <summary>
+		/// Closes the popup in the current editor if existant
+		/// </summary>
+		public static void ClosePopup ()
+		{
+			if (HasPopupControl ())
+			{
+				openedPopup = null;
+				openedPopupUser = "NONE";
+			}
 		}
 	}
 
@@ -56,6 +81,8 @@ namespace NodeEditorFramework.Utilities
 		public static Texture2D expandRight;
 		public static float itemHeight;
 		public static GUIStyle selectedLabel;
+
+		public float minWidth;
 		
 		public PopupMenu () 
 		{
@@ -72,14 +99,17 @@ namespace NodeEditorFramework.Utilities
 			selectedLabel = new GUIStyle (GUI.skin.label);
 			selectedLabel.normal.background = NodeEditorFramework.Utilities.RTEditorGUI.ColorToTex (1, new Color (0.4f, 0.4f, 0.4f));
 		}
-		
-		public void Show (Vector2 pos)
+
+		public void Show (Vector2 pos, float MinWidth = 40)
 		{
-			position = calculateRect (pos, menuItems);
+			minWidth = MinWidth;
+			position = calculateRect (pos, menuItems, minWidth);
 			selectedPath = "";
-			OverlayGUI.currentPopup = this;
+			OverlayGUI.OpenPopup (this);
 		}
-		
+
+		public Vector2 Position { get { return position.position; } }
+
 		#region Creation
 		
 		public void AddItem (GUIContent content, bool on, MenuFunctionData func, object userData)
@@ -167,16 +197,14 @@ namespace NodeEditorFramework.Utilities
 			}
 			
 			if (!inRect || close) 
-			{
-				OverlayGUI.currentPopup = null;
-			}
+				OverlayGUI.ClosePopup ();
 
 			NodeEditorFramework.NodeEditor.RepaintClients ();
 		}
 		
 		private bool DrawGroup (Rect pos, List<MenuItem> menuItems) 
 		{
-			Rect rect = calculateRect (pos.position, menuItems);
+			Rect rect = calculateRect (pos.position, menuItems, minWidth);
 			
 			Rect clickRect = new Rect (rect);
 			clickRect.xMax += 20;
@@ -212,7 +240,7 @@ namespace NodeEditorFramework.Utilities
 				if (labelRect.Contains (Event.current.mousePosition))
 					selectedPath = item.path;
 
-				bool selected = selectedPath.Contains (item.path);
+				bool selected = selectedPath == item.path || selectedPath.Contains (item.path + "/");
 				GUI.Label (labelRect, item.content, selected? selectedLabel : GUI.skin.label);
 				
 				if (item.group) 
@@ -244,10 +272,10 @@ namespace NodeEditorFramework.Utilities
 			return rect;
 		}
 		
-		private static Rect calculateRect (Vector2 position, List<MenuItem> menuItems) 
+		private static Rect calculateRect (Vector2 position, List<MenuItem> menuItems, float minWidth) 
 		{
 			Vector2 size;
-			float width = 40, height = 0;
+			float width = minWidth, height = 0;
 			
 			for (int itemCnt = 0; itemCnt < menuItems.Count; itemCnt++)
 			{
@@ -334,6 +362,8 @@ namespace NodeEditorFramework.Utilities
 	public class GenericMenu
 	{
 		private static PopupMenu popup;
+
+		public Vector2 Position { get { return popup.Position; } }
 		
 		public GenericMenu () 
 		{
@@ -342,14 +372,12 @@ namespace NodeEditorFramework.Utilities
 		
 		public void ShowAsContext ()
 		{
-			Vector2 mousePos = Event.current.mousePosition;
-			//Vector2 screenMousePos = GUIScaleUtility.GUIToScreenSpace (mousePos);
-			popup.Show (mousePos);
+			popup.Show (GUIScaleUtility.GUIToScreenSpace (Event.current.mousePosition));
 		}
 
-		public void Show (Vector2 pos)
+		public void Show (Vector2 pos, float MinWidth = 40)
 		{
-			popup.Show (pos);
+			popup.Show (GUIScaleUtility.GUIToScreenSpace (pos), MinWidth);
 		}
 		
 		public void AddItem (GUIContent content, bool on, PopupMenu.MenuFunctionData func, object userData)

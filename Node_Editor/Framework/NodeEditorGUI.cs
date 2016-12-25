@@ -5,8 +5,11 @@ using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework 
 {
-	public static class NodeEditorGUI 
+	public static partial class NodeEditorGUI 
 	{
+		internal static string curEditorUser;
+		internal static bool isEditorWindow;
+
 		// static GUI settings, textures and styles
 		public static int knobSize = 16;
 
@@ -25,11 +28,13 @@ namespace NodeEditorFramework
 		public static GUIStyle nodeLabel;
 		public static GUIStyle nodeLabelBold;
 		public static GUIStyle nodeLabelSelected;
+		public static GUIStyle nodeLabelCentered;
+		public static GUIStyle nodeLabelBoldCentered;
 
 		public static GUIStyle nodeBox;
 		public static GUIStyle nodeBoxBold;
 		
-		public static bool Init (bool GUIFunction) 
+		public static bool Init ()
 		{
 			// Textures
 			Background = ResourceManager.LoadTexture ("Textures/background.png");
@@ -40,8 +45,6 @@ namespace NodeEditorFramework
 			
 			if (!Background || !AALineTex || !GUIBox || !GUIButton)
 				return false;
-			if (!GUIFunction)
-				return true;
 
 			// Skin & Styles
 			nodeSkin = Object.Instantiate<GUISkin> (GUI.skin);
@@ -65,6 +68,12 @@ namespace NodeEditorFramework
 			// Selected Label
 			nodeLabelSelected = new GUIStyle (nodeLabel);
 			nodeLabelSelected.normal.background = RTEditorGUI.ColorToTex (1, NE_LightColor);
+			// Centered Label
+			nodeLabelCentered = new GUIStyle (nodeLabel);
+			nodeLabelCentered.alignment = TextAnchor.MiddleCenter;
+			// Centered Bold Label
+			nodeLabelBoldCentered = new GUIStyle (nodeLabelBold);
+			nodeLabelBoldCentered.alignment = TextAnchor.MiddleCenter;
 			// Bold Box
 			nodeBoxBold = new GUIStyle (nodeBox);
 			nodeBoxBold.fontStyle = FontStyle.Bold;
@@ -72,16 +81,22 @@ namespace NodeEditorFramework
 			return true;
 		}
 
-		public static void StartNodeGUI () 
+		public static void StartNodeGUI (string editorUser, bool IsEditorWindow) 
 		{
+			NodeEditor.checkInit(true);
+
+			curEditorUser = editorUser;
+			isEditorWindow = IsEditorWindow;
+
 			defaultSkin = GUI.skin;
-			if (nodeSkin == null)
-				Init (true);
-			GUI.skin = nodeSkin;
+			if (nodeSkin != null)
+				GUI.skin = nodeSkin;
+			OverlayGUI.StartOverlayGUI (curEditorUser);
 		}
 
 		public static void EndNodeGUI () 
 		{
+			OverlayGUI.EndOverlayGUI ();
 			GUI.skin = defaultSkin;
 		}
 

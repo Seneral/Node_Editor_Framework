@@ -36,8 +36,8 @@ namespace NodeEditorFramework
 
 		// Resizing and dragging state for active node group
 		private static BorderSelection resizeDir;
-		private static List<Node> pinnedNodes = new List<Node> ();
-		private static List<NodeGroup> pinnedGroups = new List<NodeGroup> ();
+		internal static List<Node> pinnedNodes = new List<Node> ();
+		internal static List<NodeGroup> pinnedGroups = new List<NodeGroup> ();
 
 		// Settings
 		private const bool headerFree = true;
@@ -293,7 +293,7 @@ namespace NodeEditorFramework
 				selection = BorderSelection.Left;
 			else if (canvasPos.x > max.x)
 				selection = BorderSelection.Right;
-			
+
 			if (canvasPos.y < max.y)
 				selection |= BorderSelection.Top;
 			else if (canvasPos.y > min.y)
@@ -436,7 +436,7 @@ namespace NodeEditorFramework
 				}
 				else 
 				{ // Dragging -> Apply drag to body and pinned nodes
-					active.rect.position += dragChange;
+					active.rect.position = newSizePos;
 					foreach (Node pinnedNode in pinnedNodes)
 						pinnedNode.rect.position += dragChange;
 					foreach (NodeGroup pinnedGroup in pinnedGroups)
@@ -454,15 +454,15 @@ namespace NodeEditorFramework
 		[EventHandlerAttribute (EventType.MouseUp)]
 		private static void HandleDraggingEnd (NodeEditorInputInfo inputInfo) 
 		{
-			if (inputInfo.editorState.activeGroup != null || inputInfo.editorState.dragUserID == "group")
+			if (inputInfo.editorState.dragUserID == "group")
 			{
-				if (inputInfo.editorState.activeGroup != null )
-					inputInfo.editorState.activeGroup.UpdatePins ();
-				inputInfo.editorState.activeGroup = null;
-				inputInfo.editorState.resizeGroup = false;
-				inputInfo.editorState.dragUserID = "";
+//				if (inputInfo.editorState.activeGroup != null )
+//					inputInfo.editorState.activeGroup.UpdatePins ();
+				inputInfo.editorState.EndDrag ("group");
 				NodeEditor.RepaintClients();
 			}
+			inputInfo.editorState.activeGroup = null;
+			inputInfo.editorState.resizeGroup = false;
 		}
 
 		#endregion

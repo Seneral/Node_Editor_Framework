@@ -8,7 +8,7 @@ namespace NodeEditorFramework
 	/// <summary>
 	/// Node output accepts multiple connections to NodeInputs by default
 	/// </summary>
-	public class NodeOutput : NodeKnob
+	public partial class NodeOutput : NodeKnob
 	{
 		// NodeKnob Members
 		protected override NodeSide defaultSide { get { return NodeSide.Right; } }
@@ -23,6 +23,8 @@ namespace NodeEditorFramework
 		internal TypeData typeData { get { CheckType (); return _typeData; } }
 		[System.NonSerialized]
 		private object value = null;
+
+		public bool calculationBlockade = false;
 
 		#region General
 
@@ -79,13 +81,20 @@ namespace NodeEditorFramework
 		protected override void ReloadTexture () 
 		{
 			CheckType ();
-			knobTexture = typeData.OutputKnob;
+			knobTexture = typeData.OutKnobTex;
 		}
 
 		private void CheckType () 
 		{
 			if (_typeData == null || !_typeData.isValid ()) 
 				_typeData = ConnectionTypes.GetTypeData (typeID);
+			if (_typeData == null || !_typeData.isValid ()) 
+			{
+				ConnectionTypes.FetchTypes ();
+				_typeData = ConnectionTypes.GetTypeData (typeID);
+				if (_typeData == null || !_typeData.isValid ())
+					throw new UnityException ("Could not find type " + typeID + "!");
+			}
 		}
 
 		#endregion
@@ -185,5 +194,14 @@ namespace NodeEditorFramework
 		}
 
 		#endregion
+
+        #region Utility
+
+        public override Node GetNodeAcrossConnection()
+        {
+            return connections.Count > 0 ? connections[0].body : null;
+        }
+
+	    #endregion
 	}
 }

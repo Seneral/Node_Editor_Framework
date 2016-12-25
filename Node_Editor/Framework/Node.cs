@@ -1,14 +1,13 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Linq;
 using System.Collections.Generic;
 
-using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework
 {
-	public abstract class Node : ScriptableObject
+	public abstract partial class Node : ScriptableObject
 	{
 		public Rect rect = new Rect ();
 		internal Vector2 contentOffset = Vector2.zero;
@@ -16,15 +15,17 @@ namespace NodeEditorFramework
 		public List<NodeKnob> nodeKnobs = new List<NodeKnob> ();
 
 		// Calculation graph
-//		[NonSerialized]
-		[SerializeField, HideInInspector]
+		[SerializeField]
 		public List<NodeInput> Inputs = new List<NodeInput>();
-//		[NonSerialized]
-		[SerializeField, HideInInspector]
+		[SerializeField]
 		public List<NodeOutput> Outputs = new List<NodeOutput>();
 		[HideInInspector]
 		[NonSerialized]
 		internal bool calculated = true;
+
+		public Color backgroundColor = Color.white;
+		private Color lastBGColor = Color.white;
+		private GUIStyle nodeBGStyle;
 
 		#region General
 
@@ -33,7 +34,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal void InitBase () 
 		{
-			NodeEditor.RecalculateFrom (this);
+			NodeEditor.Calculator.RecalculateFrom (this);
 			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
 				NodeEditor.curNodeCanvas.nodes.Add (this);
 			#if UNITY_EDITOR
@@ -93,6 +94,10 @@ namespace NodeEditorFramework
 				throw new UnityException ("Cannot create Node with id " + nodeID + " as no such Node type is registered!");
 
 			node = node.Create (position);
+
+			if(node == null)
+				return null;
+
 			node.InitBase ();
 
 			if (connectingOutput != null)
@@ -123,9 +128,9 @@ namespace NodeEditorFramework
 
 		#endregion
 
-		#region Undeclared Members
+		#region Dynamic Members
 
-		#region Node Type methods (abstract)
+		#region Node Type Methods
 
 		/// <summary>
 		/// Get the ID of the Node
@@ -141,13 +146,19 @@ namespace NodeEditorFramework
 		/// Draw the Node immediately
 		/// </summary>
 		protected internal abstract void NodeGUI ();
+
+		/// <summary>
+		/// Used to display a custom node property editor in the side window of the NodeEditorWindow
+		/// Optionally override this to implement
+		/// </summary>
+		public virtual void DrawNodePropertyEditor () { }
 		
 		/// <summary>
 		/// Calculate the outputs of this Node
 		/// Return Success/Fail
 		/// Might be dependant on previous nodes
 		/// </summary>
-		public abstract bool Calculate ();
+		public virtual bool Calculate () { return true; }
 
 		#endregion
 
@@ -163,7 +174,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public virtual bool ContinueCalculation { get { return true; } }
 
-        #endregion
+		#endregion
 
 		#region Protected Callbacks
 
@@ -198,32 +209,45 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal virtual void CopyScriptableObjects (System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) {}
 
-		#endregion
+		public void SerializeInputsAndOutputs(System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) {}
 
-		#endregion
+        #endregion
 
-		#region Drawing
+        #endregion
+
+        #region Drawing
+
+#if UNITY_EDITOR
+        public virtual void OnSceneGUI()
+	    {
+	        
+	    }
+#endif
 
 		/// <summary>
 		/// Draws the node frame and calls NodeGUI. Can be overridden to customize drawing.
 		/// </summary>
 		protected internal virtual void DrawNode () 
 		{
+			AssureNodeBGStyle ();
+
 			// TODO: Node Editor Feature: Custom Windowing System
-			// Create a rect that is adjusted to the editor zoom
+			// Create a rect that is adjusted to the editor zoom and pixel perfect
 			Rect nodeRect = rect;
-			nodeRect.position += NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
+			Vector2 pos = NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
+			nodeRect.position = new Vector2((int)(nodeRect.x+pos.x), (int)(nodeRect.y+pos.y));
 			contentOffset = new Vector2 (0, 20);
 
 			// Create a headerRect out of the previous rect and draw it, marking the selected node as such by making the header bold
 			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, contentOffset.y);
-			GUI.Label (headerRect, name, NodeEditor.curEditorState.selectedNode == this? NodeEditorGUI.nodeBoxBold : NodeEditorGUI.nodeBox);
+			GUI.Box (headerRect, GUIContent.none, nodeBGStyle);
+			GUI.Label (headerRect, name, NodeEditor.curEditorState.selectedNode == this? NodeEditorGUI.nodeLabelBoldCentered : NodeEditorGUI.nodeLabelCentered);
 
 			// Begin the body frame around the NodeGUI
 			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + contentOffset.y, nodeRect.width, nodeRect.height - contentOffset.y);
-			GUI.BeginGroup (bodyRect, GUI.skin.box);
+			GUI.BeginGroup (bodyRect, nodeBGStyle);
 			bodyRect.position = Vector2.zero;
-			GUILayout.BeginArea (bodyRect, GUI.skin.box);
+			GUILayout.BeginArea (bodyRect);
 			// Call NodeGUI
 			GUI.changed = false;
 			NodeGUI ();
@@ -263,16 +287,21 @@ namespace NodeEditorFramework
 													startDir,
 													input.GetGUIKnob ().center,
 													input.GetDirection (),
-													output.typeData.col);
+													output.typeData.Color);
 				}
 			}
 		}
 
-		/// <summary>
-		/// Used to display a custom node property editor in the side window of the NodeEditorWindow
-		/// Optionally override this to implement
-		/// </summary>
-		public virtual void DrawNodePropertyEditor() { }
+		private void AssureNodeBGStyle ()
+		{
+			if (nodeBGStyle == null || nodeBGStyle.normal.background == null || lastBGColor != backgroundColor)
+			{
+				lastBGColor = backgroundColor;
+				nodeBGStyle = new GUIStyle (GUI.skin.box);
+				nodeBGStyle.normal.background = ResourceManager.GetTintedTexture ("Textures/NE_Box.png", backgroundColor);
+			}
+		}
+
 
 		#endregion
 		
@@ -478,13 +507,10 @@ namespace NodeEditorFramework
 			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
 			{
 				NodeOutput connection = Inputs [cnt].connection;
-				if (connection != null) 
+				if (connection != null && connection.body.isInLoop ()) 
 				{
-					if (connection.body.isInLoop ())
-					{
-						StopRecursiveSearchLoop ();
-						return true;
-					}
+					StopRecursiveSearchLoop ();
+					return true;
 				}
 			}
 			EndRecursiveSearchLoop ();
@@ -506,16 +532,10 @@ namespace NodeEditorFramework
 			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
 			{
 				NodeOutput connection = Inputs [cnt].connection;
-				if (connection != null) 
+				if (connection != null && connection.body.allowsLoopRecursion (otherNode)) 
 				{
-					if (connection.body != startRecursiveSearchNode)
-					{
-						if (connection.body.allowsLoopRecursion (otherNode))
-						{
-							StopRecursiveSearchLoop ();
-							return true;
-						}
-					}
+					StopRecursiveSearchLoop ();
+					return true;
 				}
 			}
 			EndRecursiveSearchLoop ();
@@ -541,8 +561,8 @@ namespace NodeEditorFramework
 
 		#region Recursive Search Helpers
 
-		private List<Node> recursiveSearchSurpassed;
-		private Node startRecursiveSearchNode; // Temporary start node for recursive searches
+		[NonSerialized] private List<Node> recursiveSearchSurpassed;
+		[NonSerialized] private Node startRecursiveSearchNode; // Temporary start node for recursive searches
 
 		/// <summary>
 		/// Begins the recursive search loop and returns whether this node has already been searched

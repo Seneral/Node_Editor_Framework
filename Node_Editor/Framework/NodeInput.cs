@@ -8,7 +8,7 @@ namespace NodeEditorFramework
 	/// <summary>
 	/// NodeInput accepts one connection to a NodeOutput by default
 	/// </summary>
-	public class NodeInput : NodeKnob
+	public partial class NodeInput : NodeKnob
 	{
 		// NodeKnob Members
 		protected override NodeSide defaultSide { get { return NodeSide.Left; } }
@@ -78,13 +78,16 @@ namespace NodeEditorFramework
 		protected override void ReloadTexture () 
 		{
 			CheckType ();
-			knobTexture = typeData.InputKnob;
+			knobTexture = typeData.InKnobTex;
 		}
 
 		private void CheckType () 
 		{
-			if (_typeData == null || !_typeData.isValid ())
+			if (_typeData == null || !_typeData.isValid ()) 
+				_typeData = ConnectionTypes.GetTypeData (typeID);
+			if (_typeData == null || !_typeData.isValid ()) 
 			{
+				ConnectionTypes.FetchTypes ();
 				_typeData = ConnectionTypes.GetTypeData (typeID);
 				if (_typeData == null || !_typeData.isValid ())
 					throw new UnityException ("Could not find type " + typeID + "!");
@@ -194,12 +197,7 @@ namespace NodeEditorFramework
 			}
 			connection = output;
 			output.connections.Add (this);
-
-			if (!output.body.calculated)
-				NodeEditor.RecalculateFrom (output.body);
-			else
-				NodeEditor.RecalculateFrom (body);
-			
+			NodeEditor.Calculator.RecalculateFrom (body);
 			output.body.OnAddOutputConnection (output);
 			body.OnAddInputConnection (this);
 			NodeEditorCallbacks.IssueOnAddConnection (this);
@@ -217,9 +215,18 @@ namespace NodeEditorFramework
 			connection.connections.Remove (this);
 			connection = null;
 
-			NodeEditor.RecalculateFrom (body);
+			NodeEditor.Calculator.RecalculateFrom (body);
 		}
 
+
+		#endregion
+
+		#region Utility
+
+		public override Node GetNodeAcrossConnection()
+		{
+			return connection != null ? connection.body : null;
+		}
 
 		#endregion
 	}
