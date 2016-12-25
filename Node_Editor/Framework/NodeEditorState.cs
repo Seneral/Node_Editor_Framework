@@ -17,6 +17,7 @@ namespace NodeEditorFramework
 		public Node selectedNode; // selected Node
 		[NonSerialized] public Node focusedNode; // Node under mouse
 		[NonSerialized] public NodeKnob focusedNodeKnob; // NodeKnob under mouse
+		[NonSerialized] public NodeGroup activeGroup; // NodeGroup that is currently interacted with
 
 		// Navigation State
 		public Vector2 panOffset = new Vector2 (); // pan offset
@@ -26,15 +27,65 @@ namespace NodeEditorFramework
 		[NonSerialized] public NodeOutput connectOutput; // connection this output
 		[NonSerialized] public bool dragNode; // node dragging
 		[NonSerialized] public bool panWindow; // window panning
-		[NonSerialized] public Vector2 dragStart; // start mouse position for both node dragging and window panning
-		[NonSerialized] public Vector2 dragPos; // start object position for both node dragging and window panning
-		[NonSerialized] public Vector2 dragOffset; // offset for both node dragging and window panning
 		[NonSerialized] public bool navigate; // navigation ('N')
+		[NonSerialized] public bool resizeGroup; // whether the active group is being resized; if not, it is dragged
 
 		// Temporary variables
 		public Vector2 zoomPos { get { return canvasRect.size/2; } } // zoom center in canvas space
 		[NonSerialized] public Rect canvasRect; // canvas Rect
 		[NonSerialized] public Vector2 zoomPanAdjust; // calculated value to offset elements with when zooming
 		[NonSerialized] public List<Rect> ignoreInput = new List<Rect> (); // Rects inside the canvas to ignore input in (nested canvases, fE)
+
+		#region DragHelper
+
+		[NonSerialized] public string dragUserID; // dragging source
+		[NonSerialized] public Vector2 dragMouseStart; // drag start position (mouse)
+		[NonSerialized] public Vector2 dragObjectStart; // start position of the dragged object
+		[NonSerialized] public Vector2 dragOffset; // offset for both node dragging and window panning
+		public Vector2 dragObjectPos { get { return dragObjectStart + dragOffset; } } // position of the dragged object
+
+		/// <summary>
+		/// Starts a drag operation with the given userID and initial mouse and object position
+		/// Returns false when a different user already claims this drag operation
+		/// </summary>
+		public bool StartDrag (string userID, Vector2 mousePos, Vector2 objectPos) 
+		{
+			if (!String.IsNullOrEmpty (dragUserID) && dragUserID != userID)
+				return false;
+			dragUserID = userID;
+			dragMouseStart = mousePos;
+			dragObjectStart = objectPos;
+			dragOffset = Vector2.zero;
+			return true;
+
+		}
+
+		/// <summary>
+		/// Updates the current drag with the passed new mouse position and returns the drag offset change since the last update 
+		/// </summary>
+		public Vector2 UpdateDrag (string userID, Vector2 newDragPos)
+		{
+			if (dragUserID != userID)
+				throw new UnityException ("User ID " + userID + " tries to interrupt drag from " + dragUserID);
+			Vector2 prevOffset = dragOffset;
+			dragOffset = (newDragPos - dragMouseStart) * zoom;
+			return dragOffset - prevOffset;
+		}
+
+		/// <summary>
+		/// Ends the drag of the specified userID
+		/// </summary>
+		public Vector2 EndDrag (string userID) 
+		{
+			if (dragUserID != userID)
+				throw new UnityException ("User ID " + userID + " tries to end drag from " + dragUserID);
+			Vector2 dragPos = dragObjectPos;
+			dragUserID = "";
+			dragOffset = dragMouseStart = dragObjectStart = Vector2.zero;
+			return dragPos;
+
+		}
+
+		#endregion
 	}
 }

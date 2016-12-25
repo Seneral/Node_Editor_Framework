@@ -222,6 +222,10 @@ namespace NodeEditorFramework
 				RepaintClients ();
 			}
 
+			// Draw the groups below everything else
+			for (int groupCnt = 0; groupCnt < curNodeCanvas.groups.Count; groupCnt++)
+				curNodeCanvas.groups [groupCnt].DrawGroup ();
+			
 			// Push the active node to the top of the draw order.
 			if (Event.current.type == EventType.Layout && curEditorState.selectedNode != null)
 			{

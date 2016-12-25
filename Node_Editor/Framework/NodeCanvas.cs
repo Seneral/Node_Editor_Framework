@@ -15,6 +15,7 @@ namespace NodeEditorFramework
 		public bool livesInScene = false;
 
 		public List<Node> nodes = new List<Node> ();
+		public List<NodeGroup> groups = new List<NodeGroup> ();
 
 		public NodeEditorState[] editorStates = new NodeEditorState[0];
 
@@ -37,12 +38,23 @@ namespace NodeEditorFramework
 				Debug.LogWarning ("NodeCanvas '" + name + "' nodes were erased and set to null! Automatically fixed!");
 				nodes = new List<Node> ();
 			}
+			for (int groupCnt = 0; groupCnt < groups.Count; groupCnt++) 
+			{
+				NodeGroup group = groups[groupCnt];
+				if (group == null)
+				{
+					Debug.LogWarning ("NodeCanvas '" + name + "' contained broken (null) group! Automatically fixed!");
+					groups.RemoveAt (groupCnt);
+					groupCnt--;
+					continue;
+				}
+			}
 			for (int nodeCnt = 0; nodeCnt < nodes.Count; nodeCnt++) 
 			{
 				Node node = nodes[nodeCnt];
 				if (node == null)
 				{
-					Debug.LogWarning ("NodeCanvas '" + name + "' contained broken (null) nodes! Automatically fixed!");
+					Debug.LogWarning ("NodeCanvas '" + name + "' contained broken (null) node! Automatically fixed!");
 					nodes.RemoveAt (nodeCnt);
 					nodeCnt--;
 					continue;
