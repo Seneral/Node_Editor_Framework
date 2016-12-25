@@ -66,6 +66,12 @@ namespace NodeEditorFramework
 
 		protected virtual void OnValidate () { }
 
+		public virtual void OnBeforeSavingCanvas () { }
+
+		public virtual bool CanAddNode (string nodeID) { return true; }
+
+		#endregion
+
 		#region Traversal
 
 		public void TraverseAll ()
@@ -83,12 +89,6 @@ namespace NodeEditorFramework
 		#endregion
 
 		#region Methods
-
-		public virtual void OnBeforeSavingCanvas () { }
-
-		public virtual bool CanAddNode (string nodeID) { return true; }
-
-		#endregion
 
 		/// <summary>
 		/// Validates this canvas, checking for any broken nodes or references and cleans them.
