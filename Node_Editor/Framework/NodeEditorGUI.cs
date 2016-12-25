@@ -102,6 +102,9 @@ namespace NodeEditorFramework
 
 		#region Connection Drawing
 
+		// Curve parameters
+		public static float curveBaseDirection = 1.5f, curveBaseStart = 2f, curveDirectionScale = 0.004f;
+
 		/// <summary>
 		/// Draws a node connection from start to end, horizontally
 		/// </summary>
@@ -134,6 +137,21 @@ namespace NodeEditorFramework
 			}
 			else if (drawMethod == ConnectionDrawMethod.StraightLine)
 				RTEditorGUI.DrawLine (startPos, endPos, col * Color.gray, null, 3);
+		}
+
+		/// <summary>
+		/// Optimises the bezier directions scale so that the bezier looks good in the specified position relation.
+		/// Only the magnitude of the directions are changed, not their direction!
+		/// </summary>
+		public static void OptimiseBezierDirections (Vector2 startPos, ref Vector2 startDir, Vector2 endPos, ref Vector2 endDir) 
+		{
+			Vector2 offset = (endPos - startPos) * curveDirectionScale;
+			float baseDir = Mathf.Min (offset.magnitude/curveBaseStart, 1) * curveBaseDirection;
+			Vector2 scale = new Vector2 (Mathf.Abs (offset.x) + baseDir, Mathf.Abs (offset.y) + baseDir);
+			// offset.x and offset.y linearly increase at scale of curveDirectionScale
+			// For 0 < offset.magnitude < curveBaseStart, baseDir linearly increases from 0 to curveBaseDirection. For offset.magnitude > curveBaseStart, baseDir = curveBaseDirection
+			startDir = Vector2.Scale(startDir.normalized, scale);
+			endDir = Vector2.Scale(endDir.normalized, scale);
 		}
 
 		/// <summary>

@@ -283,11 +283,10 @@ namespace NodeEditorFramework
 				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
 				{
 					NodeInput input = output.connections [conCnt];
-					NodeEditorGUI.DrawConnection (startPos,
-													startDir,
-													input.GetGUIKnob ().center,
-													input.GetDirection (),
-													output.typeData.Color);
+					Vector2 endPos = input.GetGUIKnob ().center;
+					Vector2 endDir = input.GetDirection();
+					NodeEditorGUI.OptimiseBezierDirections (startPos, ref startDir, endPos, ref endDir);
+					NodeEditorGUI.DrawConnection (startPos, startDir, endPos, endDir, output.typeData.Color);
 				}
 			}
 		}

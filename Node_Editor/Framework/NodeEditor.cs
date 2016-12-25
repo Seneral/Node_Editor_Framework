@@ -216,8 +216,9 @@ namespace NodeEditorFramework
 				Vector2 startPos = output.GetGUIKnob ().center;
 				Vector2 startDir = output.GetDirection ();
 				Vector2 endPos = Event.current.mousePosition;
-				// There is no specific direction of the end knob so we pick the best according to the relative position
-				Vector2 endDir = NodeEditorGUI.GetSecondConnectionVector (startPos, endPos, startDir);
+				Vector2 endDir = -startDir; // NodeEditorGUI.GetSecondConnectionVector (startPos, endPos, startDir); <- causes unpleasant jumping when switching polarity
+
+				NodeEditorGUI.OptimiseBezierDirections (startPos, ref startDir, endPos, ref endDir);
 				NodeEditorGUI.DrawConnection (startPos, startDir, endPos, endDir, output.typeData.Color);
 				RepaintClients ();
 			}
