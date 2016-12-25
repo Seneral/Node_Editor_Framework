@@ -25,6 +25,8 @@ namespace NodeEditorFramework
 
 		public bool livesInScene = false;
 
+		public List<Node> nodes = new List<Node> ();
+		public List<NodeGroup> groups = new List<NodeGroup> ();
 
 		#region Constructors
 
@@ -64,12 +66,6 @@ namespace NodeEditorFramework
 
 		protected virtual void OnValidate () { }
 
-		public virtual void OnBeforeSavingCanvas () { }
-
-		public virtual bool CanAddNode (string nodeID) { return true; }
-
-		#endregion
-
 		#region Traversal
 
 		public void TraverseAll ()
@@ -88,6 +84,12 @@ namespace NodeEditorFramework
 
 		#region Methods
 
+		public virtual void OnBeforeSavingCanvas () { }
+
+		public virtual bool CanAddNode (string nodeID) { return true; }
+
+		#endregion
+
 		/// <summary>
 		/// Validates this canvas, checking for any broken nodes or references and cleans them.
 		/// </summary>
@@ -100,12 +102,23 @@ namespace NodeEditorFramework
 			}
 			if (deepValidate)
 			{
+				for (int groupCnt = 0; groupCnt < groups.Count; groupCnt++) 
+				{
+					NodeGroup group = groups[groupCnt];
+					if (group == null)
+					{
+						Debug.LogWarning ("NodeCanvas '" + name + "' contained broken (null) group! Automatically fixed!");
+						groups.RemoveAt (groupCnt);
+						groupCnt--;
+						continue;
+					}
+				}
 				for (int nodeCnt = 0; nodeCnt < nodes.Count; nodeCnt++) 
 				{
 					Node node = nodes[nodeCnt];
 					if (node == null)
 					{
-						Debug.LogWarning ("NodeCanvas '" + name + "' contained broken (null) nodes! Automatically fixed!");
+						Debug.LogWarning ("NodeCanvas '" + name + "' contained broken (null) node! Automatically fixed!");
 						nodes.RemoveAt (nodeCnt);
 						nodeCnt--;
 						continue;
