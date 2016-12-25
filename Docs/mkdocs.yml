@@ -1,0 +1,22 @@
+site_name: Node Editor Framework
+pages:
+- 'index.md'
+- Getting Started: 'GettingStarted.md'
+- Building Extensions:
+    - 'Overview': 'BuildingExtensions/index.md'
+    - 'Custom Nodes': 'BuildingExtensions/CustomNodes.md'
+    - 'Custom ConnectionTypes': 'BuildingExtensions/CustomConnectionTypes.md'
+    - 'Adding NodeCanvas Types': 'BuildingExtensions/AddingNodeCanvasTypes.md'
+    - 'Adding Input Controls': 'BuildingExtensions/AddingInputControls.md'
+    - 'Building an Editor': 'BuildingExtensions/BuildingAnEditor.md'
+    - 'Events&Callbacks': 'BuildingExtensions/EventsCallbacks.md'
+- Framework Overview: 'FrameworkOverview.md'
+- License: 'license.md'
+repo_url: https://github.com/Baste-RainGames/Node_Editor 
+site_description: "Node Editor Framework for Unity3D Documentation"
+site_favicon: "./img/favicon.png"
+theme: simplex
+
+extra_css: ['extra.css']
+
+use_directory_urls: true
