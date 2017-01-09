@@ -7,8 +7,11 @@ namespace NodeEditorFramework.Standard
 {
 	public class GraphTraversal : NodeCanvasTraversal
 	{
-		public GraphTraversal (NodeCanvas canvas) : base(canvas)
+		GraphCanvasType Canvas;
+
+		public GraphTraversal (GraphCanvasType canvas) : base(canvas)
 		{
+			Canvas = canvas;
 		}
 
 		/// <summary>
@@ -16,7 +19,9 @@ namespace NodeEditorFramework.Standard
 		/// </summary>
 		public override void TraverseAll () 
 		{
-			
+			RootGraphNode rootNode = Canvas.rootNode;
+			rootNode.Calculate ();
+			//Debug.Log ("RootNode is " + rootNode);
 		}
 	}
 }

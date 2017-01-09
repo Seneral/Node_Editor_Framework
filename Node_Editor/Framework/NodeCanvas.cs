@@ -16,8 +16,6 @@ namespace NodeEditorFramework
 
 		public NodeCanvasTraversal Traversal;
 
-		public List<Node> nodes = new List<Node> ();
-
 		public NodeEditorState[] editorStates = new NodeEditorState[0];
 
 		public string saveName;
@@ -129,9 +127,12 @@ namespace NodeEditorFramework
 						if (nodeKnob == null)
 						{
 							Debug.LogWarning ("NodeCanvas '" + name + "' Node '" + node.name + "' contained broken (null) NodeKnobs! Automatically fixed!");
-							node.nodeKnobs.RemoveAt (knobCnt);
-							knobCnt--;
-							continue;
+							nodes.RemoveAt (nodeCnt);
+							nodeCnt--;
+							break;
+//							node.nodeKnobs.RemoveAt (knobCnt);
+//							knobCnt--;
+//							continue;
 						}
 
 						if (nodeKnob is NodeInput)

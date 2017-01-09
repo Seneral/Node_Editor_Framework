@@ -10,7 +10,7 @@ namespace NodeEditorFramework.Standard
 		public override string canvasName { get { return "Graph"; } }
 
 		private string rootNodeID { get { return "rootGraphNode"; } }
-		private RootGraphNode rootNode;
+		public RootGraphNode rootNode;
 
 		protected override void OnCreate () 
 		{
@@ -28,7 +28,7 @@ namespace NodeEditorFramework.Standard
 		{
 			if (Traversal == null)
 				Traversal = new GraphTraversal (this);
-			if (!nodes.Exists ((Node n) => n.GetID == rootNodeID))
+			if (rootNode == null && (rootNode = nodes.Find ((Node n) => n.GetID == rootNodeID) as RootGraphNode) == null)
 				rootNode = Node.Create (rootNodeID, Vector2.zero) as RootGraphNode;
 		}
 
