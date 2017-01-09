@@ -16,8 +16,6 @@ namespace NodeEditorFramework
 	/// </summary>
 	public static partial class NodeEditor 
 	{
-		public static INodeCalculator Calculator;
-
 		public static string editorPath = "Assets/Plugins/Node_Editor/";
 
 		// The NodeCanvas which represents the currently drawn Node Canvas; globally accessed
@@ -72,7 +70,7 @@ namespace NodeEditorFramework
 		private static void setupBaseFramework ()
 		{
 			CheckEditorPath ();
-			Calculator = new DefaultNodeCalculator ();
+
 			// Init Resource system. Can be called anywhere else, too, if it's needed before.
 			ResourceManager.SetDefaultResourcePath (editorPath + "Resources/");
 

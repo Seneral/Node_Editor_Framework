@@ -24,6 +24,7 @@ namespace NodeEditorFramework.Standard
 		private string sceneCanvasName = "";
 		private Rect loadSceneUIPos;
 		private Rect createCanvasUIPos;
+		private Rect convertCanvasUIPos;
 		private int sideWindowWidth = 400;
 
 		public Rect sideWindowRect { get { return new Rect (position.width - sideWindowWidth, 0, sideWindowWidth, position.height); } }
@@ -80,6 +81,8 @@ namespace NodeEditorFramework.Standard
 			// Setup Cache
 			canvasCache = new NodeEditorUserCache(Path.GetDirectoryName(AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject (this))));
 			canvasCache.SetupCacheEvents();
+			if (canvasCache.nodeCanvas.GetType () == typeof(NodeCanvas))
+				ShowNotification(new GUIContent("The Canvas has no specific type. Please use the convert button to assign a type and re-save the canvas!"));
 		}
 
 	    private void NormalReInit()
@@ -160,8 +163,8 @@ namespace NodeEditorFramework.Standard
 
 		private void DrawSideWindow()
 		{
-			GUILayout.Label (new GUIContent ("Node Editor (" + canvasCache.nodeCanvas.saveName + ")", "Opened Canvas path: " + canvasCache.nodeCanvas.savePath), NodeEditorGUI.nodeLabelBold);
-			GUILayout.Label ((canvasCache.nodeCanvas.livesInScene? "Scene Save" : "Asset Save") + ", Type: " + canvasCache.typeData.DisplayString + "");
+			GUILayout.Label (new GUIContent ("" + canvasCache.nodeCanvas.saveName + " (" + (canvasCache.nodeCanvas.livesInScene? "Scene Save" : "Asset Save") + ")", "Opened Canvas path: " + canvasCache.nodeCanvas.savePath), NodeEditorGUI.nodeLabelBold);
+			GUILayout.Label ("Type: " + canvasCache.typeData.DisplayString + "/" + canvasCache.nodeCanvas.GetType ().Name + "");
 
 //			EditorGUILayout.ObjectField ("Loaded Canvas", canvasCache.nodeCanvas, typeof(NodeCanvas), false);
 //			EditorGUILayout.ObjectField ("Loaded State", canvasCache.editorState, typeof(NodeEditorState), false);
@@ -176,6 +179,17 @@ namespace NodeEditorFramework.Standard
 			{
 				Rect popupPos = GUILayoutUtility.GetLastRect();
 				createCanvasUIPos = new Rect(popupPos.x + 2, popupPos.yMax + 2, popupPos.width - 4, 0);
+			}
+			if (canvasCache.nodeCanvas.GetType () == typeof(NodeCanvas) && GUILayout.Button(new GUIContent("Convert Canvas", "Converts the current canvas to a new type.")))
+			{
+				NodeEditorFramework.Utilities.GenericMenu menu = new NodeEditorFramework.Utilities.GenericMenu();
+				NodeCanvasManager.FillCanvasTypeMenu(ref menu, canvasCache.ConvertCanvasType);
+				menu.Show(convertCanvasUIPos.position, convertCanvasUIPos.width);
+			}
+			if (Event.current.type == EventType.Repaint)
+			{
+				Rect popupPos = GUILayoutUtility.GetLastRect();
+				convertCanvasUIPos = new Rect(popupPos.x + 2, popupPos.yMax + 2, popupPos.width - 4, 0);
 			}
 
 			if (GUILayout.Button(new GUIContent("Save Canvas", "Save the Canvas to the load location")))
@@ -218,6 +232,8 @@ namespace NodeEditorFramework.Standard
 				}
 				else
 					canvasCache.LoadNodeCanvas (path);
+				if (canvasCache.nodeCanvas.GetType () == typeof(NodeCanvas))
+					ShowNotification(new GUIContent("The Canvas has no specific type. Please use the convert button to assign a type and re-save the canvas!"));
 			}
 
 			//GUILayout.Space(6);
@@ -246,7 +262,7 @@ namespace NodeEditorFramework.Standard
 			GUILayout.Label ("Utility/Debug", NodeEditorGUI.nodeLabel);
 
 			if (GUILayout.Button (new GUIContent ("Recalculate All", "Initiates complete recalculate. Usually does not need to be triggered manually.")))
-				NodeEditor.Calculator.RecalculateAll (canvasCache.nodeCanvas);
+				canvasCache.nodeCanvas.TraverseAll ();
 
 			if (GUILayout.Button ("Force Re-Init"))
 				NodeEditor.ReInit (true);

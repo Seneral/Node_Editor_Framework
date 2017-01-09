@@ -179,6 +179,8 @@ namespace NodeEditorFramework
 			#if UNITY_EDITOR
 			if (!useCache)
 				return;
+			if (nodeCanvas.GetType () == typeof(NodeCanvas))
+				return;
 			UnityEditor.EditorUtility.SetDirty (nodeCanvas);
 			if (editorState != null)
 				UnityEditor.EditorUtility.SetDirty (editorState);
@@ -223,8 +225,8 @@ namespace NodeEditorFramework
 
 			CheckCurrentCache ();
 			UpdateCanvasInfo ();
-			NodeEditor.Calculator.RecalculateAll (nodeCanvas);
-			NodeEditor.RepaintClients ();			
+			nodeCanvas.TraverseAll ();
+			NodeEditor.RepaintClients ();
 			#endif
 		}
 		
@@ -236,10 +238,10 @@ namespace NodeEditorFramework
 			if (nodeCanvas.livesInScene)
 			{
 				if (NodeEditorSaveManager.FindOrCreateSceneSave ("lastSession").savedNodeCanvas != nodeCanvas)
-					throw new UnityException ("Cache system error: Current scene canvas is not saved as the temporary cache scene save!");
+					Debug.LogError ("Cache system error: Current scene canvas is not saved as the temporary cache scene save!");
 			}
 			else if (UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas) != lastSessionPath)
-				throw new UnityException ("Cache system error: Current asset canvas is not saved as the temporary cache asset!");
+				Debug.LogError ("Cache system error: Current asset canvas is not saved as the temporary cache asset!");
 			#elif UNITY_EDITOR
 			if (!useCache)
 				return;
@@ -283,12 +285,12 @@ namespace NodeEditorFramework
 		{
 			if (nodeCanvas != canvas)
 			{
-				canvas.Validate ();
+				canvas.Validate (true);
 				nodeCanvas = canvas;
 				editorState = NodeEditorSaveManager.ExtractEditorState (nodeCanvas, MainEditorStateIdentifier);
 				RecreateCache ();
 				UpdateCanvasInfo ();
-				NodeEditor.Calculator.RecalculateAll (nodeCanvas);
+				nodeCanvas.TraverseAll ();
 				NodeEditor.RepaintClients ();
 			}
 		}
@@ -323,7 +325,7 @@ namespace NodeEditorFramework
 			openedCanvasPath = path;
 			RecreateCache ();
 			UpdateCanvasInfo ();
-			NodeEditor.Calculator.RecalculateAll (nodeCanvas);
+			nodeCanvas.TraverseAll ();
 			NodeEditor.RepaintClients ();
 		}
 
@@ -356,7 +358,7 @@ namespace NodeEditorFramework
 			openedCanvasPath = path;
 			RecreateCache ();
 			UpdateCanvasInfo ();
-			NodeEditor.Calculator.RecalculateAll (nodeCanvas);
+			nodeCanvas.TraverseAll ();
 			NodeEditor.RepaintClients ();
 		}
 
@@ -365,13 +367,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void NewNodeCanvas (Type canvasType = null) 
 		{
-			if (canvasType != null && canvasType.IsSubclassOf (typeof(NodeCanvas)))
-				nodeCanvas = ScriptableObject.CreateInstance(canvasType) as NodeCanvas;
-			else
-				nodeCanvas = ScriptableObject.CreateInstance<NodeCanvas>();
-			nodeCanvas.name = "New " + nodeCanvas.canvasName;
-			nodeCanvas.Validate ();
-
+			nodeCanvas = NodeCanvas.CreateCanvas (canvasType);
 			//EditorPrefs.SetString ("NodeEditorLastSession", "New Canvas");
 			NewEditorState ();
 			openedCanvasPath = "";
@@ -394,6 +390,19 @@ namespace NodeEditorFramework
 		}
 
 		#endregion
+
+		public void ConvertCanvasType (Type newType)
+		{
+			NodeCanvas canvas = NodeCanvasManager.ConvertCanvasType (nodeCanvas, newType);
+			if (canvas != nodeCanvas)
+			{
+				nodeCanvas = canvas;
+				RecreateCache ();
+				UpdateCanvasInfo ();
+				nodeCanvas.TraverseAll ();
+				NodeEditor.RepaintClients ();
+			}
+		}
 
 		private void UpdateCanvasInfo () 
 		{

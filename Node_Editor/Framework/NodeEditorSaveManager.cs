@@ -95,6 +95,8 @@ namespace NodeEditorFramework
 				return;
 			}
 
+			if (nodeCanvas.GetType () == typeof(NodeCanvas)) throw new UnityException ("Cannot save NodeCanvas: The NodeCanvas has no explicit type: '" + nodeCanvas.GetType ().ToString () + "'. Please convert it to a valid type!");
+
 			if (!nodeCanvas.livesInScene
 		#if UNITY_EDITOR // Make sure the canvas has no reference to an asset
 			|| UnityEditor.AssetDatabase.Contains (nodeCanvas)
@@ -104,14 +106,13 @@ namespace NodeEditorFramework
 				nodeCanvas = CreateWorkingCopy (nodeCanvas, true);
 			}
 			else
-				nodeCanvas.Validate ();
+				nodeCanvas.Validate (true);
 
 			nodeCanvas.livesInScene = true;
 			nodeCanvas.name = saveName;
 
-		#if UNITY_EDITOR
-			nodeCanvas.BeforeSavingCanvas();
-		#endif
+			nodeCanvas.OnBeforeSavingCanvas();
+
 			nodeCanvas.UpdateSource ("SCENE/" + saveName);
 
 			NodeCanvas savedCanvas = nodeCanvas;
@@ -209,10 +210,11 @@ namespace NodeEditorFramework
 		{
 		#if !UNITY_EDITOR
 			throw new System.NotImplementedException ();
-		#else
+		#endif
 
 			if (string.IsNullOrEmpty (path) ||!path.StartsWith ("Assets")) throw new UnityException ("Cannot save NodeCanvas: Invalid path specified: '" + path + "'!");
 			if (nodeCanvas == null) throw new UnityException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path " + path + " is null!");
+			if (nodeCanvas.GetType () == typeof(NodeCanvas)) throw new UnityException ("Cannot save NodeCanvas: The NodeCanvas has no explicit type: '" + nodeCanvas.GetType ().ToString () + "'. Please convert it to a valid type!");
 			if (nodeCanvas.livesInScene)
 				Debug.LogWarning ("Attempting to save scene canvas " + nodeCanvas.name + " to an asset, scene object references may be broken!" + (!createWorkingCopy? " No workingCopy is going to be created, so your scene save is broken, too!" : ""));
 		#if UNITY_EDITOR
@@ -221,9 +223,11 @@ namespace NodeEditorFramework
 
 			path = ResourceManager.PreparePath (path);
 
-		#if UNITY_EDITOR
-			nodeCanvas.BeforeSavingCanvas ();
+			nodeCanvas.OnBeforeSavingCanvas ();
 
+			NodeCanvas canvasSave = nodeCanvas;
+
+		#if UNITY_EDITOR
 			nodeCanvas.UpdateSource (path);
 
 			// Preprocess the canvas
@@ -231,7 +235,7 @@ namespace NodeEditorFramework
 			nodeCanvas.livesInScene = false;
 
 			NodeCanvas prevSave;
-			if (safeOverwrite && (prevSave = ResourceManager.LoadResource<NodeCanvas> (path)) != null) // OVERWRITE
+			if (safeOverwrite && (prevSave = ResourceManager.LoadResource<NodeCanvas> (path)) != null && prevSave.GetType () == canvasSave.GetType ()) // OVERWRITE
 			{ // Delete contents of old save
 				NodeEditor.BeginEditingCanvas (prevSave);
 				while (prevSave.nodes.Count > 0)
@@ -241,7 +245,7 @@ namespace NodeEditorFramework
 				NodeEditor.EndEditingCanvas ();
 				// Overwrite main canvas
 				OverwriteCanvas (ref prevSave, nodeCanvas);
-				nodeCanvas = prevSave;
+				canvasSave = prevSave;
 			}
 			else
 			{ // Write main canvas
@@ -249,12 +253,12 @@ namespace NodeEditorFramework
 			}
 
 			// Write editorStates
-			AddSubAssets (nodeCanvas.editorStates, nodeCanvas);
+			AddSubAssets (nodeCanvas.editorStates, canvasSave);
 
 			// Write nodes + contents
 			foreach (Node node in nodeCanvas.nodes)
 			{ // Write node and additional scriptable objects
-				AddSubAsset (node, nodeCanvas);
+				AddSubAsset (node, canvasSave);
 				AddSubAssets (node.GetScriptableObjects (), node);
 				foreach (NodeKnob knob in node.nodeKnobs)
 				{ // Write knobs and their additional scriptable objects
@@ -269,9 +273,7 @@ namespace NodeEditorFramework
 			// TODO: Node Editor: Need to implement ingame-saving (Resources, AsssetBundles, ... won't work)
 		#endif
 
-			NodeEditorCallbacks.IssueOnSaveCanvas (nodeCanvas);
-
-		#endif
+			NodeEditorCallbacks.IssueOnSaveCanvas (canvasSave);
 		}
 
 		/// <summary>
@@ -354,7 +356,7 @@ namespace NodeEditorFramework
 			if (workingCopy)
 				canvas = CreateWorkingCopy (canvas, true);
 			else
-				canvas.Validate ();
+				canvas.Validate (true);
 		}
 
 		#endregion
@@ -369,7 +371,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static NodeCanvas CreateWorkingCopy (NodeCanvas nodeCanvas, bool editorStates) 
 		{
-			nodeCanvas.Validate ();
+			nodeCanvas.Validate (true);
 			nodeCanvas = Clone (nodeCanvas);
 
 			// Take each SO, make a clone of it and store both versions in the respective list

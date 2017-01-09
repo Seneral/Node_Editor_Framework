@@ -34,9 +34,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal void InitBase () 
 		{
-			NodeEditor.Calculator.RecalculateFrom (this);
 			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
 				NodeEditor.curNodeCanvas.nodes.Add (this);
+			NodeEditor.curNodeCanvas.OnNodeChange (this);
 			#if UNITY_EDITOR
 			if (String.IsNullOrEmpty (name))
 				name = UnityEditor.ObjectNames.NicifyVariableName (GetID);
@@ -73,6 +73,7 @@ namespace NodeEditorFramework
 					DestroyImmediate (nodeKnobs[knobCnt], true);
 			}
 			DestroyImmediate (this, true);
+			NodeEditor.curNodeCanvas.Validate ();
 		}
 
 		/// <summary>
@@ -89,9 +90,13 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static Node Create (string nodeID, Vector2 position, NodeOutput connectingOutput) 
 		{
+			if (!NodeCanvasManager.CheckCanvasCompability (nodeID, NodeEditor.curNodeCanvas))
+				throw new UnityException ("Cannot create Node with ID '" + nodeID + "' as it is not compatible with the current canavs type (" + NodeEditor.curNodeCanvas.GetType ().ToString () + ")!");
+			if (!NodeEditor.curNodeCanvas.CanAddNode (nodeID))
+				throw new UnityException ("Cannot create another Node with ID '" + nodeID + "' on the current canvas of type (" + NodeEditor.curNodeCanvas.GetType ().ToString () + ")!");
 			Node node = NodeTypes.getDefaultNode (nodeID);
 			if (node == null)
-				throw new UnityException ("Cannot create Node with id " + nodeID + " as no such Node type is registered!");
+				throw new UnityException ("Cannot create Node as ID '" + nodeID + "' is not registered!");
 
 			node = node.Create (position);
 
@@ -110,6 +115,7 @@ namespace NodeEditorFramework
 			}
 
 			NodeEditorCallbacks.IssueOnAddNode (node);
+			NodeEditor.curNodeCanvas.Validate ();
 
 			return node;
 		}

@@ -16,7 +16,7 @@ namespace NodeEditorFramework
 	/// </summary>
 	public static class ConnectionTypes
 	{
-		private static Type NullType { get { return typeof(ConnectionTypes); } }
+		private static Type NullType { get { return typeof(void); } }
 		
 		// Static consistent information about types
 		private static Dictionary<string, TypeData> types;

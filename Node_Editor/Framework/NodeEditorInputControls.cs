@@ -21,7 +21,7 @@ namespace NodeEditorFramework
 			List<Node> displayedNodes = state.connectOutput != null? NodeTypes.getCompatibleNodes (state.connectOutput) : NodeTypes.nodes.Keys.ToList ();
 			foreach (Node compatibleNode in displayedNodes)
 			{
-				if (NodeCanvasManager.CheckCanvasCompability (compatibleNode, inputInfo.editorState.canvas.GetType ()))
+				if (NodeCanvasManager.CheckCanvasCompability (compatibleNode.GetID, inputInfo.editorState.canvas) && inputInfo.editorState.canvas.CanAddNode (compatibleNode.GetID))
 					canvasContextMenu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[compatibleNode].adress), false, CreateNodeCallback, new NodeEditorInputInfo (compatibleNode.GetID, state));
 			}
 		}
@@ -58,7 +58,7 @@ namespace NodeEditorFramework
 		{
 			inputInfo.SetAsCurrentEnvironment ();
 			NodeEditorState state = inputInfo.editorState;
-			if (state.focusedNode != null) 
+			if (state.focusedNode != null && NodeEditor.curNodeCanvas.CanAddNode (state.focusedNode.GetID)) 
 			{ // Create new node of same type
 				Node duplicatedNode = Node.Create (state.focusedNode.GetID, NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos), state.connectOutput);
 				state.selectedNode = state.focusedNode = duplicatedNode;

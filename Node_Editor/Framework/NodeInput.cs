@@ -197,10 +197,11 @@ namespace NodeEditorFramework
 			}
 			connection = output;
 			output.connections.Add (this);
-			NodeEditor.Calculator.RecalculateFrom (body);
 			output.body.OnAddOutputConnection (output);
 			body.OnAddInputConnection (this);
 			NodeEditorCallbacks.IssueOnAddConnection (this);
+
+			NodeEditor.curNodeCanvas.OnNodeChange (body);
 		}
 
 		/// <summary>
@@ -215,7 +216,7 @@ namespace NodeEditorFramework
 			connection.connections.Remove (this);
 			connection = null;
 
-			NodeEditor.Calculator.RecalculateFrom (body);
+			NodeEditor.curNodeCanvas.OnNodeChange (body);
 		}
 
 

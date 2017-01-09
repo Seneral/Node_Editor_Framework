@@ -3,19 +3,23 @@ using NodeEditorFramework;
 using UnityEngine;
 using System.Collections.Generic;
 
-namespace NodeEditorFramework
+namespace NodeEditorFramework.Standard
 {
-	public partial class DefaultNodeCalculator : INodeCalculator
+	public class DefaultCanvasCalculator : NodeCanvasTraversal
 	{
 		// A list of Nodes from which calculation originates -> Call StartCalculation
 		public List<Node> workList;
 		private int calculationCount;
 
+		public DefaultCanvasCalculator (NodeCanvas canvas) : base(canvas)
+		{
+		}
+
 		/// <summary>
 		/// Recalculate from every Input Node.
 		/// Usually does not need to be called at all, the smart calculation system is doing the job just fine
 		/// </summary>
-		public void RecalculateAll (NodeCanvas nodeCanvas) 
+		public override void TraverseAll () 
 		{
 			workList = new List<Node> ();
 			foreach (Node node in nodeCanvas.nodes) 
@@ -33,7 +37,7 @@ namespace NodeEditorFramework
 		/// Recalculate from this node. 
 		/// Usually does not need to be called manually
 		/// </summary>
-		public void RecalculateFrom (Node node) 
+		public override void OnChange (Node node) 
 		{
 			node.ClearCalculation ();
 			workList = new List<Node> { node };
