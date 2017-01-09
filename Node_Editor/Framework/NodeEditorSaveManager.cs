@@ -255,8 +255,8 @@ namespace NodeEditorFramework
 				}
 			}
 
-			UnityEditor.AssetDatabase.SaveAssets ();
-			UnityEditor.AssetDatabase.Refresh ();
+			//UnityEditor.AssetDatabase.SaveAssets ();
+			//UnityEditor.AssetDatabase.Refresh ();
 		#else
 			// TODO: Node Editor: Need to implement ingame-saving (Resources, AsssetBundles, ... won't work)
 		#endif
