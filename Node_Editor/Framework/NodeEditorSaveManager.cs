@@ -49,10 +49,13 @@ namespace NodeEditorFramework
 		/// </summary>
 		internal static NodeCanvasSceneSave FindSceneSave (string saveName)
 		{
-			FetchSceneSaveHolder ();
-			NodeCanvasSceneSave sceneSave = sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().ToList ().Find ((NodeCanvasSceneSave save) => save.saveName == saveName || (save.savedNodeCanvas != null && save.savedNodeCanvas.name == saveName));
-			if (sceneSave != null)
-				sceneSave.saveName = saveName;
+			NodeCanvasSceneSave sceneSave = null;
+			if (sceneSaveHolder != null)
+			{
+				sceneSave = sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().ToList ().Find ((NodeCanvasSceneSave save) => save.saveName == saveName || (save.savedNodeCanvas != null && save.savedNodeCanvas.name == saveName));
+				if (sceneSave != null)
+					sceneSave.saveName = saveName;
+			}
 			return sceneSave;
 		}
 
@@ -222,8 +225,8 @@ namespace NodeEditorFramework
 			ProcessCanvas (ref nodeCanvas, createWorkingCopy);
 			nodeCanvas.livesInScene = false;
 
-			NodeCanvas prevSave = ResourceManager.LoadResource<NodeCanvas> (path);
-			if (prevSave != null && safeOverwrite) // OVERWRITE
+			NodeCanvas prevSave;
+			if (safeOverwrite && (prevSave = ResourceManager.LoadResource<NodeCanvas> (path)) != null) // OVERWRITE
 			{ // Delete contents of old save
 				NodeEditor.BeginEditingCanvas (prevSave);
 				while (prevSave.nodes.Count > 0)
@@ -350,46 +353,6 @@ namespace NodeEditorFramework
 		}
 
 		#endregion
-
-		#endregion
-
-		#region Compression
-
-
-		/// <summary>
-		/// Compresses the nodeCanvas, meaning it will remove duplicate references that are only for convenience
-		/// </summary>
-		/*public static void Compress (ref NodeCanvas nodeCanvas)
-		{
-			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
-			{
-				Node node = nodeCanvas.nodes[nodeCnt];
-				node.Inputs = new List<NodeInput> ();
-				node.Outputs = new List<NodeOutput> ();
-			}
-		}*/
-
-
-		/// <summary>
-		/// Uncompresses the nodeCanvas, meaning it will restore duplicate references for convenience
-		/// </summary>
-		public static void Uncompress (ref NodeCanvas nodeCanvas)
-		{
-			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
-			{
-				Node node = nodeCanvas.nodes[nodeCnt];
-				node.Inputs = new List<NodeInput> ();
-				node.Outputs = new List<NodeOutput> ();
-				for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++) 
-				{
-					NodeKnob knob = node.nodeKnobs[knobCnt];
-					if (knob is NodeInput)
-						node.Inputs.Add (knob as NodeInput);
-					else if (knob is NodeOutput) 
-						node.Outputs.Add (knob as NodeOutput);
-				}
-			}
-		}
 
 		#endregion
 
