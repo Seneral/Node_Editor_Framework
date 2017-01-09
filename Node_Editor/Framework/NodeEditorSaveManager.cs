@@ -225,14 +225,15 @@ namespace NodeEditorFramework
 
 			nodeCanvas.OnBeforeSavingCanvas ();
 
+			NodeCanvas canvasSave = nodeCanvas;
+
 		#if UNITY_EDITOR
 			nodeCanvas.UpdateSource (path);
 
 			// Preprocess the canvas
 			ProcessCanvas (ref nodeCanvas, createWorkingCopy);
 			nodeCanvas.livesInScene = false;
-      
-			NodeCanvas canvasSave = nodeCanvas;
+
 			NodeCanvas prevSave;
 			if (safeOverwrite && (prevSave = ResourceManager.LoadResource<NodeCanvas> (path)) != null && prevSave.GetType () == canvasSave.GetType ()) // OVERWRITE
 			{ // Delete contents of old save
