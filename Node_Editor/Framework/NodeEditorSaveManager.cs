@@ -49,10 +49,13 @@ namespace NodeEditorFramework
 		/// </summary>
 		internal static NodeCanvasSceneSave FindSceneSave (string saveName)
 		{
-			FetchSceneSaveHolder ();
-			NodeCanvasSceneSave sceneSave = sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().ToList ().Find ((NodeCanvasSceneSave save) => save.saveName == saveName || (save.savedNodeCanvas != null && save.savedNodeCanvas.name == saveName));
-			if (sceneSave != null)
-				sceneSave.saveName = saveName;
+			NodeCanvasSceneSave sceneSave = null;
+			if (sceneSaveHolder != null)
+			{
+				sceneSave = sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().ToList ().Find ((NodeCanvasSceneSave save) => save.saveName == saveName || (save.savedNodeCanvas != null && save.savedNodeCanvas.name == saveName));
+				if (sceneSave != null)
+					sceneSave.saveName = saveName;
+			}
 			return sceneSave;
 		}
 
@@ -127,6 +130,11 @@ namespace NodeEditorFramework
 					sceneSave = CreateSceneSave (saveName);
 				sceneSave.savedNodeCanvas = savedCanvas;
 			}
+		#if UNITY_5_3_OR_NEWER
+			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty (UnityEngine.SceneManagement.SceneManager.GetActiveScene ());
+		#else
+			UnityEditor.EditorApplication.MarkSceneDirty ();
+		#endif
 		#else
 			sceneSave = FindOrCreateSceneSave (saveName);
 			sceneSave.savedNodeCanvas = savedCanvas;
@@ -223,10 +231,10 @@ namespace NodeEditorFramework
 			// Preprocess the canvas
 			ProcessCanvas (ref nodeCanvas, createWorkingCopy);
 			nodeCanvas.livesInScene = false;
-
-			NodeCanvas prevSave = ResourceManager.LoadResource<NodeCanvas> (path);
+      
 			NodeCanvas canvasSave = nodeCanvas;
-			if (prevSave != null && prevSave.GetType () == canvasSave.GetType () && safeOverwrite) // OVERWRITE
+			NodeCanvas prevSave;
+			if (safeOverwrite && (prevSave = ResourceManager.LoadResource<NodeCanvas> (path)) != null && prevSave.GetType () == canvasSave.GetType ()) // OVERWRITE
 			{ // Delete contents of old save
 				NodeEditor.BeginEditingCanvas (prevSave);
 				while (prevSave.nodes.Count > 0)
@@ -258,8 +266,8 @@ namespace NodeEditorFramework
 				}
 			}
 
-			UnityEditor.AssetDatabase.SaveAssets ();
-			UnityEditor.AssetDatabase.Refresh ();
+			//UnityEditor.AssetDatabase.SaveAssets ();
+			//UnityEditor.AssetDatabase.Refresh ();
 		#else
 			// TODO: Node Editor: Need to implement ingame-saving (Resources, AsssetBundles, ... won't work)
 		#endif
@@ -351,46 +359,6 @@ namespace NodeEditorFramework
 		}
 
 		#endregion
-
-		#endregion
-
-		#region Compression
-
-
-		/// <summary>
-		/// Compresses the nodeCanvas, meaning it will remove duplicate references that are only for convenience
-		/// </summary>
-		/*public static void Compress (ref NodeCanvas nodeCanvas)
-		{
-			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
-			{
-				Node node = nodeCanvas.nodes[nodeCnt];
-				node.Inputs = new List<NodeInput> ();
-				node.Outputs = new List<NodeOutput> ();
-			}
-		}*/
-
-
-		/// <summary>
-		/// Uncompresses the nodeCanvas, meaning it will restore duplicate references for convenience
-		/// </summary>
-		public static void Uncompress (ref NodeCanvas nodeCanvas)
-		{
-			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
-			{
-				Node node = nodeCanvas.nodes[nodeCnt];
-				node.Inputs = new List<NodeInput> ();
-				node.Outputs = new List<NodeOutput> ();
-				for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++) 
-				{
-					NodeKnob knob = node.nodeKnobs[knobCnt];
-					if (knob is NodeInput)
-						node.Inputs.Add (knob as NodeInput);
-					else if (knob is NodeOutput) 
-						node.Outputs.Add (knob as NodeOutput);
-				}
-			}
-		}
 
 		#endregion
 

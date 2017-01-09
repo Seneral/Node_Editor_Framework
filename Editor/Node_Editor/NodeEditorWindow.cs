@@ -92,10 +92,6 @@ namespace NodeEditorFramework.Standard
 
 		private void OnDestroy()
 		{
-			EditorUtility.SetDirty(canvasCache.nodeCanvas);
-			AssetDatabase.SaveAssets();
-			AssetDatabase.Refresh();
-
 			NodeEditor.ClientRepaints -= Repaint;
 
 			EditorLoadingControl.justLeftPlayMode -= NormalReInit;
@@ -272,7 +268,12 @@ namespace NodeEditorFramework.Standard
 				NodeEditor.ReInit (true);
 			
 			NodeEditorGUI.knobSize = EditorGUILayout.IntSlider (new GUIContent ("Handle Size", "The size of the Node Input/Output handles"), NodeEditorGUI.knobSize, 12, 20);
-			canvasCache.editorState.zoom = EditorGUILayout.Slider (new GUIContent ("Zoom", "Use the Mousewheel. Seriously."), canvasCache.editorState.zoom, 0.6f, 4);
+			//canvasCache.editorState.zoom = EditorGUILayout.Slider (new GUIContent ("Zoom", "Use the Mousewheel. Seriously."), canvasCache.editorState.zoom, 0.6f, 4);
+			NodeEditorUserCache.cacheIntervalSec = EditorGUILayout.IntSlider (new GUIContent ("Cache Interval (Sec)", "The interval in seconds the canvas is temporarily saved into the cache as a precaution for crashes."), NodeEditorUserCache.cacheIntervalSec, 30, 300);
+
+//			NodeEditorGUI.curveBaseDirection = EditorGUILayout.FloatField ("Curve Base Dir", NodeEditorGUI.curveBaseDirection);
+//			NodeEditorGUI.curveBaseStart = EditorGUILayout.FloatField ("Curve Base Start", NodeEditorGUI.curveBaseStart);
+//			NodeEditorGUI.curveDirectionScale = EditorGUILayout.FloatField ("Curve Dir Scale", NodeEditorGUI.curveDirectionScale);
 
 			if (canvasCache.editorState.selectedNode != null && Event.current.type != EventType.Ignore)
 				canvasCache.editorState.selectedNode.DrawNodePropertyEditor();

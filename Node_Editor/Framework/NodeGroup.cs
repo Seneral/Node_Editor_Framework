@@ -40,7 +40,7 @@ namespace NodeEditorFramework
 		internal static List<NodeGroup> pinnedGroups = new List<NodeGroup> ();
 
 		// Settings
-		private const bool headerFree = true;
+		private static bool headerFree = true;
 		private const int borderWidth = 15;
 		private const int minGroupSize = 150;
 		private const int headerHeight = 30;
