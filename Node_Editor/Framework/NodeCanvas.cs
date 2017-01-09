@@ -116,7 +116,7 @@ namespace NodeEditorFramework
 					Node node = nodes[nodeCnt];
 					if (node == null)
 					{
-						Debug.LogWarning ("NodeCanvas '" + name + "' contained broken (null) node! Automatically fixed!");
+						Debug.LogWarning ("NodeCanvas '" + saveName + "' (" + name + ") contained broken (null) node! Automatically fixed!");
 						nodes.RemoveAt (nodeCnt);
 						nodeCnt--;
 						continue;

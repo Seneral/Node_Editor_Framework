@@ -234,15 +234,25 @@ namespace NodeEditorFramework
 			ProcessCanvas (ref nodeCanvas, createWorkingCopy);
 			nodeCanvas.livesInScene = false;
 
+			canvasSave = nodeCanvas;
 			NodeCanvas prevSave;
 			if (safeOverwrite && (prevSave = ResourceManager.LoadResource<NodeCanvas> (path)) != null && prevSave.GetType () == canvasSave.GetType ()) // OVERWRITE
 			{ // Delete contents of old save
-				NodeEditor.BeginEditingCanvas (prevSave);
-				while (prevSave.nodes.Count > 0)
-					prevSave.nodes[0].Delete ();
+				for (int nodeCnt = 0; nodeCnt < prevSave.nodes.Count; nodeCnt++) 
+				{
+					Node node = prevSave.nodes[nodeCnt];
+					for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++)
+					{
+						if (node.nodeKnobs[knobCnt] != null)
+							Object.DestroyImmediate (node.nodeKnobs[knobCnt], true);
+					}
+					Object.DestroyImmediate (node, true);
+				}
 				for (int i = 0; i < prevSave.editorStates.Length; i++)
-					Object.DestroyImmediate (prevSave.editorStates[i], true);
-				NodeEditor.EndEditingCanvas ();
+				{
+					if (prevSave.editorStates[i] != null)
+						Object.DestroyImmediate (prevSave.editorStates[i], true);
+				}
 				// Overwrite main canvas
 				OverwriteCanvas (ref prevSave, nodeCanvas);
 				canvasSave = prevSave;
