@@ -28,6 +28,8 @@ namespace NodeEditorFramework.Standard
 		public void CalculateCanvas () 
 		{
 			AssureCanvas ();
+			NodeEditor.checkInit (false);
+			canvas.Validate (true);
 			canvas.TraverseAll ();
 			DebugOutputResults ();
 		}
@@ -39,6 +41,7 @@ namespace NodeEditorFramework.Standard
 		private void DebugOutputResults () 
 		{
 			AssureCanvas ();
+			Debug.Log ("Calculating '" + canvas.saveName + "':");
 			List<Node> outputNodes = getOutputNodes ();
 			foreach (Node outputNode in outputNodes) 
 			{
