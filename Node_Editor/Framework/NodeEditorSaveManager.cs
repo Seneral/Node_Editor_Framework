@@ -129,6 +129,11 @@ namespace NodeEditorFramework
 					sceneSave = CreateSceneSave (saveName);
 				sceneSave.savedNodeCanvas = savedCanvas;
 			}
+		#if UNITY_5_3_OR_NEWER
+			UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty (UnityEngine.SceneManagement.SceneManager.GetActiveScene ());
+		#else
+			UnityEditor.EditorApplication.MarkSceneDirty ();
+		#endif
 		#else
 			sceneSave = FindOrCreateSceneSave (saveName);
 			sceneSave.savedNodeCanvas = savedCanvas;
