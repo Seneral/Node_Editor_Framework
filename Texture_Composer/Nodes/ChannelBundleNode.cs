@@ -41,7 +41,7 @@ public class ChannelBundleNode : Node
 		GUILayout.EndHorizontal ();
 
 		if (GUI.changed)
-			NodeEditor.RecalculateFrom (this);
+			NodeEditor.curNodeCanvas.OnNodeChange (this);
 	}
 	
 	public override bool Calculate () 

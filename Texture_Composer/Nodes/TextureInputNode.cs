@@ -32,7 +32,7 @@ public class TextureInputNode : Node
 		// TODO: Check if texture is readable
 
 		if (GUI.changed)
-			NodeEditor.RecalculateFrom (this);
+			NodeEditor.curNodeCanvas.OnNodeChange (this);
 	}
 	
 	public override bool Calculate () 
