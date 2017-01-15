@@ -11,7 +11,7 @@ namespace NodeEditorFramework.Standard
 
 		protected override void OnCreate () 
 		{
-			Traversal = new DefaultCanvasCalculator (this);
+			Traversal = new CanvasCalculator (this);
 		}
 
 		public void OnEnable () 
@@ -23,7 +23,7 @@ namespace NodeEditorFramework.Standard
 		protected override void OnValidate ()
 		{
 			if (Traversal == null)
-				Traversal = new DefaultCanvasCalculator (this);
+				Traversal = new CanvasCalculator (this);
 		}
 	}
 }
