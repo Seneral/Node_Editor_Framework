@@ -5,13 +5,13 @@ using System.Collections.Generic;
 
 namespace NodeEditorFramework.Standard
 {
-	public class DefaultCanvasCalculator : NodeCanvasTraversal
+	public class CanvasCalculator : NodeCanvasTraversal
 	{
 		// A list of Nodes from which calculation originates -> Call StartCalculation
 		public List<Node> workList;
 		private int calculationCount;
 
-		public DefaultCanvasCalculator (NodeCanvas canvas) : base(canvas)
+		public CanvasCalculator (NodeCanvas canvas) : base(canvas)
 		{
 		}
 

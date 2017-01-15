@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-using NodeEditorFramework.Standard;
-
 namespace NodeEditorFramework 
 {
 	/// <summary>
@@ -47,7 +45,7 @@ namespace NodeEditorFramework
 			if (canvasType != null && canvasType.IsSubclassOf (typeof(NodeCanvas)))
 				canvas = ScriptableObject.CreateInstance (canvasType) as NodeCanvas;
 			else
-				canvas = ScriptableObject.CreateInstance<CalculationCanvasType>();
+				canvas = ScriptableObject.CreateInstance<NodeEditorFramework.Standard.CalculationCanvasType>();
 			canvas.name = canvas.saveName = "New " + canvas.canvasName;
 
 			NodeEditor.BeginEditingCanvas (canvas);
