@@ -3,6 +3,8 @@ This project aims to create an easy-to-use framework for creating graph-based di
 
 <p align="center">
   <img alt="Node Editor Image" src="http://i.imgur.com/I3rDd7Y.jpg" width="60%"/>
+  <br><br>
+  <b>Check out the <a href="https://seneral.github.io/NodeEditor_WebGLDemo/">WebGL Demo</a>!</b>
 </p>
 
 ### Major Features
