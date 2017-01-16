@@ -191,7 +191,7 @@ namespace NodeEditorFramework
 			if (nodeCanvas.livesInScene)
 				NodeEditorSaveManager.SaveSceneNodeCanvas ("lastSession", ref nodeCanvas, cacheWorkingCopy);
 			else
-				NodeEditorSaveManager.SaveNodeCanvas (lastSessionPath, nodeCanvas, cacheWorkingCopy, false);
+				NodeEditorSaveManager.SaveNodeCanvas (lastSessionPath, nodeCanvas, cacheWorkingCopy, true);
 
 			CheckCurrentCache ();
 			#endif
@@ -220,8 +220,11 @@ namespace NodeEditorFramework
 
 			// Fetch the associated MainEditorState
 			editorState = NodeEditorSaveManager.ExtractEditorState (nodeCanvas, MainEditorStateIdentifier);
+			#if EDITOR_CACHE_ASSET
 			if (!nodeCanvas.livesInScene && !UnityEditor.AssetDatabase.Contains (editorState))
 				NodeEditorSaveManager.AddSubAsset (editorState, lastSessionPath);
+			#endif
+
 
 			CheckCurrentCache ();
 			UpdateCanvasInfo ();
