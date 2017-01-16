@@ -338,7 +338,7 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Handles the group context click (on the header only)
 		/// </summary>
-		[EventHandlerAttribute (EventType.MouseDown, priority = -1)] // Before the other context clicks because they won't account for groups
+		[EventHandlerAttribute (EventType.MouseDown, -1)] // Before the other context clicks because they won't account for groups
 		private static void HandleGroupContextClick (NodeEditorInputInfo inputInfo) 
 		{
 			NodeEditorState state = inputInfo.editorState;
@@ -358,7 +358,7 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Starts a dragging operation for either dragging or resizing (on the header or borders only)
 		/// </summary>
-		[EventHandlerAttribute (EventType.MouseDown, priority = 104)] // Priority over hundred to make it call after the GUI, and before Node dragging (110) and window panning (105)
+		[EventHandlerAttribute (EventType.MouseDown, 104)] // Priority over hundred to make it call after the GUI, and before Node dragging (110) and window panning (105)
 		private static void HandleGroupDraggingStart (NodeEditorInputInfo inputInfo) 
 		{
 			if (GUIUtility.hotControl > 0)
