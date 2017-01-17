@@ -30,4 +30,4 @@ If you have any questions on how to commit, Unity made a tutorial about using gi
 ### Credits and Licensing
 The project was started as a part of the thread ["Simple Node Editor"](http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738) in may 2015 by [Seneral](http://forum.unity3d.com/members/seneral.638015/), and the repository was set up by [Baste Nesse Buanes](http://forum.unity3d.com/members/baste.185905/). You can find the full list of contributors [on this page](https://github.com/Baste-RainGames/Node_Editor/graphs/contributors). Additionally, [Vexe](http://forum.unity3d.com/members/vexe.280515/) has greatly helped with reflection related stuff.
 
-The license used is the MIT License - see Docs/license.md
+The license used is the MIT License - see license.md
