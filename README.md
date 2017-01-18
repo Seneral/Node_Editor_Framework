@@ -1,33 +1,11 @@
-## Node Editor Framework for Unity
-This project aims to create an easy-to-use framework for creating graph-based displays in the Unity Editor and runtime.
+###Expression Nodes
+A collection of nodes that use reflection to dynamically parse objects of different types from text and convert them to any other, aswell as pass them into any system-level function.
 
 <p align="center">
-  <img alt="Node Editor Image" src="http://i.imgur.com/I3rDd7Y.jpg" width="60%"/>
-  <br><br>
-  <b>Check out the <a href="https://seneral.github.io/NodeEditor_WebGLDemo/">WebGL Demo</a>!</b>
+  <img alt="Node Editor Image" src="http://i.imgur.com/VHV3pql.jpg" width="60%"/>
 </p>
 
-### Major Features
-- Convenient editor featuring zooming
-- Automatic node calculation system
-- Customisable drag'n'drop node connection system
-- StateMachine Behaviour system (WIP)
-- Dynamic extensions (Nodes, ConnectionTypes, NodeKnobs, ...) without touching framework code
-- Extensive control over Node/Knob/Connection appearance, even individually
-- Save/Load node canvas with auto save
-- Fully customisable GUI and layout
-- Growing runtime support
-- Documentation and active support:)
+This example shows how to integrate new dynamic types into the framework and adjust knob type after creation.
+Installation is as easy as dropping the folder into your project with either Node Editor master or develop installed.
 
-### Documentation and Support
-The documentation can be found in the 'Docs' folder as raw markdown files to use with mkdocs and the compiled html version online [here](http://baste-raingames.github.io/Node_Editor/). Please contact [Seneral](http://forum.unity3d.com/members/seneral.638015/) for any type of question regarding the framework, or post on the [project thread](http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738).
-
-### Community and Contributing
-I encourage anyone in the Community willing to contribute to step up and do so! There are plenty of things to do, with everything from easy to hard, which can be browsed [here](https://github.com/Baste-RainGames/Node_Editor/issues). In most cases it might help to contact the main developer [Seneral](http://forum.unity3d.com/members/seneral.638015/) when you have any questions regarding the framework itself or any of the plans linked above.
-
-If you have any questions on how to commit, Unity made a tutorial about using git with SourceTree [here](https://unity3d.com/learn/tutorials/topics/cloud-build/creating-your-first-source-control-repository), and to create pull requests atlassian made one [here](https://www.atlassian.com/git/tutorials/making-a-pull-request/how-it-works). Don't be confused by the fact that they're using Bitucket, the same applies to GitHub. If there is an issue describing the feature or bug you implemented, you should link it from withing the pull request:)
-
-### Credits and Licensing
-The project was started as a part of the thread ["Simple Node Editor"](http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738) in may 2015 by [Seneral](http://forum.unity3d.com/members/seneral.638015/), and the repository was set up by [Baste Nesse Buanes](http://forum.unity3d.com/members/baste.185905/). You can find the full list of contributors [on this page](https://github.com/Baste-RainGames/Node_Editor/graphs/contributors). Additionally, [Vexe](http://forum.unity3d.com/members/vexe.280515/) has greatly helped with reflection related stuff.
-
-The license used is the MIT License - see license.md
+Note: The ActionNode, used to call any function in the system, currently does not work due to an internal error of UnityFunc. In the future I will make it use my other implementation for serializing actions &co., Serializable Action instead, which is generally far superior.
