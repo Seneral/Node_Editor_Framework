@@ -7,16 +7,14 @@ namespace NodeEditorFramework
 	using UnityEngine;
 
 	/// <summary>
-	///     The Node Canvas base class.
+	/// The Node Canvas base class.
 	/// </summary>
 	/// <remarks>
-	///     All node canvases should derive from this class.
+	/// All canvases should derive from this class.
 	/// </remarks>
 	public class NodeCanvas : ScriptableObject
 	{
-		#region Fields
-
-		#region Public Fields
+		public virtual string canvasName { get { return "DEFAULT"; } }
 
 		public NodeCanvasTraversal Traversal;
 
@@ -30,29 +28,13 @@ namespace NodeEditorFramework
 		public List<Node> nodes = new List<Node>();
 		public List<NodeGroup> groups = new List<NodeGroup>();
 
-		#endregion
-
-		#endregion
-
-		#region Proprieties
-
-		#region Public Proprieties
-
-		public virtual string canvasName { get { return "DEFAULT"; } }
-
-		#endregion
-
-		#endregion
-
-		#region Methods
-
-		#region Public Static Methods
+		#region Constructors
 
 		/// <summary>
-		///     Initializes the <see cref="NodeCanvas" />.
+		/// Initializes the <see cref="NodeCanvas"/>.
 		/// </summary>
-		/// <typeparam name="T">The <see cref="NodeCanvas" /> subclass's type.</typeparam>
-		/// <returns>Returns the initialized <see cref="NodeCanvas" />.</returns>
+		/// <typeparam name="T">The <see cref="NodeCanvas"/> subclass's type.</typeparam>
+		/// <returns>Returns the initialized <see cref="NodeCanvas"/>.</returns>
 		public static T CreateCanvas<T>() where T : NodeCanvas
 		{
 			if (typeof(T) == typeof(NodeCanvas))
@@ -71,15 +53,15 @@ namespace NodeEditorFramework
 		}
 
 		/// <summary>
-		///     Initializes the <see cref="NodeCanvas" />.
+		/// Initializes the <see cref="NodeCanvas"/>.
 		/// </summary>
-		/// <param name="canvasType">The <see cref="NodeCanvas" /> subclass's type.</param>
-		/// <returns>Returns the initialized <see cref="NodeCanvas" />.</returns>
+		/// <param name="canvasType">The <see cref="NodeCanvas"/> subclass's type.</param>
+		/// <returns>Returns the initialized <see cref="NodeCanvas"/>.</returns>
 		public static NodeCanvas CreateCanvas(Type canvasType)
 		{
 			NodeCanvas canvas;
 
-			if ((canvasType != null) && canvasType.IsSubclassOf(typeof(NodeCanvas)))
+			if (canvasType != null && canvasType.IsSubclassOf(typeof(NodeCanvas)))
 			{
 				canvas = CreateInstance(canvasType) as NodeCanvas;
 			}
@@ -99,11 +81,42 @@ namespace NodeEditorFramework
 
 		#endregion
 
-		#region Public Methods
+		#region Callbacks
+
+		protected virtual void OnCreate() {}
+
+		protected virtual void OnValidate() {}
+
+		public virtual void OnBeforeSavingCanvas() {}
+
+		public virtual bool CanAddNode(string nodeID)
+		{
+			return true;
+		}
+
+		#endregion
+
+		#region Traversal
+
+		public void TraverseAll()
+		{
+			if (Traversal != null)
+				Traversal.TraverseAll();
+		}
+
+		public void OnNodeChange(Node node)
+		{
+			if (Traversal != null && node != null)
+				Traversal.OnChange(node);
+		}
+
+		#endregion
+
+		#region Methods
 
 		/// <summary>
-		///     Validates the <see cref="NodeCanvas" /> by checking for any broken references.
-		///     If there are any, cleans them.
+		/// Validates the <see cref="NodeCanvas"/> by checking for any broken references.
+		/// If there are any, cleans them.
 		/// </summary>
 		/// <param name="deepValidate">Whether or not should check each node individually.</param>
 		public void Validate(bool deepValidate = false)
@@ -162,7 +175,7 @@ namespace NodeEditorFramework
 						if (nodeKnob is NodeInput)
 						{
 							NodeInput input = nodeKnob as NodeInput;
-							if ((input.connection != null) && (input.connection.body == null))
+							if (input.connection != null && input.connection.body == null)
 							{
 								// References broken node; Clear connection
 								input.connection = null;
@@ -175,7 +188,7 @@ namespace NodeEditorFramework
 							for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
 							{
 								NodeInput con = output.connections[conCnt];
-								if ((con == null) || (con.body == null))
+								if (con == null || con.body == null)
 								{
 									// Broken connection; Clear connection
 									output.connections.RemoveAt(conCnt);
@@ -225,43 +238,6 @@ namespace NodeEditorFramework
 			{
 				savePath = path;
 				saveName = newName;
-			}
-		}
-
-		#endregion
-
-		#endregion
-
-		#region Callbacks
-
-		protected virtual void OnCreate() {}
-
-		protected virtual void OnValidate() {}
-
-		public virtual void OnBeforeSavingCanvas() {}
-
-		public virtual bool CanAddNode(string nodeID)
-		{
-			return true;
-		}
-
-		#endregion
-
-		#region Traversal
-
-		public void TraverseAll()
-		{
-			if (Traversal != null)
-			{
-				Traversal.TraverseAll();
-			}
-		}
-
-		public void OnNodeChange(Node node)
-		{
-			if ((Traversal != null) && (node != null))
-			{
-				Traversal.OnChange(node);
 			}
 		}
 
