@@ -1,4 +1,4 @@
-﻿namespace NodeEditorFramework
+namespace NodeEditorFramework
 {
 	using System;
 	using System.Collections.Generic;
