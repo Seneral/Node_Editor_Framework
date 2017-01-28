@@ -7,17 +7,14 @@ namespace NodeEditorFramework.Standard
 	[Node (false, "Example/Example Node")]
 	public class ExampleNode : Node 
 	{
-		public override Vector2 MinSize { get { return new Vector2(150, 10); } }
-		public override bool Resizable { get { return true; } }
-
 		public const string ID = "exampleNode";
 		public override string GetID { get { return ID; } }
 		
 		public override Node Create (Vector2 pos) 
 		{
 			ExampleNode node = CreateInstance<ExampleNode> ();
-
-			node.rect.position = pos;
+			
+			node.rect = new Rect (pos.x, pos.y, 150, 60);
 			node.name = "Example Node";
 			
 			node.CreateInput ("Value", "Float");
