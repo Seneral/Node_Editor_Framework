@@ -9,8 +9,13 @@ namespace NodeEditorFramework
 {
 	public abstract partial class Node : ScriptableObject
 	{
+		public virtual Vector2 MinSize { get { return new Vector2(); } }
+		public virtual bool Resizable { get { return false; } } // set to false to avoid breaking existing nodes
 		public Rect rect = new Rect ();
+
 		internal Vector2 contentOffset = Vector2.zero;
+		internal Vector2 resizeToPosition;
+
 		[SerializeField]
 		public List<NodeKnob> nodeKnobs = new List<NodeKnob> ();
 
@@ -254,12 +259,59 @@ namespace NodeEditorFramework
 			GUI.BeginGroup (bodyRect, nodeBGStyle);
 			bodyRect.position = Vector2.zero;
 			GUILayout.BeginArea (bodyRect);
+
 			// Call NodeGUI
 			GUI.changed = false;
 			NodeGUI ();
+
+			if(Resizable && Event.current.type == EventType.Repaint)
+				resizeToPosition = GUILayoutUtility.GetLastRect().max + contentOffset;
+
 			// End NodeGUI frame
 			GUILayout.EndArea ();
 			GUI.EndGroup ();
+
+			ResizeNode();
+		}
+
+		/// <summary>
+		/// Resizes the node to either the MinSize or to fit size of the GUILayout in #NodeGUI()
+		/// </summary>
+		protected internal virtual void ResizeNode()
+		{
+			if (Event.current.type != EventType.Repaint)
+				return;
+
+			if (!Resizable)
+				return;
+
+			Rect nodeRect = rect;
+
+			Vector2 maxSize = new Vector2();
+
+			maxSize.y = Math.Max(resizeToPosition.y, MinSize.y);
+
+			List<NodeKnob> topBottomKnobs = nodeKnobs.Where(x => x.side == NodeSide.Bottom || x.side == NodeSide.Top).ToList();
+			if (topBottomKnobs.Any())
+			{
+				float knobSize = topBottomKnobs.Max(x => x.GetGUIKnob().xMax - nodeRect.xMin);
+				float minWidth = MinSize.x;
+
+				maxSize.x = Math.Max(knobSize, minWidth);
+			}
+			else
+			{
+				maxSize.x = MinSize.x;
+			}
+
+			if (maxSize != nodeRect.size)
+				nodeRect.size = maxSize;
+
+			if (rect.size != nodeRect.size)
+			{
+				rect = nodeRect;
+				NodeEditor.RepaintClients ();
+			}
 		}
 
 		/// <summary>
