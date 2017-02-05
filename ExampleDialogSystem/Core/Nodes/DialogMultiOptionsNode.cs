@@ -8,171 +8,194 @@ using UnityEngine;
 [Node(false, "Dialog/Dialog With Options Node", new Type[]{typeof(DialogNodeCanvas)})]
 public class DialogMultiOptionsNode : BaseDialogNode
 {
-    private const string Id = "multiOptionDialogNode";
-    public override string GetID { get { return Id; } }
-    public override Type GetObjectType { get { return typeof(DialogMultiOptionsNode); } }
+	private const string Id = "multiOptionDialogNode";
+	public override string GetID { get { return Id; } }
+	public override Type GetObjectType { get { return typeof(DialogMultiOptionsNode); } }
 
-    private const int StartValue = 222;
-    private const int SizeValue = 22;
+	private const int StartValue = 276;
+	private const int SizeValue = 24;
 
-    [SerializeField]
-    List<DataHolderForOption> _options;
+	[SerializeField]
+	List<DataHolderForOption> _options;
+	private Vector2 scroll;
 
-    public override Node Create(Vector2 pos)
-    {
-        DialogMultiOptionsNode node = CreateInstance<DialogMultiOptionsNode>();
+	public override Node Create(Vector2 pos)
+	{
+		DialogMultiOptionsNode node = CreateInstance<DialogMultiOptionsNode>();
 
-        node.rect = new Rect(pos.x, pos.y, 300, 265);
-        node.name = "Dailog with Options Node";
+		node.rect = new Rect(pos.x, pos.y, 300, 275);
+		node.name = "Dialog with Options Node";
 
-        //Previous Node Connections
-        node.CreateInput("Previous Node", "DialogForward", NodeSide.Left, 30);
-        node.CreateOutput("Back Node", "DialogBack", NodeSide.Left, 50);
+		//Previous Node Connections
+		node.CreateInput("Previous Node", "DialogForward", NodeSide.Left, 30);
+		node.CreateOutput("Back Node", "DialogBack", NodeSide.Left, 50);
 
-        ////Next Node to go to
-        //node.CreateOutput("Next Node", "DialogForward", NodeSide.Right, 30);
+		////Next Node to go to
+		//node.CreateOutput("Next Node", "DialogForward", NodeSide.Right, 30);
 
-        node.SayingCharacterName = "Morgen Freeman";
-        node.WhatTheCharacterSays = "I'm GOD";
-        node.SayingCharacterPotrait = null;
+		node.CharacterName = "Character Name";
+		node.DialogLine = "Dialog Line Here";
+		node.CharacterPotrait = null;
 
-        node._options = new List<DataHolderForOption>();
+		node._options = new List<DataHolderForOption>();
 
-        node.AddNewOption();
-        
-        return node;
-    }
+		node.AddNewOption();
+		
+		return node;
+	}
 
-    protected internal override void NodeGUI()
-    {
-        GUILayout.BeginHorizontal();
+	protected internal override void NodeGUI()
+	{
+		EditorGUILayout.BeginVertical("Box", GUILayout.ExpandHeight(true));
 
-        SayingCharacterName = EditorGUILayout.TextField("Character Name", SayingCharacterName);
+		EditorGUILayout.BeginVertical("Box");
+		GUILayout.BeginHorizontal();
+		CharacterPotrait = (Sprite)EditorGUILayout.ObjectField(CharacterPotrait, typeof(Sprite), false, GUILayout.Width(65f), GUILayout.Height(65f));
+		CharacterName = EditorGUILayout.TextField("", CharacterName);
+		GUILayout.EndHorizontal();
+		GUILayout.EndVertical();
 
-        GUILayout.EndHorizontal();
-        GUILayout.BeginHorizontal();
+		GUILayout.Space(5);
 
-        WhatTheCharacterSays = EditorGUILayout.TextArea(WhatTheCharacterSays, GUILayout.Height(100));
+		EditorStyles.textField.wordWrap = true;
 
-        GUILayout.EndHorizontal();
-        GUILayout.BeginHorizontal();
+		GUILayout.BeginHorizontal();
 
-        SayingCharacterPotrait = EditorGUILayout.ObjectField("Character Potrait", SayingCharacterPotrait,
-            typeof(Sprite), false) as Sprite;
+		scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.Height(100));
+		DialogLine = EditorGUILayout.TextArea(DialogLine, GUILayout.ExpandHeight(true));
+		EditorGUILayout.EndScrollView();
+		GUILayout.EndHorizontal();
 
-        GUILayout.EndHorizontal();
+		GUILayout.Space(5);
 
-        GUILayout.Space(5);
-        DrawOptions();
+		GUILayout.BeginHorizontal();
+		EditorGUIUtility.labelWidth = 90;
+		SoundDialog = EditorGUILayout.ObjectField("Dialog Audio:", SoundDialog, typeof(AudioClip), false) as AudioClip;
+		if (GUILayout.Button("►", GUILayout.Width(20)))
+		{
+			if (SoundDialog)
+				AudioUtils.PlayClip(SoundDialog);
+		}
+		GUILayout.EndHorizontal();
 
-        GUILayout.BeginHorizontal();
-        GUILayout.BeginVertical();
+		GUILayout.Space(5);
 
-        GUILayout.Space(5);
-        if(GUILayout.Button("Add New Option"))
-        {
-            AddNewOption();
-            IssueEditorCallBacks();
-        }
+		#region Options
+		GUILayout.BeginVertical("box");
+		GUILayout.ExpandWidth(false);
 
-        GUILayout.EndVertical();
-        GUILayout.EndHorizontal();
+		GUILayout.BeginHorizontal();
+		GUILayout.Label("Options", NodeEditorGUI.nodeLabelBoldCentered);
+		if (GUILayout.Button("+", GUILayout.Width(20)))
+		{
+			AddNewOption();
+			IssueEditorCallBacks();
+		}
 
-        GUILayout.BeginHorizontal();
-        GUILayout.BeginVertical();
+		GUILayout.EndHorizontal();
+		GUILayout.Space(5);
 
-        GUILayout.Space(5);
-        if (GUILayout.Button("Remove Last Option"))
-        {
-            Debug.Log("Remove options is clicked");
-            RemoveLastOption();
-        }
+		DrawOptions();
 
-        GUILayout.EndVertical();
-        GUILayout.EndHorizontal();
-    }
-    
-    private void RemoveLastOption()
-    {
-        if(_options.Count > 1)
-        {
-            DataHolderForOption option = _options.Last();
-            _options.Remove(option);
-            Outputs[option.NodeOutputIndex].Delete();
-            rect = new Rect(rect.x, rect.y, rect.width, rect.height - SizeValue);
-        }
-    }
+		GUILayout.ExpandWidth(false);
+		GUILayout.EndVertical();
+	#endregion
 
-    private void DrawOptions()
-    {
-        foreach(DataHolderForOption option in _options)
-        {
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical();
-            option.OptionDisplay = EditorGUILayout.TextField("Option : ", option.OptionDisplay);
-            GUILayout.Space(4);
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
-        }
-    }
+		EditorGUILayout.EndVertical();
+	}
+	
+	private void RemoveLastOption()
+	{
+		if(_options.Count > 1)
+		{
+			DataHolderForOption option = _options.Last();
+			_options.Remove(option);
+			Outputs[option.NodeOutputIndex].Delete();
+			rect = new Rect(rect.x, rect.y, rect.width, rect.height - SizeValue);
+		}
+	}
 
-    private void AddNewOption()
-    {
-        DataHolderForOption option = new DataHolderForOption {OptionDisplay = "Write Here"};
-        CreateOutput("Next Node", "DialogForward", NodeSide.Right,
-            StartValue + _options.Count * SizeValue);
-        option.NodeOutputIndex = Outputs.Count - 1;        
-        rect = new Rect(rect.x, rect.y, rect.width, rect.height + SizeValue);
-        _options.Add(option);
-    }
+	private void DrawOptions()
+	{
+		EditorGUILayout.BeginVertical();
+		for (var i = 0; i < _options.Count; i++)
+		{
+			DataHolderForOption option = _options[i];
+			GUILayout.BeginVertical();
+			GUILayout.BeginHorizontal();
+			EditorGUILayout.LabelField(option.NodeOutputIndex + ".", GUILayout.MaxWidth(15));
+			option.OptionDisplay = EditorGUILayout.TextArea(option.OptionDisplay, GUILayout.MinWidth(80));
 
-    //For Resolving the Type Mismatch Issue
-    private void IssueEditorCallBacks()
-    {
-        DataHolderForOption option = _options.Last();
-        NodeEditorCallbacks.IssueOnAddNodeKnob(Outputs[option.NodeOutputIndex]);
-    }
+			if (GUILayout.Button("‒", GUILayout.Width(20)))
+			{
+				_options.RemoveAt(i);
+				Outputs[option.NodeOutputIndex].Delete();
+				rect = new Rect(rect.x, rect.y, rect.width, rect.height - SizeValue);
+			}
 
-    public override BaseDialogNode Input(int inputValue)
-    {
-        switch (inputValue)
-        {
-            case (int)EDialogInputValue.Next:
-                if (Outputs[1].GetNodeAcrossConnection() != default(Node))
-                    return Outputs[1].GetNodeAcrossConnection() as BaseDialogNode;
-                break;
-            case (int)EDialogInputValue.Back:
-                if(Outputs[0].GetNodeAcrossConnection() != default(Node))
-                    return Outputs[0].GetNodeAcrossConnection() as BaseDialogNode;
-                break;
-            default:
-                if(Outputs[_options[inputValue].NodeOutputIndex].GetNodeAcrossConnection() != default(Node))
-                    return Outputs[_options[inputValue].NodeOutputIndex].GetNodeAcrossConnection() as BaseDialogNode;
-                break;
-        }
-        return null;
-    }
+			GUILayout.EndHorizontal();
+			GUILayout.EndVertical();
+			GUILayout.Space(4);
+		}
+		GUILayout.EndVertical();
+	}
 
-    public override bool IsBackAvailable()
-    {
-        return Outputs[0].GetNodeAcrossConnection() != default(Node);
-    }
+	private void AddNewOption()
+	{
+		DataHolderForOption option = new DataHolderForOption {OptionDisplay = "Write Here"};
+		CreateOutput("Next Node", "DialogForward", NodeSide.Right,
+			StartValue + _options.Count * SizeValue);
+		option.NodeOutputIndex = Outputs.Count - 1;		
+		rect = new Rect(rect.x, rect.y, rect.width, rect.height + SizeValue);
+		_options.Add(option);
+	}
 
-    public override bool IsNextAvailable()
-    {
-        return false;
-    }
+	//For Resolving the Type Mismatch Issue
+	private void IssueEditorCallBacks()
+	{
+		DataHolderForOption option = _options.Last();
+		NodeEditorCallbacks.IssueOnAddNodeKnob(Outputs[option.NodeOutputIndex]);
+	}
 
+	public override BaseDialogNode Input(int inputValue)
+	{
+		switch (inputValue)
+		{
+			case (int)EDialogInputValue.Next:
+				if (Outputs[1].GetNodeAcrossConnection() != default(Node))
+					return Outputs[1].GetNodeAcrossConnection() as BaseDialogNode;
+				break;
+			case (int)EDialogInputValue.Back:
+				if(Outputs[0].GetNodeAcrossConnection() != default(Node))
+					return Outputs[0].GetNodeAcrossConnection() as BaseDialogNode;
+				break;
+			default:
+				if(Outputs[_options[inputValue].NodeOutputIndex].GetNodeAcrossConnection() != default(Node))
+					return Outputs[_options[inputValue].NodeOutputIndex].GetNodeAcrossConnection() as BaseDialogNode;
+				break;
+		}
+		return null;
+	}
 
-    [Serializable]
-    class DataHolderForOption
-    {
-        public string OptionDisplay;
-        public int NodeOutputIndex;                
-    }
+	public override bool IsBackAvailable()
+	{
+		return Outputs[0].GetNodeAcrossConnection() != default(Node);
+	}
 
-    public List<string> GetAllOptions()
-    {
-        return _options.Select(option => option.OptionDisplay).ToList();
-    }
+	public override bool IsNextAvailable()
+	{
+		return false;
+	}
+
+	[Serializable]
+	class DataHolderForOption
+	{
+		public string OptionDisplay;
+		public int NodeOutputIndex;				
+	}
+
+	public List<string> GetAllOptions()
+	{
+		return _options.Select(option => option.OptionDisplay).ToList();
+	}
 }
