@@ -1,10 +1,13 @@
-Texture Composer Example
-------------------------
+## Texture Composer Example
 
+#### An example for the Node Editor Framework
+
+<br>
 <p align="center">
-  <img alt="Texture Composer Example" src="http://i.imgur.com/eQj4bgr.jpg" width="60%"/>
+  <img alt="Texture Composer Example" src="http://i.imgur.com/HcXhhGf.png" width="80%"/>
 </p>
+ <br>
 
+A very simple setup of a few texture nodes built upon the default calculation canvas. Start here to get a basic idea on how to create simple extensions for the framework with custom functionality.
 
-To check out this example, drop this branch into a project with the current NodeEditorFramework/Develop installed.
-It shows how the framework can be used to create a simple texture composer able to work with textures and channels and perform actions like channel shuffle.
+Simply drop the Texture_Composer folder into a project with the current NodeEditorFramework/Develop installed and open the example canvas located at Texture_Composer/Resources/Saves/Texture Mix Canvas.asset
