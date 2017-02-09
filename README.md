@@ -22,11 +22,16 @@
 - Many great examples found in the repo branches
 
 ### Examples
-There are several great examples depending on how you are planning to use the framework. You can find them as a subbranch of this repo in Examples/...
+There are several great examples depending on how you are planning to use the framework. You can find them as a subbranch of this repo in Examples/... and need to be copied into a project already containing the Node Editor Framework (most use the develop branch!):
 
-1. The Texture Composer, as seen in the title screen, is a very simple setup of a few texture nodes built upon the default calculation canvas in the framework. Start here to get a basic idea on how to create simple extensions of the framework with custom functionality.
-2. A great, but complex example is the Dialogue System, developed and maintained by [ChicK00o](https://github.com/ChicK00o). Making excellent use of the framework's modularity to extend the frameworks capability and behaviour to get a basic dialogue system, including the editing and runtime execution (with an example scene), up and running. Check it out if you want to get an idea of a bigger setup expanding on the Node Editor Framework with custom rules.
-3. A small example of extending the editor controls can be seen in the included NodeGroup. It contains custom controls to handle without modifying any framework code.
+1. The [Texture Composer](https://github.com/Seneral/Node_Editor/tree/Examples/Texture_Composer), as seen in the title screen, is a very simple setup of a few texture nodes built upon the default calculation canvas in the framework. Start here to get a basic idea on how to create simple extensions of the framework with custom functionality.
+2. A great, but complex example is the [Dialogue System](https://github.com/Seneral/Node_Editor/tree/Examples/Dialogue-System), developed and maintained by [ChicK00o](https://github.com/ChicK00o). Making excellent use of the framework's modularity to extend the frameworks capability and behaviour to get a basic dialogue system, including the editing and runtime execution (with an example scene), up and running. Check it out if you want to get an idea of a bigger setup expanding on the Node Editor Framework with custom rules.
+3. Another set of nodes is the 'Expression Node' example. These are a bit different as they use reflection to inject any type of variable into the framework, to convert or execute code on. It's main purpose is to show complex modifications of the Node Knobs and general extended use of the framework.
+4. A small example of extending the editor controls can be seen in the included [Node Group](https://github.com/Seneral/Node_Editor/blob/develop/Node_Editor/Framework/NodeGroup.cs). It contains custom controls to handle without modifying any framework code.
+
+
+<b>Tip:</b> 
+Get the latest development version with the best features in the [develop](https://github.com/Seneral/Node_Editor/tree/develop) branch!
 
 ### Documentation and Support
 The documentation can be found in the 'Docs' folder as raw markdown files to use with mkdocs and the compiled html version is online [here](http://seneral.github.io/Node_Editor/). Please post on the [project thread](http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738) or contact [Seneral](http://forum.unity3d.com/members/seneral.638015/) for any type of question regarding the framework, examples or documentation.
