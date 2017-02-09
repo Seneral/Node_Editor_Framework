@@ -23,6 +23,7 @@
 
 ### Examples
 There are several great examples depending on how you are planning to use the framework. You can find them as a subbranch of this repo in Examples/...
+
 1. The Texture Composer, as seen in the title screen, is a very simple setup of a few texture nodes built upon the default calculation canvas in the framework. Start here to get a basic idea on how to create simple extensions of the framework with custom functionality.
 2. A great, but very complex example is the Dialogue System, developed and maintained by [ChicK00o](https://github.com/ChicK00o). Making excellent use of the framework's modularity to extend the frameworks capability and behaviour to get a basic dialogue system, including the editing and runtime execution (with an example scene), up and running. Check it out if you want to get an idea of a bigger setup expanding on the Node Editor Framework with custom rules. This is not yet a fully fledged Dialogue System.
 3. A small example of extending the editor controls can be seen in the included NodeGroup. It contains custom controls to handle without modifying any framework code.
