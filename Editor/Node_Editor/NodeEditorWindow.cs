@@ -20,7 +20,7 @@ namespace NodeEditorFramework.Standard
 		public static void AssureEditor() { if (_editor == null) OpenNodeEditor(); }
 
 		// Opened Canvas
-		public static NodeEditorUserCache canvasCache;
+		public NodeEditorUserCache canvasCache;
 
 		// GUI
 		private string sceneCanvasName = "";
@@ -62,8 +62,7 @@ namespace NodeEditorFramework.Standard
 			if (Selection.activeObject != null && Selection.activeObject is NodeCanvas)
 			{
 				string NodeCanvasPath = AssetDatabase.GetAssetPath(instanceID);
-				NodeEditorWindow.OpenNodeEditor();
-				canvasCache.LoadNodeCanvas(NodeCanvasPath);
+				NodeEditorWindow.OpenNodeEditor().canvasCache.LoadNodeCanvas(NodeCanvasPath);
 				return true;
 			}
 			return false;
@@ -109,6 +108,12 @@ namespace NodeEditorFramework.Standard
 
 			// Clear Cache
 			canvasCache.ClearCacheEvents ();
+		}
+
+		public void OnLostFocus () 
+		{ // Save any changes made while focussing this window
+			// Will also save before possible assembly reload, scene switch, etc. because these require focussing of a different window
+			canvasCache.SaveCache ();
 		}
 
 		#endregion
@@ -208,7 +213,7 @@ namespace NodeEditorFramework.Standard
 		{
 			NodeCanvasTypeData data = (NodeCanvasTypeData)userdata;
 
-			canvasCache.NewNodeCanvas(data.CanvasType);
+			editor.canvasCache.NewNodeCanvas(data.CanvasType);
 			NodeCanvas.CreateCanvas(data.CanvasType);
 		}	
 

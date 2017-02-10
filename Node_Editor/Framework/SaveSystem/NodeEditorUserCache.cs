@@ -77,6 +77,11 @@ namespace NodeEditorFramework
 			UnityEditor.EditorApplication.update -= CheckCacheUpdate;
 			UnityEditor.EditorApplication.update += CheckCacheUpdate;
 			lastCacheTime = UnityEditor.EditorApplication.timeSinceStartup;
+
+			EditorLoadingControl.beforeEnteringPlayMode -= SaveCache;
+			EditorLoadingControl.beforeEnteringPlayMode += SaveCache;
+			EditorLoadingControl.beforeLeavingPlayMode -= SaveCache;
+			EditorLoadingControl.beforeLeavingPlayMode += SaveCache;
 			#endif
 
 			LoadCache ();
@@ -89,8 +94,10 @@ namespace NodeEditorFramework
 			NodeEditorCallbacks.OnAddNode -= SaveNewNode;
 			NodeEditorCallbacks.OnAddNodeKnob -= SaveNewNodeKnob;
 			#elif UNITY_EDITOR
-			RecreateCache ();
+			SaveCache ();
 			UnityEditor.EditorApplication.update -= CheckCacheUpdate;
+			EditorLoadingControl.beforeEnteringPlayMode -= SaveCache;
+			EditorLoadingControl.beforeLeavingPlayMode -= SaveCache;
 			#endif
 		}
 
@@ -103,7 +110,7 @@ namespace NodeEditorFramework
 				if (editorState.dragUserID == "" && editorState.connectOutput == null && GUIUtility.hotControl <= 0 && !OverlayGUI.HasPopupControl ())
 				{ // Only save when the user currently does not perform an action that could be interrupted by the save
 					lastCacheTime = UnityEditor.EditorApplication.timeSinceStartup;
-					RecreateCache ();
+					SaveCache ();
 				}
 			}
 		}
@@ -174,12 +181,12 @@ namespace NodeEditorFramework
 		/// Creates a new cache save file for the currently loaded canvas 
 		/// Only called when a new canvas is created or loaded
 		/// </summary>
-		private void SaveCache () 
+		public void SaveCache () 
 		{
 			#if UNITY_EDITOR
 			if (!useCache)
 				return;
-			if (nodeCanvas.GetType () == typeof(NodeCanvas))
+			if (!nodeCanvas || nodeCanvas.GetType () == typeof(NodeCanvas))
 				return;
 			UnityEditor.EditorUtility.SetDirty (nodeCanvas);
 			if (editorState != null)
@@ -251,10 +258,10 @@ namespace NodeEditorFramework
 			if (nodeCanvas.livesInScene)
 			{
 				if (NodeEditorSaveManager.FindOrCreateSceneSave ("lastSession").savedNodeCanvas == null)
-					RecreateCache ();
+					SaveCache ();
 			}
 			else if (UnityEditor.AssetDatabase.LoadAssetAtPath<NodeCanvas> (lastSessionPath) == null)
-				RecreateCache ();
+				SaveCache ();
 			#endif
 		}
 		
