@@ -66,6 +66,20 @@ namespace NodeEditorFramework
 
 		public virtual bool CanAddNode (string nodeID) { return true; }
 
+		#region Additional Serialization
+
+		/// <summary>
+		/// Should return all additional ScriptableObjects this Node references
+		/// </summary>
+		public virtual ScriptableObject[] GetScriptableObjects () { return new ScriptableObject[0]; }
+
+		/// <summary>
+		/// Replaces all references to any ScriptableObjects this Node holds with the cloned versions in the serialization process.
+		/// </summary>
+		protected internal virtual void CopyScriptableObjects (System.Func<ScriptableObject, ScriptableObject> replaceSO) {}
+
+		#endregion
+
 		#endregion
 
 		#region Traversal

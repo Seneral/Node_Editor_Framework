@@ -115,14 +115,7 @@ namespace NodeEditorFramework
 		#region Additional Serialization
 
 		/// <summary>
-		/// Returns all additional ScriptableObjects this NodeKnob holds. 
-		/// That means only the actual SOURCES, simple REFERENCES will not be returned
-		/// This means all SciptableObjects returned here do not have it's source elsewhere
-		/// </summary>
-		public virtual ScriptableObject[] GetScriptableObjects () { return new ScriptableObject[0]; }
-
-		/// <summary>
-		/// Replaces all REFERENCES aswell as SOURCES of any ScriptableObjects this NodeKnob holds with the cloned versions in the serialization process.
+		/// Replaces all references to any ScriptableObjects this NodeKnob holds with the cloned versions in the serialization process.
 		/// </summary>
 		protected internal virtual void CopyScriptableObjects (System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) {}
 

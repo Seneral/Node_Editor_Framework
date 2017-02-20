@@ -385,12 +385,14 @@ namespace NodeEditorFramework
 		public static NodeCanvas CreateWorkingCopy (NodeCanvas nodeCanvas, bool editorStates) 
 		{
 			nodeCanvas.Validate (true);
-			nodeCanvas = Clone (nodeCanvas);
 
 			// Take each SO, make a clone of it and store both versions in the respective list
 			// This will only iterate over the 'source instances'
 			List<ScriptableObject> allSOs = new List<ScriptableObject> ();
 			List<ScriptableObject> clonedSOs = new List<ScriptableObject> ();
+			// Clone and enter the canvas object and it's referenced SOs
+			nodeCanvas = AddClonedSO (allSOs, clonedSOs, nodeCanvas);
+			AddClonedSOs (allSOs, clonedSOs, nodeCanvas.GetScriptableObjects ());
 			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
 			{
 				Node node = nodeCanvas.nodes[nodeCnt];
@@ -403,11 +405,12 @@ namespace NodeEditorFramework
 				foreach (NodeKnob knob in clonedNode.nodeKnobs)
 				{ // Clone NodeKnobs and additional scriptableObjects
 					AddClonedSO (allSOs, clonedSOs, knob);
-					AddClonedSOs (allSOs, clonedSOs, knob.GetScriptableObjects ());
 				}
 			}
 
 			// Replace every reference to any of the initial SOs of the first list with the respective clones of the second list
+			nodeCanvas.CopyScriptableObjects ((ScriptableObject so) => ReplaceSO (allSOs, clonedSOs, so));
+
 			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
 			{ // Clone Nodes, structural content and additional scriptableObjects
 				Node node = nodeCanvas.nodes[nodeCnt];
