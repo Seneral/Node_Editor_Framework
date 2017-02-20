@@ -60,7 +60,7 @@ namespace NodeEditorFramework
 
 		protected virtual void OnCreate () {}
 
-		protected virtual void OnValidate () { }
+		protected virtual void ValidateSelf () { }
 
 		public virtual void OnBeforeSavingCanvas () { }
 
@@ -183,7 +183,7 @@ namespace NodeEditorFramework
 						state.selectedNode = null;
 				}
 			}
-			OnValidate ();
+			ValidateSelf ();
 		}
 
 		public bool UpdateSource (string path) 

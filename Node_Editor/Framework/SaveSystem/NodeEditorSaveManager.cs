@@ -126,24 +126,25 @@ namespace NodeEditorFramework
 			if (saveName.StartsWith ("SCENE/"))
 				saveName = saveName.Substring (6);
 			
-			if (!createWorkingCopy && (!nodeCanvas.livesInScene
+			if (!nodeCanvas.livesInScene
 		#if UNITY_EDITOR // Make sure the canvas has no reference to an asset
 			|| UnityEditor.AssetDatabase.Contains (nodeCanvas)
 		#endif
-			)) {
-				//Debug.LogWarning ("Forced to create working copy of '" + saveName + "' when saving to scene because it already exists as an asset!");
-				createWorkingCopy = true;
+			) {
+				Debug.LogWarning ("Creating scene save '" + nodeCanvas.name + "' for canvas saved as an asset! Forcing creation of working copy!"); 
+				ProcessCanvas (ref nodeCanvas, true);
 			}
-
-			NodeCanvas savedCanvas = nodeCanvas;
-			// Preprocess canvas
-			nodeCanvas.OnBeforeSavingCanvas();
-			ProcessCanvas (ref savedCanvas, createWorkingCopy);
 
 			// Update the source of the canvas
 			nodeCanvas.UpdateSource ("SCENE/" + saveName);
 
+			// Preprocess the canvas
+			NodeCanvas processedCanvas = nodeCanvas;
+			processedCanvas.OnBeforeSavingCanvas ();
+			ProcessCanvas (ref processedCanvas, createWorkingCopy);
+
 			// Get the saveHolder and store the canvas
+			NodeCanvas savedCanvas = processedCanvas;
 			NodeCanvasSceneSave sceneSave;
 		#if UNITY_EDITOR
 			if ((sceneSave = FindSceneSave (saveName)) != null && safeOverwrite)
@@ -221,33 +222,30 @@ namespace NodeEditorFramework
 			if (nodeCanvas == null) throw new System.ArgumentNullException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path '" + path + "' is null!");
 			if (nodeCanvas.GetType () == typeof(NodeCanvas)) throw new System.ArgumentException ("Cannot save NodeCanvas: The NodeCanvas has no explicit type! Please convert it to a valid sub-type of NodeCanvas!");
 
-			bool updateRef = false;
 			if (nodeCanvas.livesInScene)
 			{
 				Debug.LogWarning ("Attempting to save scene canvas '" + nodeCanvas.name + "' to an asset, references to scene object may be broken!" + (!createWorkingCopy? " Forcing creation of working copy!" : ""));
-				createWorkingCopy = updateRef = true;
+				createWorkingCopy = true;
 			}
 		#if UNITY_EDITOR
-			if (!createWorkingCopy && UnityEditor.AssetDatabase.Contains (nodeCanvas) && UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas) != path) 
+			if (UnityEditor.AssetDatabase.Contains (nodeCanvas) && UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas) != path) 
 			{ 
-				Debug.LogError ("Trying to create a duplicate save file for '" + nodeCanvas.name + "'! Forcing creation of working copy!"); 
-				createWorkingCopy = true; 
+				Debug.LogWarning ("Trying to create a duplicate save file for '" + nodeCanvas.name + "'! Forcing creation of working copy!"); 
+				ProcessCanvas (ref nodeCanvas, true);
 			}
 		#endif
 
-			NodeCanvas canvasSave = nodeCanvas;
-
-			// Preprocess the canvas
-			canvasSave.OnBeforeSavingCanvas ();
-			ProcessCanvas (ref canvasSave, createWorkingCopy);
-			if (updateRef)
-				nodeCanvas = canvasSave;
-
 			// Prepare and update source path of the canvas
 			path = ResourceManager.PreparePath (path);
-			canvasSave.UpdateSource (path);
+			nodeCanvas.UpdateSource (path);
+
+			// Preprocess the canvas
+			NodeCanvas processedCanvas = nodeCanvas;
+			processedCanvas.OnBeforeSavingCanvas ();
+			ProcessCanvas (ref processedCanvas, createWorkingCopy);
 
 			// Differenciate canvasSave as the canvas asset and nodeCanvas as the source incase an existing save has been overwritten
+			NodeCanvas canvasSave = processedCanvas;
 			NodeCanvas prevSave;
 			if (safeOverwrite && (prevSave = ResourceManager.LoadResource<NodeCanvas> (path)) != null && prevSave.GetType () == canvasSave.GetType ())
 			{ // OVERWRITE: Delete contents of old save
@@ -267,18 +265,18 @@ namespace NodeEditorFramework
 						Object.DestroyImmediate (prevSave.editorStates[i], true);
 				}
 				// Overwrite main canvas
-				OverwriteCanvas (ref prevSave, nodeCanvas);
+				OverwriteCanvas (ref prevSave, processedCanvas);
 				canvasSave = prevSave;
 			}
 			else
 			{ // Write main canvas
-				UnityEditor.AssetDatabase.CreateAsset (nodeCanvas, path);
+				UnityEditor.AssetDatabase.CreateAsset (processedCanvas, path);
 			}
 
 			// Write editorStates
-			AddSubAssets (nodeCanvas.editorStates, canvasSave);
+			AddSubAssets (processedCanvas.editorStates, canvasSave);
 			// Write nodes + contents
-			foreach (Node node in nodeCanvas.nodes)
+			foreach (Node node in processedCanvas.nodes)
 			{ // Write node and additional scriptable objects
 				AddSubAsset (node, canvasSave);
 				AddSubAssets (node.GetScriptableObjects (), node);

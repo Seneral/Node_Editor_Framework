@@ -198,7 +198,7 @@ namespace NodeEditorFramework
 			if (nodeCanvas.livesInScene)
 				NodeEditorSaveManager.SaveSceneNodeCanvas ("lastSession", ref nodeCanvas, cacheWorkingCopy);
 			else
-				NodeEditorSaveManager.SaveNodeCanvas (lastSessionPath, nodeCanvas, cacheWorkingCopy, true);
+				NodeEditorSaveManager.SaveNodeCanvas (lastSessionPath, ref nodeCanvas, cacheWorkingCopy, true);
 
 			CheckCurrentCache ();
 			#endif
@@ -346,7 +346,7 @@ namespace NodeEditorFramework
 		{
 			nodeCanvas.editorStates = new NodeEditorState[] { editorState };
 			bool switchedToFile = nodeCanvas.livesInScene;
-			NodeEditorSaveManager.SaveNodeCanvas (path, nodeCanvas, true);
+			NodeEditorSaveManager.SaveNodeCanvas (path, ref nodeCanvas, true);
 			if (switchedToFile)
 				RecreateCache ();
 			NodeEditor.RepaintClients ();

@@ -20,7 +20,7 @@ namespace NodeEditorFramework.Standard
 			//NodeEditorCallbacks.OnDeleteNode += OnDeleteNode;
 		}
 
-		protected override void OnValidate ()
+		protected override void ValidateSelf ()
 		{
 			if (Traversal == null)
 				Traversal = new CanvasCalculator (this);
