@@ -24,7 +24,7 @@ namespace NodeEditorFramework.Standard
 			//NodeEditorCallbacks.OnDeleteNode += CheckDeleteNode;
 		}
 
-		protected override void OnValidate ()
+		protected override void ValidateSelf ()
 		{
 			if (Traversal == null)
 				Traversal = new GraphTraversal (this);
