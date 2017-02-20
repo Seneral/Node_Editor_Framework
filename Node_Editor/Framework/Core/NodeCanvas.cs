@@ -186,8 +186,10 @@ namespace NodeEditorFramework
 			OnValidate ();
 		}
 
-		public void UpdateSource (string path) 
+		public bool UpdateSource (string path) 
 		{
+			if (path == savePath)
+				return false;
 			string newName;
 			if (path.StartsWith ("SCENE/"))
 			{
@@ -198,11 +200,13 @@ namespace NodeEditorFramework
 				int nameStart = path.LastIndexOf ('/')+1;
 				newName = path.Substring (nameStart, path.Length-nameStart-6);
 			}
-			if (newName != "LastSession")
+			if (newName.ToLower () != "lastsession")
 			{
 				savePath = path;
 				saveName = newName;
+				livesInScene = path.StartsWith ("SCENE/");
 			}
+			return true;
 		}
 
 		#endregion

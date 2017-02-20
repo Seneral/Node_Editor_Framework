@@ -218,19 +218,17 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal virtual void CopyScriptableObjects (System.Func<ScriptableObject, ScriptableObject> replaceSO) {}
 
-		public void SerializeInputsAndOutputs(System.Func<ScriptableObject, ScriptableObject> replaceSerializableObject) {}
+		#endregion
 
-        #endregion
+		#endregion
 
-        #endregion
-
-        #region Drawing
+		#region Drawing
 
 #if UNITY_EDITOR
-        public virtual void OnSceneGUI()
-	    {
-	        
-	    }
+		public virtual void OnSceneGUI()
+		{
+
+		}
 #endif
 
 		/// <summary>
