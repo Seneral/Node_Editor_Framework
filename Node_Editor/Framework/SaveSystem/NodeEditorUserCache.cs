@@ -17,6 +17,7 @@ namespace NodeEditorFramework
 		public NodeEditorState editorState;
 		public void AssureCanvas () { if (nodeCanvas == null) LoadCache (); if (nodeCanvas == null) NewNodeCanvas (); if (editorState == null) NewEditorState (); }
 
+		public Type defaultNodeCanvasType;
 		public NodeCanvasTypeData typeData;
 
 		#if EDITOR_CACHE_ASSET
@@ -377,6 +378,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void NewNodeCanvas (Type canvasType = null) 
 		{
+			canvasType = canvasType ?? defaultNodeCanvasType;
 			nodeCanvas = NodeCanvas.CreateCanvas (canvasType);
 			//EditorPrefs.SetString ("NodeEditorLastSession", "New Canvas");
 			NewEditorState ();

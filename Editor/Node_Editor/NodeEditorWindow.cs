@@ -87,6 +87,7 @@ namespace NodeEditorFramework.Standard
 
 			// Setup Cache
 			canvasCache = new NodeEditorUserCache(Path.GetDirectoryName(AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject (this))));
+			//canvasCache.defaultNodeCanvasType = typeof(GraphCanvasType);
 			canvasCache.SetupCacheEvents();
 			if (canvasCache.nodeCanvas.GetType () == typeof(NodeCanvas))
 				ShowNotification(new GUIContent("The Canvas has no specific type. Please use the convert button to assign a type and re-save the canvas!"));
@@ -219,7 +220,8 @@ namespace NodeEditorFramework.Standard
 
 				// Canvas creation
 				foreach (System.Collections.Generic.KeyValuePair<Type, NodeCanvasTypeData> data in NodeCanvasManager.CanvasTypes)
-					menu.AddItem(new GUIContent("New Canvas/" + data.Value.DisplayString), false, CreateCanvasCallback, data.Value);
+					menu.AddItem(new GUIContent("New Canvas/" + data.Value.DisplayString), false, CreateCanvasCallback, data.Key);
+//				menu.AddItem(new GUIContent("New Standard Canvas"), false, CreateCanvasCallback, null);
 				menu.AddSeparator("");              
 
 				// Scene Saving
@@ -376,10 +378,7 @@ namespace NodeEditorFramework.Standard
 
 		private void CreateCanvasCallback(object userdata)
 		{
-			NodeCanvasTypeData data = (NodeCanvasTypeData)userdata;
-
-			editor.canvasCache.NewNodeCanvas(data.CanvasType);
-			NodeCanvas.CreateCanvas(data.CanvasType);
+			editor.canvasCache.NewNodeCanvas((Type)userdata);
 		}	
 
 		private void LoadCanvas()
