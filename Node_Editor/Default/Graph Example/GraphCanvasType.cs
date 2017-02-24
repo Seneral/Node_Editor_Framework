@@ -20,6 +20,8 @@ namespace NodeEditorFramework.Standard
 
 		private void OnEnable () 
 		{
+			if (Traversal == null)
+				Traversal = new GraphTraversal (this);
 			// Register to other callbacks
 			//NodeEditorCallbacks.OnDeleteNode += CheckDeleteNode;
 		}

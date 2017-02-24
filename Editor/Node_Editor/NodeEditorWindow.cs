@@ -91,11 +91,13 @@ namespace NodeEditorFramework.Standard
 			canvasCache.SetupCacheEvents();
 			if (canvasCache.nodeCanvas.GetType () == typeof(NodeCanvas))
 				ShowNotification(new GUIContent("The Canvas has no specific type. Please use the convert button to assign a type and re-save the canvas!"));
+			canvasCache.nodeCanvas.Validate (false);
 		}
 
 		private void NormalReInit()
 		{
 			NodeEditor.ReInit(false);
+			canvasCache.nodeCanvas.Validate (false);
 		}
 
 		private void OnDestroy()
