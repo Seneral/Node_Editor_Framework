@@ -10,6 +10,8 @@ namespace NodeEditorFramework.Standard
 		// A list of Nodes from which calculation originates -> Call StartCalculation
 		public List<Node> workList;
 		private int calculationCount;
+		
+		private const int maxTriesOnSingleNode = 1000;
 
 		public CanvasCalculator (NodeCanvas canvas) : base(canvas)
 		{
@@ -64,7 +66,7 @@ namespace NodeEditorFramework.Standard
 					if (ContinueCalculation (workList[workCnt]))
 						limitReached = false;
 				}
-				if (roundCnt > 1000)
+				if (roundCnt > maxTriesOnSingleNode)
 					limitReached = true;
 			}
 		}
