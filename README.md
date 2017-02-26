@@ -7,7 +7,10 @@
 <p align="center">
   <img alt="Node Editor Image" src="http://i.imgur.com/HcXhhGf.png" width="80%"/>
   <br><br>
-  <b>Check out the <a href="https://seneral.github.io/NodeEditor_WebGLDemo/">WebGL Demo</a>!</b>
+  <b>
+    <a href="https://seneral.github.io/NodeEditor_WebGLDemo/">WebGL Demo</a> - 
+    <a href="http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738">Forum Thread</a>
+  </b>
 </p>
 
 ### Major Features
