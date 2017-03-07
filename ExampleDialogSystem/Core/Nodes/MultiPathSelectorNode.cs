@@ -8,6 +8,9 @@ using UnityEngine;
 [Node(false, "Dialog/MultiPath Node", new Type[] { typeof(DialogNodeCanvas) })]
 public class MultiPathSelectorNode : BaseDialogNode
 {
+	public override Vector2 MinSize { get { return new Vector2(400, 80); } }
+	public override bool Resizable { get { return true; } }
+
 	private const string Id = "multiPathNode";
 	public override string GetID { get { return Id; } }
 	public override Type GetObjectType { get { return typeof(MultiPathSelectorNode); } }
@@ -24,8 +27,9 @@ public class MultiPathSelectorNode : BaseDialogNode
 	{
 		MultiPathSelectorNode node = CreateInstance<MultiPathSelectorNode>();
 
-		node.rect = new Rect(pos.x, pos.y, 300, 100);
+		//node.rect = new Rect(pos.x, pos.y, 300, 100);
 		node.name = "Multi Path Node";
+		node.rect.position = pos;
 
 		//Previous Node Connections
 		node.CreateInput("Previous Node", "DialogForward", NodeSide.Left, 30);		
