@@ -9,7 +9,8 @@
   <br><br>
   <b>
     <a href="https://seneral.github.io/NodeEditor_WebGLDemo/">WebGL Demo</a> - 
-    <a href="http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738">Forum Thread</a>
+    <a href="http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738">Forum Thread</a> -
+    <a href="http://www.levingaeher.com/Node_Editor/">Documentation</a>
   </b>
 </p>
 
