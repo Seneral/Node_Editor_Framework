@@ -6,6 +6,9 @@ using UnityEngine;
 [Node(false, "Dialog/Dialog Node", new Type[] { typeof(DialogNodeCanvas) })]
 public class DialogNode : BaseDialogNode
 {
+	public override Vector2 MinSize { get { return new Vector2(350, 60); } }
+	public override bool Resizable { get { return true; } }
+
 	private const string Id = "dialogNode";
 	public override string GetID { get { return Id; } }
 	public override Type GetObjectType { get { return typeof(DialogNode); } }
@@ -16,7 +19,8 @@ public class DialogNode : BaseDialogNode
 	{
 		DialogNode node = CreateInstance<DialogNode>();
 
-		node.rect = new Rect(pos.x, pos.y, 300, 230);
+		//node.rect = new Rect(pos.x, pos.y, 300, 230);
+		node.rect.position = pos;
 		node.name = "Dialog Node";
 
 		//Previous Node Connections

@@ -20,17 +20,17 @@ public class DialogNodeCanvas : NodeCanvas
 		return node != default(DialogStartNode);
 	}
 
-    public override void OnBeforeSavingCanvas()
-    {
-	this._lstDialogStartNodes.Clear();
-	foreach (Node node in this.nodes)
+	public override void OnBeforeSavingCanvas()
 	{
-	    if (node is DialogStartNode)
-	    {
-		_lstDialogStartNodes.Add(node as DialogStartNode);
-	    }
+		this._lstDialogStartNodes.Clear();
+		foreach (Node node in this.nodes)
+		{
+			if (node is DialogStartNode)
+			{
+				_lstDialogStartNodes.Add(node as DialogStartNode);
+			}
+		}
 	}
-    }
 
 	public IEnumerable<int> GetAllDialogId()
 	{

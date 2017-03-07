@@ -8,6 +8,9 @@ using UnityEngine;
 [Node(false, "Dialog/Dialog With Options Node", new Type[]{typeof(DialogNodeCanvas)})]
 public class DialogMultiOptionsNode : BaseDialogNode
 {
+	public override Vector2 MinSize { get { return new Vector2(400, 60); } }
+	public override bool Resizable { get { return true; } }
+
 	private const string Id = "multiOptionDialogNode";
 	public override string GetID { get { return Id; } }
 	public override Type GetObjectType { get { return typeof(DialogMultiOptionsNode); } }
@@ -23,7 +26,8 @@ public class DialogMultiOptionsNode : BaseDialogNode
 	{
 		DialogMultiOptionsNode node = CreateInstance<DialogMultiOptionsNode>();
 
-		node.rect = new Rect(pos.x, pos.y, 300, 275);
+		//node.rect = new Rect(pos.x, pos.y, 300, 275);
+		node.rect.position = pos;
 		node.name = "Dialog with Options Node";
 
 		//Previous Node Connections
@@ -125,7 +129,7 @@ public class DialogMultiOptionsNode : BaseDialogNode
 			GUILayout.BeginHorizontal();
 			EditorGUILayout.LabelField(option.NodeOutputIndex + ".", GUILayout.MaxWidth(15));
 			option.OptionDisplay = EditorGUILayout.TextArea(option.OptionDisplay, GUILayout.MinWidth(80));
-
+			OutputKnob (_options[i].NodeOutputIndex);
 			if (GUILayout.Button("‒", GUILayout.Width(20)))
 			{
 				_options.RemoveAt(i);
