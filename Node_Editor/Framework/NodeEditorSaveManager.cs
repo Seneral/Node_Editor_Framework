@@ -140,7 +140,7 @@ namespace NodeEditorFramework
 			throw new System.NotImplementedException ();
 		#else
 
-			if (string.IsNullOrEmpty (path)) throw new UnityException ("Cannot save NodeCanvas: No spath specified to save the NodeCanvas " + (nodeCanvas != null? nodeCanvas.name : "") + " to!");
+			if (string.IsNullOrEmpty (path)) throw new UnityException ("Cannot save NodeCanvas: No path specified to save the NodeCanvas " + (nodeCanvas != null? nodeCanvas.name : "") + " to!");
 			if (nodeCanvas == null) throw new UnityException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path " + path + " is null!");
 			if (nodeCanvas.livesInScene)
 				Debug.LogWarning ("Attempting to save scene canvas " + nodeCanvas.name + " to an asset, scene object references will be broken!" + (!createWorkingCopy? " No workingCopy is going to be created, so your scene save is broken, too!" : ""));
@@ -155,20 +155,43 @@ namespace NodeEditorFramework
 			ProcessCanvas (ref nodeCanvas, createWorkingCopy);
 			nodeCanvas.livesInScene = false;
 
+			// Check if asset already exists at the specified path
+			NodeCanvas asset = null;
+			bool overwriteExisting = false;
+
+			if (createWorkingCopy)
+			{
+				asset = UnityEditor.AssetDatabase.LoadMainAssetAtPath (path) as NodeCanvas;
+				if (asset != null) // Asset exists; flag for overwriting later
+					overwriteExisting = true;
+			}
+
+			// If the asset doesn't exist, create new asset at the specified path
+			if (!overwriteExisting)
+			{
+				UnityEditor.AssetDatabase.CreateAsset (nodeCanvas, path);
+				asset = nodeCanvas;
+			}
+
 			// Write canvas and editorStates
-			UnityEditor.AssetDatabase.CreateAsset (nodeCanvas, path);
-			AddSubAssets (nodeCanvas.editorStates, nodeCanvas);
+			AddSubAssets (nodeCanvas.editorStates, asset);
 
 			// Write nodes + contents
 			foreach (Node node in nodeCanvas.nodes)
 			{ // Write node and additional scriptable objects
-				AddSubAsset (node, nodeCanvas);
+				AddSubAsset (node, asset);
 				AddSubAssets (node.GetScriptableObjects (), node);
 				foreach (NodeKnob knob in node.nodeKnobs)
 				{ // Write knobs and their additional scriptable objects
 					AddSubAsset (knob, node);
 					AddSubAssets (knob.GetScriptableObjects (), knob);
 				}
+			}
+
+			// Overwrite existing canvas asset
+			if (overwriteExisting)
+			{
+				UnityEditor.EditorUtility.CopySerialized (nodeCanvas, asset);
 			}
 
 			UnityEditor.AssetDatabase.SaveAssets ();
