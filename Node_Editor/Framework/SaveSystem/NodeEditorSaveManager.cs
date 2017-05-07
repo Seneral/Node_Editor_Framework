@@ -234,6 +234,8 @@ namespace NodeEditorFramework
 				ProcessCanvas (ref nodeCanvas, true);
 			}
 		#endif
+		
+		#if UNITY_EDITOR
 
 			// Prepare and update source path of the canvas
 			path = ResourceManager.PreparePath (path);
@@ -288,6 +290,8 @@ namespace NodeEditorFramework
 			//UnityEditor.AssetDatabase.Refresh ();
 
 			NodeEditorCallbacks.IssueOnSaveCanvas (canvasSave);
+
+		#endif
 		}
 
 		/// <summary>
