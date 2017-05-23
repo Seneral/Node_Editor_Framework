@@ -438,6 +438,8 @@ namespace NodeEditorFramework.Standard
 		public void LoadSceneCanvasCallback (object canvas) 
 		{
 			canvasCache.LoadSceneNodeCanvas ((string)canvas);
+			//Atheos auto save the sceneCanvasName to (sava to scence) after (Load from scene)
+            		sceneCanvasName = canvasCache.nodeCanvas.name;
 		}
 
 		#endregion
