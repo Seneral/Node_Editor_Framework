@@ -16,13 +16,15 @@ namespace NodeEditorFramework
 		public static int knobSize = 16;
 
 		public static Color NE_LightColor = new Color (0.4f, 0.4f, 0.4f);
-		public static Color NE_TextColor = new Color (0.7f, 0.7f, 0.7f);
+		public static Color NE_TextColor = new Color(0.8f, 0.8f, 0.8f);
 
 		public static Texture2D Background;
 		public static Texture2D AALineTex;
 		public static Texture2D GUIBox;
 		public static Texture2D GUIButton;
 		public static Texture2D GUIBoxSelection;
+		public static Texture2D GUIToolbar;
+		public static Texture2D GUIToolbarButton;
 
 		public static GUISkin nodeSkin;
 		public static GUISkin defaultSkin;
@@ -37,7 +39,12 @@ namespace NodeEditorFramework
 
 		public static GUIStyle nodeBox;
 		public static GUIStyle nodeBoxBold;
-		
+
+		public static GUIStyle toolbar;
+		public static GUIStyle toolbarLabel;
+		public static GUIStyle toolbarDropdown;
+		public static GUIStyle toolbarButton;
+
 		public static bool Init ()
 		{
 			// Textures
@@ -45,45 +52,71 @@ namespace NodeEditorFramework
 			AALineTex = ResourceManager.LoadTexture ("Textures/AALine.png");
 			GUIBox = ResourceManager.LoadTexture ("Textures/NE_Box.png");
 			GUIButton = ResourceManager.LoadTexture ("Textures/NE_Button.png");
-			GUIBoxSelection = ResourceManager.LoadTexture ("Textures/BoxSelection.png");
-			
-			if (!Background || !AALineTex || !GUIBox || !GUIButton)
+			GUIBoxSelection = ResourceManager.LoadTexture("Textures/BoxSelection.png");
+			GUIToolbar = ResourceManager.LoadTexture("Textures/NE_Toolbar.png");
+			GUIToolbarButton = ResourceManager.LoadTexture("Textures/NE_ToolbarButton.png");
+
+			if (!Background || !AALineTex || !GUIBox || !GUIButton || !GUIToolbar || !GUIToolbarButton)
 				return false;
 
 			// Skin & Styles
-			nodeSkin = Object.Instantiate<GUISkin> (GUI.skin);
+			nodeSkin = Object.Instantiate (GUI.skin);
+			GUI.skin = nodeSkin;
+
+			foreach (GUIStyle style in GUI.skin)
+			{
+				style.fontSize = 11;
+				//style.normal.textColor = style.active.textColor = style.focused.textColor = style.hover.textColor = NE_TextColor;
+			}
 
 			// Label
 			nodeSkin.label.normal.textColor = NE_TextColor;
 			nodeLabel = nodeSkin.label;
+			nodeLabelBold = new GUIStyle (nodeLabel) { fontStyle = FontStyle.Bold };
+			nodeLabelSelected = new GUIStyle (nodeLabel);
+			nodeLabelSelected.normal.background = RTEditorGUI.ColorToTex (1, NE_LightColor);
+			nodeLabelCentered = new GUIStyle (nodeLabel) { alignment = TextAnchor.MiddleCenter };
+			nodeLabelBoldCentered = new GUIStyle (nodeLabelBold) { alignment = TextAnchor.MiddleCenter };
 			nodeLabelLeft = new GUIStyle (nodeLabel) { alignment = TextAnchor.MiddleLeft };
 			nodeLabelRight = new GUIStyle (nodeLabel) { alignment = TextAnchor.MiddleRight };
 
 			// Box
-			nodeSkin.box.normal.textColor = NE_TextColor;
 			nodeSkin.box.normal.background = GUIBox;
+			nodeSkin.box.normal.textColor = NE_TextColor;
+			nodeSkin.box.active.textColor = NE_TextColor;
 			nodeBox = nodeSkin.box;
+			nodeBoxBold = new GUIStyle (nodeBox) { fontStyle = FontStyle.Bold };
+
 			// Button
 			nodeSkin.button.normal.textColor = NE_TextColor;
 			nodeSkin.button.normal.background = GUIButton;
-			// TextArea
-			nodeSkin.textArea.normal.background = GUIBox;
-			nodeSkin.textArea.active.background = GUIBox;
-			// Bold Label
-			nodeLabelBold = new GUIStyle (nodeLabel);
-			nodeLabelBold.fontStyle = FontStyle.Bold;
-			// Selected Label
-			nodeLabelSelected = new GUIStyle (nodeLabel);
-			nodeLabelSelected.normal.background = RTEditorGUI.ColorToTex (1, NE_LightColor);
-			// Centered Label
-			nodeLabelCentered = new GUIStyle (nodeLabel);
-			nodeLabelCentered.alignment = TextAnchor.MiddleCenter;
-			// Centered Bold Label
-			nodeLabelBoldCentered = new GUIStyle (nodeLabelBold);
-			nodeLabelBoldCentered.alignment = TextAnchor.MiddleCenter;
-			// Bold Box
-			nodeBoxBold = new GUIStyle (nodeBox);
-			nodeBoxBold.fontStyle = FontStyle.Bold;
+
+			// Toolbar
+			toolbar = GUI.skin.FindStyle("toolbar");
+			toolbarButton = GUI.skin.FindStyle("toolbarButton");
+			toolbarLabel = GUI.skin.FindStyle("toolbarButton");
+			toolbarDropdown = GUI.skin.FindStyle("toolbarDropdown");
+			if (toolbar == null || toolbarButton == null || toolbarLabel == null || toolbarDropdown == null)
+			{ // No editor styles available - use custom skin
+				toolbar = new GUIStyle(nodeSkin.box);
+				toolbar.normal.background = GUIToolbar;
+				toolbar.active.background = GUIToolbar;
+				toolbar.border = new RectOffset(0, 0, 1, 1);
+				toolbar.margin = new RectOffset(0, 0, 0, 0);
+				toolbar.padding = new RectOffset(10, 10, 1, 1);
+
+				toolbarLabel = new GUIStyle(nodeSkin.box);
+				toolbarLabel.normal.background = GUIToolbarButton;
+				toolbarLabel.border = new RectOffset(2, 2, 0, 0);
+				toolbarLabel.margin = new RectOffset(-2, -2, 0, 0);
+				toolbarLabel.padding = new RectOffset(6, 6, 4, 4);
+
+				toolbarButton = new GUIStyle(toolbarLabel);
+				toolbarButton.active.background = RTEditorGUI.ColorToTex(1, NE_LightColor);
+
+				toolbarDropdown = new GUIStyle(toolbarButton);
+			}
+			GUI.skin = null;
 
 			return true;
 		}

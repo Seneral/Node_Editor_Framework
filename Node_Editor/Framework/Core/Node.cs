@@ -32,8 +32,6 @@ namespace NodeEditorFramework
 
 		// Style
 		public Color backgroundColor = Color.white;
-		private Color lastBGColor = Color.white;
-		private GUIStyle nodeBGStyle;
 
 
 		#region Properties and Settings
@@ -259,23 +257,26 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal virtual void DrawNode () 
 		{
-			AssureNodeBGStyle ();
-
-			// TODO: Node Editor Feature: Custom Windowing System
 			// Create a rect that is adjusted to the editor zoom and pixel perfect
 			Rect nodeRect = rect;
 			Vector2 pos = NodeEditor.curEditorState.zoomPanAdjust + NodeEditor.curEditorState.panOffset;
 			nodeRect.position = new Vector2((int)(nodeRect.x+pos.x), (int)(nodeRect.y+pos.y));
 			contentOffset = new Vector2 (0, 20);
 
+			GUI.color = backgroundColor;
+
 			// Create a headerRect out of the previous rect and draw it, marking the selected node as such by making the header bold
 			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, contentOffset.y);
-			GUI.Box (headerRect, GUIContent.none, nodeBGStyle);
+			GUI.color = backgroundColor;
+			GUI.Box (headerRect, GUIContent.none, GUI.skin.box);
+			GUI.color = Color.white;
 			GUI.Label (headerRect, Title, NodeEditor.curEditorState.selectedNode == this? NodeEditorGUI.nodeLabelBoldCentered : NodeEditorGUI.nodeLabelCentered);
 
 			// Begin the body frame around the NodeGUI
 			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + contentOffset.y, nodeRect.width, nodeRect.height - contentOffset.y);
-			GUI.BeginGroup (bodyRect, nodeBGStyle);
+			GUI.color = backgroundColor;
+			GUI.BeginGroup (bodyRect, GUI.skin.box);
+			GUI.color = Color.white;
 			bodyRect.position = Vector2.zero;
 			GUILayout.BeginArea (bodyRect);
 
@@ -336,17 +337,6 @@ namespace NodeEditorFramework
 			for (int i = 0; i < outputPorts.Count; i++)
 				outputPorts[i].DrawConnections ();
 		}
-
-		private void AssureNodeBGStyle ()
-		{
-			if (nodeBGStyle == null || nodeBGStyle.normal.background == null || lastBGColor != backgroundColor)
-			{
-				lastBGColor = backgroundColor;
-				nodeBGStyle = new GUIStyle (GUI.skin.box);
-				nodeBGStyle.normal.background = ResourceManager.GetTintedTexture ("Textures/NE_Box.png", backgroundColor);
-			}
-		}
-
 
 		#endregion
 

@@ -63,6 +63,19 @@ namespace NodeEditorFramework
 				Node duplicatedNode = Node.Create (state.focusedNode.GetID, NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos), state.connectKnob);
 				state.selectedNode = state.focusedNode = duplicatedNode;
 				state.connectKnob = null;
+				inputInfo.inputEvent.Use ();
+			}
+		}
+
+		[HotkeyAttribute(KeyCode.Delete, EventType.KeyUp)]
+		private static void DeleteNodeKey(NodeEditorInputInfo inputInfo)
+		{
+			if (GUIUtility.keyboardControl > 0)
+				return;
+			if (inputInfo.editorState.focusedNode != null)
+			{
+				inputInfo.SetAsCurrentEnvironment();
+				inputInfo.editorState.focusedNode.Delete();
 				inputInfo.inputEvent.Use();
 			}
 		}

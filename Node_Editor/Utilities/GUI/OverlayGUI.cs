@@ -1,10 +1,21 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
+#if UNITY_EDITOR
+using MenuFunction = UnityEditor.GenericMenu.MenuFunction;
+using MenuFunctionData = UnityEditor.GenericMenu.MenuFunction2;
+#else
+using MenuFunction = NodeEditorFramework.Utilities.OverlayGUI.CustomMenuFunction;
+using MenuFunctionData = NodeEditorFramework.Utilities.OverlayGUI.CustomMenuFunctionData;
+#endif
+
 namespace NodeEditorFramework.Utilities 
 {
 	public static class OverlayGUI 
 	{
+		public delegate void CustomMenuFunction();
+		public delegate void CustomMenuFunctionData(object userData);
+
 		private static string currentEditorUser;
 
 		public static string openedPopupUser = "NONE";
@@ -64,9 +75,6 @@ namespace NodeEditorFramework.Utilities
 	/// </summary>
 	public class PopupMenu 
 	{
-		public delegate void MenuFunction ();
-		public delegate void MenuFunctionData (object userData);
-		
 		public List<MenuItem> menuItems = new List<MenuItem> ();
 		
 		// State
@@ -83,7 +91,7 @@ namespace NodeEditorFramework.Utilities
 		public static GUIStyle selectedLabel;
 
 		public float minWidth;
-		
+
 		private const float minCloseDistance = 200;
 
 		public PopupMenu () 
@@ -112,7 +120,7 @@ namespace NodeEditorFramework.Utilities
 
 		public Vector2 Position { get { return position.position; } }
 
-		#region Creation
+#region Creation
 		
 		public void AddItem (GUIContent content, bool on, MenuFunctionData func, object userData)
 		{
@@ -179,9 +187,9 @@ namespace NodeEditorFramework.Utilities
 			return null;
 		}
 		
-		#endregion
+#endregion
 		
-		#region Drawing
+#region Drawing
 		
 		public void Draw () 
 		{
@@ -207,7 +215,7 @@ namespace NodeEditorFramework.Utilities
 		private bool DrawGroup (Rect pos, List<MenuItem> menuItems) 
 		{
 			Rect rect = calculateRect (pos.position, menuItems, minWidth);
-			
+
 			Rect clickRect = new Rect (rect);
 			clickRect.xMax += minCloseDistance;
 			clickRect.xMin -= minCloseDistance;
@@ -296,9 +304,9 @@ namespace NodeEditorFramework.Utilities
 			return new Rect (position.x, position.y - (down? 0 : size.y), size.x, size.y);
 		}
 		
-		#endregion
+#endregion
 		
-		#region Nested MenuItem
+#region Nested MenuItem
 		
 		public class MenuItem
 		{
@@ -355,7 +363,7 @@ namespace NodeEditorFramework.Utilities
 			}
 		}
 		
-		#endregion
+#endregion
 	}
 
 	/// <summary>
@@ -363,38 +371,81 @@ namespace NodeEditorFramework.Utilities
 	/// </summary>
 	public class GenericMenu
 	{
+#if UNITY_EDITOR
+		private UnityEditor.GenericMenu editorMenu;
+#endif
 		private static PopupMenu popup;
 
 		public Vector2 Position { get { return popup.Position; } }
 		
-		public GenericMenu () 
+		public GenericMenu (bool emulateEditor = false) 
 		{
-			popup = new PopupMenu ();
+#if UNITY_EDITOR
+			if (emulateEditor)
+				editorMenu = new UnityEditor.GenericMenu();
+			else
+#endif
+				popup = new PopupMenu ();
 		}
 		
 		public void ShowAsContext ()
 		{
-			popup.Show (GUIScaleUtility.GUIToScreenSpace (Event.current.mousePosition));
+#if UNITY_EDITOR
+			if (editorMenu != null)
+				editorMenu.ShowAsContext();
+			else
+#endif
+				popup.Show (Event.current.mousePosition);
 		}
 
-		public void Show (Vector2 pos, float MinWidth = 40)
+		public void Show(Vector2 pos, float MinWidth = 40)
 		{
-			popup.Show (GUIScaleUtility.GUIToScreenSpace (pos), MinWidth);
+#if UNITY_EDITOR
+			if (editorMenu != null)
+				editorMenu.DropDown(new Rect (pos, Vector2.zero));
+			else
+#endif
+				popup.Show(GUIScaleUtility.GUIToScreenSpace (pos), MinWidth);
+		}
+
+		public void DropDown(Rect rect, float MinWidth = 40)
+		{
+#if UNITY_EDITOR
+			if (editorMenu != null)
+				editorMenu.DropDown(rect);
+			else
+#endif
+				popup.Show(GUIScaleUtility.GUIToScreenSpace (rect.position), Mathf.Max (rect.width, MinWidth));
+		}
+
+		public void AddItem (GUIContent content, bool on, MenuFunctionData func, object userData)
+		{
+#if UNITY_EDITOR
+			if (editorMenu != null)
+				editorMenu.AddItem (content, on, func, userData);
+			else
+#endif
+				popup.AddItem (content, on, func, userData);
 		}
 		
-		public void AddItem (GUIContent content, bool on, PopupMenu.MenuFunctionData func, object userData)
+		public void AddItem (GUIContent content, bool on, MenuFunction func)
 		{
-			popup.AddItem (content, on, func, userData);
-		}
-		
-		public void AddItem (GUIContent content, bool on, PopupMenu.MenuFunction func)
-		{
+#if UNITY_EDITOR
+			if (editorMenu != null)
+				editorMenu.AddItem(content, on, func);
+			else
+#endif
 			popup.AddItem (content, on, func);
 		}
 		
 		public void AddSeparator (string path)
 		{
-			popup.AddSeparator (path);
+#if UNITY_EDITOR
+			if (editorMenu != null)
+				editorMenu.AddSeparator(path);
+			else
+#endif
+				popup.AddSeparator (path);
 		}
 	}
 }

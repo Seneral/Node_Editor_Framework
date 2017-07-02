@@ -251,7 +251,7 @@ namespace NodeEditorFramework.Utilities
 			#endif
 			if (style == null) style = GUI.skin.textField;
 			Rect totalPos = GetFieldRect (label, style, options);
-			Rect fieldPos = PrefixLabel (totalPos, 0.5f, label, style);
+			Rect fieldPos = PrefixLabel (totalPos, 0.5f, label, GUI.skin.label);
 			text = GUI.TextField (fieldPos, text);
 			return text;
 		}
@@ -271,7 +271,7 @@ namespace NodeEditorFramework.Utilities
 		{
 			if (style == null) style = GUI.skin.textField;
 			Rect totalPos = GetSliderRect (label, style, options);
-			Rect sliderFieldPos = PrefixLabel (totalPos, 0.5f, label, style);
+			Rect sliderFieldPos = PrefixLabel (totalPos, 0.5f, label, GUI.skin.label);
 
 			selected = Mathf.RoundToInt (GUI.HorizontalSlider (GetSliderRect (sliderFieldPos), selected, 0, selectableOptions.Length-1));
 			GUI.Label (GetSliderFieldRect (sliderFieldPos), selectableOptions[selected]);

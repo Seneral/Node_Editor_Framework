@@ -2,10 +2,17 @@
 using System;
 using System.Reflection;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 
 using NodeEditorFramework.Utilities;
+
+#if UNITY_EDITOR
+using MenuFunction = UnityEditor.GenericMenu.MenuFunction;
+using MenuFunctionData = UnityEditor.GenericMenu.MenuFunction2;
+#else
+using MenuFunction = NodeEditorFramework.Utilities.OverlayGUI.CustomMenuFunction;
+using MenuFunctionData = NodeEditorFramework.Utilities.OverlayGUI.CustomMenuFunctionData;
+#endif
 
 namespace NodeEditorFramework 
 {
@@ -21,7 +28,7 @@ namespace NodeEditorFramework
 		// NOTE: Using Lists of KeyValuePair as we 1. need it ordered in the first two cases and 2. we do not need extras from Dictionary anyway
 		private static List<KeyValuePair<EventHandlerAttribute, Delegate>> eventHandlers;
 		private static List<KeyValuePair<HotkeyAttribute, Delegate>> hotkeyHandlers;
-		private static List<KeyValuePair<ContextEntryAttribute, PopupMenu.MenuFunctionData>> contextEntries;
+		private static List<KeyValuePair<ContextEntryAttribute, MenuFunctionData>> contextEntries;
 		private static List<KeyValuePair<ContextFillerAttribute, Delegate>> contextFillers;
 
 		/// <summary>
@@ -31,7 +38,7 @@ namespace NodeEditorFramework
 		{
 			eventHandlers = new List<KeyValuePair<EventHandlerAttribute, Delegate>> ();
 			hotkeyHandlers = new List<KeyValuePair<HotkeyAttribute, Delegate>> ();
-			contextEntries = new List<KeyValuePair<ContextEntryAttribute, PopupMenu.MenuFunctionData>> ();
+			contextEntries = new List<KeyValuePair<ContextEntryAttribute, MenuFunctionData>> ();
 			contextFillers = new List<KeyValuePair<ContextFillerAttribute, Delegate>> ();
 
 			// Iterate through each static method
@@ -71,13 +78,13 @@ namespace NodeEditorFramework
 								{ // Method signature is correct, so we register this handler
 									if (actionDelegate == null) actionDelegate = Delegate.CreateDelegate (typeof(Action<NodeEditorInputInfo>), method);
 									// Create a proper MenuFunction as a wrapper for the delegate that converts the object to NodeEditorInputInfo
-									PopupMenu.MenuFunctionData menuFunction = (object callbackObj) => 
+									MenuFunctionData menuFunction = (object callbackObj) => 
 									{
 										if (!(callbackObj is NodeEditorInputInfo))
 											throw new UnityException ("Callback Object passed by context is not of type NodeEditorMenuCallback!");
 										actionDelegate.DynamicInvoke (callbackObj as NodeEditorInputInfo);
 									};
-									contextEntries.Add (new KeyValuePair<ContextEntryAttribute, PopupMenu.MenuFunctionData> (attr as ContextEntryAttribute, menuFunction));
+									contextEntries.Add (new KeyValuePair<ContextEntryAttribute, MenuFunctionData> (attr as ContextEntryAttribute, menuFunction));
 								}
 							}
 							else if (attrType == typeof(ContextFillerAttribute))
@@ -145,7 +152,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		private static void FillContextMenu (NodeEditorInputInfo inputInfo, GenericMenu contextMenu, ContextType contextType) 
 		{
-			foreach (KeyValuePair<ContextEntryAttribute, PopupMenu.MenuFunctionData> contextEntry in contextEntries)
+			foreach (KeyValuePair<ContextEntryAttribute, MenuFunctionData> contextEntry in contextEntries)
 			{ // Add all registered menu entries for the specified type to the contextMenu
 				if (contextEntry.Key.contextType == contextType)
 					contextMenu.AddItem (new GUIContent (contextEntry.Key.contextPath), false, contextEntry.Value, inputInfo);
@@ -263,7 +270,7 @@ namespace NodeEditorFramework
 					FillContextMenu (inputInfo, contextMenu, ContextType.Node);
 				else // Editor Context Click
 					FillContextMenu (inputInfo, contextMenu, ContextType.Canvas);
-				contextMenu.Show (inputInfo.inputPos);
+				contextMenu.ShowAsContext ();
 				Event.current.Use ();
 			}
 		}
