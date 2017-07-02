@@ -42,7 +42,7 @@ namespace NodeEditorFramework
 		public static string[] GetSceneSaves ()
 		{
 			FetchSceneSaveHolder ();
-			return sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().Select (((NodeCanvasSceneSave save) => save.saveName)).ToArray ();
+			return sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().Select (((NodeCanvasSceneSave save) => save.saveName)).Where ((string saveName) => saveName.ToLower () != "lastsession").ToArray ();
 		}
 
 		/// <summary>
@@ -127,13 +127,15 @@ namespace NodeEditorFramework
 			if (saveName.StartsWith ("SCENE/"))
 				saveName = saveName.Substring (6);
 
+			nodeCanvas.Validate();
+
 			if (!nodeCanvas.livesInScene
 		#if UNITY_EDITOR // Make sure the canvas has no reference to an asset
 			|| UnityEditor.AssetDatabase.Contains (nodeCanvas)
 		#endif
 			) {
 				Debug.LogWarning ("Creating scene save '" + nodeCanvas.name + "' for canvas saved as an asset! Forcing creation of working copy!");
-				ProcessCanvas (ref nodeCanvas, true);
+				nodeCanvas = CreateWorkingCopy(nodeCanvas);
 			}
 
 			// Update the source of the canvas
@@ -142,7 +144,8 @@ namespace NodeEditorFramework
 			// Preprocess the canvas
 			NodeCanvas processedCanvas = nodeCanvas;
 			processedCanvas.OnBeforeSavingCanvas ();
-			ProcessCanvas (ref processedCanvas, createWorkingCopy);
+			if (createWorkingCopy)
+				processedCanvas = CreateWorkingCopy(processedCanvas);
 
 			// Get the saveHolder and store the canvas
 			NodeCanvas savedCanvas = processedCanvas;
@@ -198,7 +201,9 @@ namespace NodeEditorFramework
 			savedCanvas.UpdateSource ("SCENE/" + saveName);
 
 			// Postprocess the loaded canvas
-			ProcessCanvas (ref savedCanvas, createWorkingCopy);
+			savedCanvas.Validate();
+			if (createWorkingCopy)
+				savedCanvas = CreateWorkingCopy(savedCanvas);
 
 			NodeEditorCallbacks.IssueOnLoadCanvas (savedCanvas);
 			return savedCanvas;
@@ -215,28 +220,23 @@ namespace NodeEditorFramework
 		{
 	#if !UNITY_EDITOR
 			throw new System.NotImplementedException ();
-
-			// TODO: Node Editor: Need to implement ingame-saving (Resources, AsssetBundles, ... won't work)
-		#endif
-
+	#else
 			if (string.IsNullOrEmpty (path)) throw new System.ArgumentNullException ("Cannot save NodeCanvas: No path specified!");
 			if (nodeCanvas == null) throw new System.ArgumentNullException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path '" + path + "' is null!");
 			if (nodeCanvas.GetType () == typeof(NodeCanvas)) throw new System.ArgumentException ("Cannot save NodeCanvas: The NodeCanvas has no explicit type! Please convert it to a valid sub-type of NodeCanvas!");
 			
+			nodeCanvas.Validate();
+
 			if (nodeCanvas.livesInScene)
 			{
 				Debug.LogWarning ("Attempting to save scene canvas '" + nodeCanvas.name + "' to an asset, references to scene object may be broken!" + (!createWorkingCopy? " Forcing creation of working copy!" : ""));
 				createWorkingCopy = true;
 			}
-		#if UNITY_EDITOR
 			if (UnityEditor.AssetDatabase.Contains (nodeCanvas) && UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas) != path) 
 			{ 
 				Debug.LogWarning ("Trying to create a duplicate save file for '" + nodeCanvas.name + "'! Forcing creation of working copy!");
-				ProcessCanvas (ref nodeCanvas, true);
+				nodeCanvas = CreateWorkingCopy(nodeCanvas);
 			}
-		#endif
-		
-		#if UNITY_EDITOR
 
 			// Prepare and update source path of the canvas
 			path = ResourceManager.PreparePath (path);
@@ -245,7 +245,8 @@ namespace NodeEditorFramework
 			// Preprocess the canvas
 			NodeCanvas processedCanvas = nodeCanvas;
 			processedCanvas.OnBeforeSavingCanvas ();
-			ProcessCanvas (ref processedCanvas, createWorkingCopy);
+			if (createWorkingCopy)
+				processedCanvas = CreateWorkingCopy(processedCanvas);
 
 			// Differenciate canvasSave as the canvas asset and nodeCanvas as the source incase an existing save has been overwritten
 			NodeCanvas canvasSave = processedCanvas;
@@ -300,6 +301,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static NodeCanvas LoadNodeCanvas (string path, bool createWorkingCopy)
 		{
+	#if !UNITY_EDITOR
+			throw new System.NotImplementedException ();
+	#else
 			if (string.IsNullOrEmpty (path))
 				throw new System.ArgumentNullException ("Cannot load Canvas: No path specified!");
 			path = ResourceManager.PreparePath (path);
@@ -309,21 +313,22 @@ namespace NodeEditorFramework
 			if (nodeCanvas == null) 
 				throw new UnityException ("Cannot load NodeCanvas: The file at the specified path '" + path + "' is no valid save file as it does not contain a NodeCanvas!");
 			
-		#if UNITY_EDITOR
 			if (!Application.isPlaying && (nodeCanvas.editorStates == null || nodeCanvas.editorStates.Length == 0))
 			{ // Try to load any contained editorStates, as the canvas did not reference any
 				nodeCanvas.editorStates = ResourceManager.LoadResources<NodeEditorState> (path);
 			}
-		#endif
 
 			// Set the path as the new source of the canvas
 			nodeCanvas.UpdateSource (path);
 
 			// Postprocess the loaded canvas
-			ProcessCanvas (ref nodeCanvas, createWorkingCopy);
+			nodeCanvas.Validate();
+			if (createWorkingCopy)
+				nodeCanvas = CreateWorkingCopy(nodeCanvas);
 
 			NodeEditorCallbacks.IssueOnLoadCanvas (nodeCanvas);
 			return nodeCanvas;
+	#endif
 		}
 
 		#region Utility
@@ -365,18 +370,6 @@ namespace NodeEditorFramework
 
 		#endif
 
-		/// <summary>
-		/// Applies a general process on the canvas for loading/saving operations
-		/// </summary>
-		private static void ProcessCanvas (ref NodeCanvas canvas, bool workingCopy) 
-		{
-			//Uncompress (ref canvas);
-			if (workingCopy)
-				canvas = CreateWorkingCopy (canvas, true);
-			else
-				canvas.Validate ();
-		}
-
 		#endregion
 
 		#endregion
@@ -387,9 +380,10 @@ namespace NodeEditorFramework
 		/// Creates a working copy of the specified nodeCanvas, and optionally also of it's associated editorStates.
 		/// This breaks the link of this object to any stored assets and references. That means, that all changes to this object will have to be explicitly saved.
 		/// </summary>
-		public static NodeCanvas CreateWorkingCopy (NodeCanvas nodeCanvas, bool editorStates) 
+		public static NodeCanvas CreateWorkingCopy (NodeCanvas nodeCanvas, bool editorStates = true) 
 		{
-			nodeCanvas.Validate ();
+			if (nodeCanvas == null)
+				return null;
 
 			// Lists holding initial and cloned version of each ScriptableObject for later replacement of references
 			List<ScriptableObject> allSOs = new List<ScriptableObject> ();

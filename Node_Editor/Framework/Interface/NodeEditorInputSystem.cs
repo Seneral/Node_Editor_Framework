@@ -175,8 +175,6 @@ namespace NodeEditorFramework
 			NodeEditorInputInfo inputInfo = new NodeEditorInputInfo (state);
 			CallEventHandlers (inputInfo, false);
 			CallHotkeys (inputInfo, Event.current.keyCode, Event.current.modifiers);
-
-
 		}
 
 		/// <summary>
@@ -196,6 +194,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		internal static bool shouldIgnoreInput (NodeEditorState state) 
 		{
+			if (state == null)
+				return true;
 			// Account for any opened popups
 			if (OverlayGUI.HasPopupControl ())
 				return true;

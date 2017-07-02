@@ -32,24 +32,33 @@ namespace NodeEditorFramework
 		private static Stack<NodeCanvas> editCanvasStack = new Stack<NodeCanvas> (4);
 		private static Stack<NodeEditorState> editEditorStateStack = new Stack<NodeEditorState> (4);
 
-		#region Setup
-
+		// Initiation
 		private static bool initiatedBase;
 		private static bool initiatedGUI;
 		public static bool InitiationError;
 
+		#region Setup
+
 		/// <summary>
 		/// Initiates the Node Editor if it wasn't yet
 		/// </summary>
-		public static void checkInit (bool GUIFunction) 
+		public static void checkInit(bool GUIFunction)
 		{
 			if (!InitiationError)
 			{
 				if (!initiatedBase)
-					setupBaseFramework ();
+					setupBaseFramework();
 				if (GUIFunction && !initiatedGUI)
-					setupGUI ();
+					setupGUI();
 			}
+		}
+
+		/// <summary>
+		/// Resets the initiation state so next time calling checkInit it will re-initiate
+		/// </summary>
+		public static void resetInit()
+		{
+			InitiationError = initiatedBase = initiatedGUI = false;
 		}
 
 		/// <summary>
@@ -102,10 +111,10 @@ namespace NodeEditorFramework
 		private static void setupGUI ()
 		{
 			if (!initiatedBase)
-				setupBaseFramework ();
+				setupBaseFramework();
 			initiatedGUI = false;
 			
-			// Init GUIScaleUtility. This fetches reflected calls and my throw a message notifying about incompability.
+			// Init GUIScaleUtility. This fetches reflected calls and might throw a message notifying about incompability.
 			GUIScaleUtility.CheckInit ();
 
 			if (!NodeEditorGUI.Init ()) 
@@ -129,7 +138,7 @@ namespace NodeEditorFramework
 	#if UNITY_EDITOR
 			Object script = UnityEditor.AssetDatabase.LoadAssetAtPath (editorPath + "Framework/NodeEditor.cs", typeof(Object));
 			if (script == null) 
-			{
+			{ // Not installed in default path
 				string[] assets = UnityEditor.AssetDatabase.FindAssets ("NodeEditorCallbackReceiver"); // Something relatively unique
 				if (assets.Length != 1) 
 				{
@@ -160,7 +169,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void DrawCanvas (NodeCanvas nodeCanvas, NodeEditorState editorState)  
 		{
-			if (!editorState.drawing)
+			if (nodeCanvas == null || editorState == null || !editorState.drawing)
 				return;
 			checkInit (true);
 
@@ -176,6 +185,8 @@ namespace NodeEditorFramework
 				return;
 			
 			BeginEditingCanvas (nodeCanvas, editorState);
+			if (curNodeCanvas == null || curEditorState == null || !curEditorState.drawing)
+				return;
 
 			if (Event.current.type == EventType.Repaint) 
 			{ // Draw Background when Repainting
@@ -251,20 +262,32 @@ namespace NodeEditorFramework
 			EndEditingCanvas ();
 		}
 
+		/// <summary>
+		/// Sets the specified canvas as the current context most functions work on
+		/// </summary>
 		public static void BeginEditingCanvas (NodeCanvas canvas)
 		{
 			NodeEditorState state = canvas.editorStates.Length >= 1? canvas.editorStates[0] : null;
 			BeginEditingCanvas (canvas, state);
 		}
 
+		/// <summary>
+		/// Sets the specified canvas as the current context most functions work on
+		/// </summary>
 		public static void BeginEditingCanvas (NodeCanvas canvas, NodeEditorState state)
 		{
+			if (state != null && state.canvas != canvas) 
+				state = null; // State does not belong to the canvas
+
 			editCanvasStack.Push (canvas);
 			editEditorStateStack.Push (state);
 			curNodeCanvas = canvas;
 			curEditorState = state;
 		}
 
+		/// <summary>
+		/// Restores the previously edited canvas as the current context
+		/// </summary>
 		public static void EndEditingCanvas ()
 		{
 			curNodeCanvas = editCanvasStack.Pop ();

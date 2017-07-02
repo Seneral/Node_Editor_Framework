@@ -6,9 +6,9 @@ using System.Linq;
 namespace NodeEditorFramework 
 {
 	/// <summary>
-	/// NodeCanvas base class
+	/// Base class for all canvas types
 	/// </summary>
-	public class NodeCanvas : ScriptableObject 
+	public abstract class NodeCanvas : ScriptableObject 
 	{
 		public virtual string canvasName { get { return "DEFAULT"; } }
 
@@ -26,6 +26,9 @@ namespace NodeEditorFramework
 
 		#region Constructors
 
+		/// <summary>
+		/// Creates a canvas of the specified generic type
+		/// </summary>
 		public static T CreateCanvas<T> () where T : NodeCanvas
 		{
 			if (typeof(T) == typeof(NodeCanvas))
@@ -39,6 +42,9 @@ namespace NodeEditorFramework
 			return canvas;
 		}
 
+		/// <summary>
+		/// Creates a canvas of the specified canvasType as long as it is a subclass of NodeCanvas
+		/// </summary>
 		public static NodeCanvas CreateCanvas (Type canvasType)
 		{
 			NodeCanvas canvas;
@@ -84,12 +90,18 @@ namespace NodeEditorFramework
 
 		#region Traversal
 
+		/// <summary>
+		/// Trigger traversal of the whole canvas
+		/// </summary>
 		public void TraverseAll ()
 		{
 			if (Traversal != null)
 				Traversal.TraverseAll ();
 		}
 
+		/// <summary>
+		/// Specifies a node change, usually triggering traversal from that node
+		/// </summary>
 		public void OnNodeChange (Node node)
 		{
 			if (Traversal != null && node != null)
@@ -104,7 +116,7 @@ namespace NodeEditorFramework
 		/// Validates this canvas, checking for any broken nodes or references and cleans them.
 		/// </summary>
 		public void Validate ()
-				{
+		{
 			// Check Groups
 			CheckNodeCanvasList(ref groups, "groups");
 
@@ -114,14 +126,14 @@ namespace NodeEditorFramework
 				ConnectionPortManager.UpdateConnectionPorts(node);
 
 			// Check EditorStates
-				if (editorStates == null)
-					editorStates = new NodeEditorState[0];
-				editorStates = editorStates.Where ((NodeEditorState state) => state != null).ToArray ();
-				foreach (NodeEditorState state in editorStates)
-				{
-					if (!nodes.Contains (state.selectedNode))
-						state.selectedNode = null;
-				}
+			if (editorStates == null)
+				editorStates = new NodeEditorState[0];
+			editorStates = editorStates.Where ((NodeEditorState state) => state != null).ToArray ();
+			foreach (NodeEditorState state in editorStates)
+			{
+				if (!nodes.Contains (state.selectedNode))
+					state.selectedNode = null;
+			}
 
 			// Validate CanvasType-specific stuff
 			ValidateSelf ();

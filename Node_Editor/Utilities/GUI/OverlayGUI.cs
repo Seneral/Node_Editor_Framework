@@ -84,6 +84,8 @@ namespace NodeEditorFramework.Utilities
 
 		public float minWidth;
 		
+		private const float minCloseDistance = 200;
+
 		public PopupMenu () 
 		{
 			SetupGUI ();
@@ -93,11 +95,11 @@ namespace NodeEditorFramework.Utilities
 		{
 			backgroundStyle = new GUIStyle (GUI.skin.box);
 			backgroundStyle.contentOffset = new Vector2 (2, 2);
-			expandRight = NodeEditorFramework.Utilities.ResourceManager.LoadTexture ("Textures/expandRight.png");
+			expandRight = ResourceManager.LoadTexture ("Textures/expandRight.png");
 			itemHeight = GUI.skin.label.CalcHeight (new GUIContent ("text"), 100);
 			
 			selectedLabel = new GUIStyle (GUI.skin.label);
-			selectedLabel.normal.background = NodeEditorFramework.Utilities.RTEditorGUI.ColorToTex (1, new Color (0.4f, 0.4f, 0.4f));
+			selectedLabel.normal.background = RTEditorGUI.ColorToTex (1, new Color (0.4f, 0.4f, 0.4f));
 		}
 
 		public void Show (Vector2 pos, float MinWidth = 40)
@@ -199,7 +201,7 @@ namespace NodeEditorFramework.Utilities
 			if (!inRect || close) 
 				OverlayGUI.ClosePopup ();
 
-			NodeEditorFramework.NodeEditor.RepaintClients ();
+			NodeEditor.RepaintClients ();
 		}
 		
 		private bool DrawGroup (Rect pos, List<MenuItem> menuItems) 
@@ -207,11 +209,11 @@ namespace NodeEditorFramework.Utilities
 			Rect rect = calculateRect (pos.position, menuItems, minWidth);
 			
 			Rect clickRect = new Rect (rect);
-			clickRect.xMax += 20;
-			clickRect.xMin -= 20;
-			clickRect.yMax += 20;
-			clickRect.yMin -= 20;
-			bool inRect = clickRect.Contains (Event.current.mousePosition);
+			clickRect.xMax += minCloseDistance;
+			clickRect.xMin -= minCloseDistance;
+			clickRect.yMax += minCloseDistance;
+			clickRect.yMin -= minCloseDistance;
+			bool inRect = rect.Contains (Event.current.mousePosition) || (Event.current.type != EventType.MouseDown && clickRect.Contains(Event.current.mousePosition));
 
 			currentItemHeight = backgroundStyle.contentOffset.y;
 			GUI.BeginGroup (extendRect (rect, backgroundStyle.contentOffset), GUIContent.none, backgroundStyle);
@@ -241,7 +243,7 @@ namespace NodeEditorFramework.Utilities
 					selectedPath = item.path;
 
 				bool selected = selectedPath == item.path || selectedPath.Contains (item.path + "/");
-				GUI.Label (labelRect, item.content, selected? selectedLabel : GUI.skin.label);
+				GUI.Label (labelRect, item.content, selected? NodeEditorGUI.nodeLabelSelected : NodeEditorGUI.nodeLabel);
 				
 				if (item.group) 
 				{

@@ -243,7 +243,6 @@ namespace NodeEditorFramework
 		{
 			inputInfo.editorState.zoom = (float)Math.Round (Math.Min (4.0, Math.Max (0.6, inputInfo.editorState.zoom + inputInfo.inputEvent.delta.y / 15)), 2);
 			NodeEditor.RepaintClients ();
-			inputInfo.inputEvent.Use ();
 		}
 
 		#endregion
@@ -256,7 +255,6 @@ namespace NodeEditorFramework
 			if (GUIUtility.keyboardControl > 0)
 				return;
 			inputInfo.editorState.navigate = true;
-			inputInfo.inputEvent.Use ();
 		}
 
 		[HotkeyAttribute (KeyCode.N, EventType.KeyUp)]
@@ -265,7 +263,6 @@ namespace NodeEditorFramework
 			if (GUIUtility.keyboardControl > 0)
 				return;
 			inputInfo.editorState.navigate = false;
-			inputInfo.inputEvent.Use ();
 		}
 
 		#endregion
@@ -279,7 +276,6 @@ namespace NodeEditorFramework
 			NodeEditorState state = inputInfo.editorState;
 			if (state.selectedNode != null)
 			{ // Snap selected Node's position and the drag to multiples of 10
-				inputInfo.inputEvent.Use ();
 				state.selectedNode.position.x = Mathf.Round (state.selectedNode.rect.x/10) * 10;
 				state.selectedNode.position.y = Mathf.Round (state.selectedNode.rect.y/10) * 10;
 			}
@@ -287,7 +283,6 @@ namespace NodeEditorFramework
 			{
 				state.activeGroup.rect.x = Mathf.Round (state.activeGroup.rect.x/10) * 10;
 				state.activeGroup.rect.y = Mathf.Round (state.activeGroup.rect.y/10) * 10;
-				inputInfo.inputEvent.Use ();
 			}
 			NodeEditor.RepaintClients ();
 		}

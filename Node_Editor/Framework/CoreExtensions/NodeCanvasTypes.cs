@@ -81,7 +81,7 @@ namespace NodeEditorFramework
 			if (canvas.GetType () != newType && newType.IsSubclassOf (typeof(NodeCanvas)))
 			{
 				canvas.Validate();
-				canvas = NodeEditorSaveManager.CreateWorkingCopy (canvas, true);
+				canvas = NodeEditorSaveManager.CreateWorkingCopy (canvas);
 				convertedCanvas = NodeCanvas.CreateCanvas(newType);
 				convertedCanvas.nodes = canvas.nodes;
 				convertedCanvas.groups = canvas.groups;
