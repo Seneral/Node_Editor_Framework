@@ -4,8 +4,8 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 
-using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
+using NodeEditorFramework.IO;
 
 using Object = UnityEngine.Object;
 
@@ -79,6 +79,7 @@ namespace NodeEditorFramework
 			NodeTypes.FetchNodeTypes ();
 			NodeCanvasManager.FetchCanvasTypes ();
 			ConnectionPortManager.FetchNodeConnectionDeclarations ();
+			ImportExportManager.FetchIOFormats ();
 
 			// Setup Callback system
 			NodeEditorCallbacks.SetupReceivers ();

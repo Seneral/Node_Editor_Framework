@@ -5,8 +5,8 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor;
 
-using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
+using NodeEditorFramework.IO;
 
 using GenericMenu = UnityEditor.GenericMenu;
 
@@ -30,13 +30,22 @@ namespace NodeEditorFramework.Standard
 		private int sideWindowWidth = 400;
 		private int toolbarHeight = 17;
 
-		private Rect modalWindowRect = new Rect(20, 50, 250, 100);
-
+		// Modal Panel
 		private bool showSideWindow;
 		private bool showModalPanel;
+		private Rect modalPanelRect = new Rect(20, 50, 250, 70);
+		private Action modalPanelContent;
 
 		public Rect sideWindowRect { get { return new Rect (position.width - sideWindowWidth, toolbarHeight, sideWindowWidth, position.height); } }
 		public Rect canvasWindowRect { get { return new Rect(0, toolbarHeight, position.width - (showSideWindow? sideWindowWidth : 0), position.height - toolbarHeight); } }
+
+		// IO Format modal panel
+		private ImportExportFormat IOFormat;
+		private object[] IOLocationArgs;
+		private delegate bool? DefExportLocationGUI(string canvasName, ref object[] locationArgs);
+		private delegate bool? DefImportLocationGUI(ref object[] locationArgs);
+		private DefImportLocationGUI ImportLocationGUI;
+		private DefExportLocationGUI ExportLocationGUI;
 
 		#region General 
 
@@ -135,26 +144,6 @@ namespace NodeEditorFramework.Standard
 			SceneView.lastActiveSceneView.Repaint();
 		}
 
-		private void DoModalWindow(int unusedWindowID)
-		{
-			GUILayout.BeginHorizontal ();
-			sceneCanvasName = GUILayout.TextField (sceneCanvasName, GUILayout.ExpandWidth (true));
-			bool overwrite = NodeEditorSaveManager.HasSceneSave (sceneCanvasName);
-			if (overwrite)
-				GUILayout.Label (new GUIContent ("!!!", "A canvas with the specified name already exists. It will be overwritten!"), GUILayout.ExpandWidth (false));
-			GUILayout.EndHorizontal ();
-
-			GUILayout.BeginHorizontal ();
-			if (GUILayout.Button("Cancel"))
-				showModalPanel = false;
-			if (GUILayout.Button (new GUIContent (overwrite? "Overwrite" : "Save", "Save the canvas to the Scene")))
-			{
-				showModalPanel = false;
-				canvasCache.SaveSceneNodeCanvas (sceneCanvasName);
-			}
-			GUILayout.EndHorizontal ();
-		}
-
 		private void OnGUI()
 		{
 			// Initiation
@@ -193,19 +182,15 @@ namespace NodeEditorFramework.Standard
 			// Draw Toolbar
 			DrawToolbarGUI();
 
+			// Draw Modal Panel
+			DrawModalPanel ();
+			
 			if (showSideWindow)
 			{ // Draw Side Window
 				sideWindowWidth = Math.Min(600, Math.Max(200, (int)(position.width / 5)));
 				GUILayout.BeginArea(sideWindowRect, GUI.skin.box);
 				DrawSideWindow();
 				GUILayout.EndArea();
-			}
-
-			if (showModalPanel)
-			{
-				BeginWindows();
-				modalWindowRect = GUILayout.Window(0, modalWindowRect, DoModalWindow, "Save to Scene");
-				EndWindows();
 			}
 
 			NodeEditorGUI.EndNodeGUI();
@@ -222,7 +207,7 @@ namespace NodeEditorFramework.Standard
 
 				// Canvas creation
 				NodeCanvasManager.FillCanvasTypeMenu(ref menu, CreateCanvas, "New Canvas/");
-				menu.AddSeparator("");              
+				menu.AddSeparator("");
 
 				// Scene Saving
 				menu.AddItem(new GUIContent("Load Canvas", "Loads an asset canvas"), false, LoadCanvas);
@@ -232,13 +217,18 @@ namespace NodeEditorFramework.Standard
 				menu.AddItem(new GUIContent("Save Canvas As"), false, SaveCanvasAs);
 				menu.AddSeparator("");
 
+				// Import / Export filled with import/export types
+				ImportExportManager.FillImportFormatMenu(ref menu, ImportCanvasCallback, "Import/");
+				ImportExportManager.FillExportFormatMenu(ref menu, ExportCanvasCallback, "Export/");
+				menu.AddSeparator("");
+
 				// Scene Saving
 				foreach (string sceneSave in NodeEditorSaveManager.GetSceneSaves())
 				{
 					if (sceneSave.ToLower () != "lastsession")
-						menu.AddItem(new GUIContent("Load Canvas from Scene/" + sceneSave), false, LoadSceneCanvasCallback, sceneSave);       
+						menu.AddItem(new GUIContent("Load Canvas from Scene/" + sceneSave), false, LoadSceneCanvasCallback, sceneSave);
 				}
-				menu.AddItem( new GUIContent("Save Canvas to Scene"), false, () => showModalPanel = true);
+				menu.AddItem( new GUIContent("Save Canvas to Scene"), false, SaveSceneCanvasCallback);
 
 				menu.DropDown (new Rect (5, toolbarHeight, 0, 0));
 			}
@@ -261,10 +251,45 @@ namespace NodeEditorFramework.Standard
 
 			GUI.backgroundColor = new Color(1, 0.3f, 0.3f, 1);
 			if (GUILayout.Button("Force Re-init", EditorStyles.toolbarButton, GUILayout.Width(80)))
-				NodeEditor.ReInit (true);
+				NodeEditor.ReInit(true);
 			GUI.backgroundColor = Color.white;
 
 			EditorGUILayout.EndHorizontal();
+		}
+
+		private void SaveSceneCanvasPanel()
+		{
+			GUILayout.Label("Save Canvas To Scene");
+
+			GUILayout.BeginHorizontal();
+			sceneCanvasName = GUILayout.TextField(sceneCanvasName, GUILayout.ExpandWidth(true));
+			bool overwrite = NodeEditorSaveManager.HasSceneSave(sceneCanvasName);
+			if (overwrite)
+				GUILayout.Label(new GUIContent("!!!", "A canvas with the specified name already exists. It will be overwritten!"), GUILayout.ExpandWidth(false));
+			GUILayout.EndHorizontal();
+
+			GUILayout.BeginHorizontal();
+			if (GUILayout.Button("Cancel"))
+				showModalPanel = false;
+			if (GUILayout.Button(new GUIContent(overwrite ? "Overwrite" : "Save", "Save the canvas to the Scene")))
+			{
+				showModalPanel = false;
+				if (!string.IsNullOrEmpty (sceneCanvasName))
+					canvasCache.SaveSceneNodeCanvas(sceneCanvasName);
+			}
+			GUILayout.EndHorizontal();
+		}
+
+		public void DrawModalPanel()
+		{
+			if (showModalPanel)
+			{
+				if (modalPanelContent == null)
+					return;
+				GUILayout.BeginArea(modalPanelRect, NodeEditorGUI.nodeBox);
+				modalPanelContent.Invoke();
+				GUILayout.EndArea();
+			}
 		}
 
 		private void DrawSideWindow()
@@ -374,12 +399,12 @@ namespace NodeEditorFramework.Standard
 
 		#endregion
 
-		#region Menu Callbacks
+#region Menu Callbacks
 
 		private void CreateCanvas(Type type)
 		{
 			editor.canvasCache.NewNodeCanvas(type);
-		}	
+		}
 
 		private void LoadCanvas()
 		{
@@ -390,37 +415,37 @@ namespace NodeEditorFramework.Standard
 					ShowNotification(new GUIContent("You should select an asset inside your project folder!"));
 			}
 			else
-				canvasCache.LoadNodeCanvas (path);
+				canvasCache.LoadNodeCanvas(path);
 		}
 
 		private void ReloadCanvas()
 		{
 			string path = canvasCache.nodeCanvas.savePath;
-			if (!string.IsNullOrEmpty (path))
+			if (!string.IsNullOrEmpty(path))
 			{
-				if (path.StartsWith ("SCENE/"))
-					canvasCache.LoadSceneNodeCanvas (path.Substring (6));
+				if (path.StartsWith("SCENE/"))
+					canvasCache.LoadSceneNodeCanvas(path.Substring(6));
 				else
-					canvasCache.LoadNodeCanvas (path);
-				ShowNotification (new GUIContent ("Canvas Reloaded!"));
+					canvasCache.LoadNodeCanvas(path);
+				ShowNotification(new GUIContent("Canvas Reloaded!"));
 			}
 			else
-				ShowNotification (new GUIContent ("Cannot reload canvas as it has not been saved yet!"));
+				ShowNotification(new GUIContent("Cannot reload canvas as it has not been saved yet!"));
 		}
 
 		private void SaveCanvas()
 		{
 			string path = canvasCache.nodeCanvas.savePath;
-			if (!string.IsNullOrEmpty (path))
+			if (!string.IsNullOrEmpty(path))
 			{
-				if (path.StartsWith ("SCENE/"))
-					canvasCache.SaveSceneNodeCanvas (path.Substring (6));
+				if (path.StartsWith("SCENE/"))
+					canvasCache.SaveSceneNodeCanvas(path.Substring(6));
 				else
-					canvasCache.SaveNodeCanvas (path);
-				ShowNotification (new GUIContent ("Canvas Saved!"));
+					canvasCache.SaveNodeCanvas(path);
+				ShowNotification(new GUIContent("Canvas Saved!"));
 			}
 			else
-				ShowNotification (new GUIContent ("No save location found. Use 'Save As'!"));
+				ShowNotification(new GUIContent("No save location found. Use 'Save As'!"));
 		}
 
 		private void SaveCanvasAs()
@@ -429,17 +454,88 @@ namespace NodeEditorFramework.Standard
 			if (canvasCache.nodeCanvas != null && !string.IsNullOrEmpty(canvasCache.nodeCanvas.savePath))
 				panelPath = canvasCache.nodeCanvas.savePath;
 			string path = EditorUtility.SaveFilePanelInProject ("Save Node Canvas", "Node Canvas", "asset", "", panelPath);
-			if (!string.IsNullOrEmpty (path))
-				canvasCache.SaveNodeCanvas (path);
+			if (!string.IsNullOrEmpty(path))
+				canvasCache.SaveNodeCanvas(path);
 		}
 
-		public void LoadSceneCanvasCallback (object canvas) 
+		private void LoadSceneCanvasCallback (object canvas) 
 		{
-			canvasCache.LoadSceneNodeCanvas ((string)canvas);
+			canvasCache.LoadSceneNodeCanvas((string)canvas);
 			//Atheos auto save the sceneCanvasName to (sava to scence) after (Load from scene)
-            		sceneCanvasName = canvasCache.nodeCanvas.name;
+			sceneCanvasName = canvasCache.nodeCanvas.name;
 		}
 
-		#endregion
+		private void SaveSceneCanvasCallback()
+		{
+			modalPanelContent = SaveSceneCanvasPanel;
+			showModalPanel = true;
+		}
+
+
+		private void ImportCanvasCallback(string formatID)
+		{
+			IOFormat = ImportExportManager.ParseFormat(formatID);
+			if (IOFormat.RequiresLocationGUI)
+			{
+				ImportLocationGUI = IOFormat.ImportLocationArgsGUI;
+				modalPanelContent = ImportCanvasGUI;
+				showModalPanel = true;
+			}
+			else if (IOFormat.ImportLocationArgsSelection(out IOLocationArgs))
+				canvasCache.SetCanvas(ImportExportManager.ImportCanvas(IOFormat, IOLocationArgs));
+		}
+
+		private void ImportCanvasGUI()
+		{
+			if (ImportLocationGUI != null)
+			{
+				bool? state = ImportLocationGUI(ref IOLocationArgs);
+				if (state == null)
+					return;
+
+				if (state == true)
+					canvasCache.SetCanvas(ImportExportManager.ImportCanvas(IOFormat, IOLocationArgs));
+
+				ImportLocationGUI = null;
+				modalPanelContent = null;
+				showModalPanel = false;
+			}
+			else
+				showModalPanel = false;
+		}
+
+		private void ExportCanvasCallback(string formatID)
+		{
+			IOFormat = ImportExportManager.ParseFormat(formatID);
+			if (IOFormat.RequiresLocationGUI)
+			{
+				ExportLocationGUI = IOFormat.ExportLocationArgsGUI;
+				modalPanelContent = ExportCanvasGUI;
+				showModalPanel = true;
+			}
+			else if (IOFormat.ExportLocationArgsSelection(canvasCache.nodeCanvas.saveName, out IOLocationArgs))
+				ImportExportManager.ExportCanvas(canvasCache.nodeCanvas, IOFormat, IOLocationArgs);
+		}
+
+		private void ExportCanvasGUI()
+		{
+			if (ExportLocationGUI != null)
+			{
+				bool? state = ExportLocationGUI(canvasCache.nodeCanvas.saveName, ref IOLocationArgs);
+				if (state == null)
+					return;
+
+				if (state == true)
+					ImportExportManager.ExportCanvas(canvasCache.nodeCanvas, IOFormat, IOLocationArgs);
+
+				ImportLocationGUI = null;
+				modalPanelContent = null;
+				showModalPanel = false;
+			}
+			else
+				showModalPanel = false;
+		}
+
+#endregion
 	}
 }

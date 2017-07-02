@@ -534,15 +534,16 @@ namespace NodeEditorFramework
 		#region Utility
 
 		/// <summary>
-		/// Returns the editorState with the specified name in canvas. If not found it will create a new one with that name.
+		/// Returns the editorState with the specified name in canvas.
+		/// If not found but others and forceFind is false, a different one is chosen randomly, else a new one is created.
 		/// </summary>
-		public static NodeEditorState ExtractEditorState (NodeCanvas canvas, string stateName) 
+		public static NodeEditorState ExtractEditorState (NodeCanvas canvas, string stateName, bool forceFind = false) 
 		{
 			NodeEditorState state = null;
-			if (canvas.editorStates.Length > 0)
-			{ // Search for the editorState
-				state = canvas.editorStates.First ((NodeEditorState s) => s != null && s.name == stateName);
-			}
+			if (canvas.editorStates.Length > 0) // Search for the editorState
+				state = canvas.editorStates.FirstOrDefault ((NodeEditorState s) => s.name == stateName);
+			if (state == null && !forceFind) // Take any other if not found
+				state = canvas.editorStates.FirstOrDefault();
 			if (state == null)
 			{ // Create editorState
 				state = ScriptableObject.CreateInstance<NodeEditorState>();
