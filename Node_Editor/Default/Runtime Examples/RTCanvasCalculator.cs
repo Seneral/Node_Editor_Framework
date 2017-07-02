@@ -29,7 +29,7 @@ namespace NodeEditorFramework.Standard
 		{
 			AssureCanvas ();
 			NodeEditor.checkInit (false);
-			canvas.Validate (true);
+			canvas.Validate ();
 			canvas.TraverseAll ();
 			DebugOutputResults ();
 		}
@@ -44,19 +44,13 @@ namespace NodeEditorFramework.Standard
 			Debug.Log ("Calculating '" + canvas.saveName + "':");
 			List<Node> outputNodes = getOutputNodes ();
 			foreach (Node outputNode in outputNodes) 
-			{
-				string outID = "(OUT) " + outputNode.name + ": ";
-				if (outputNode.Outputs.Count == 0)
-				{ // If the node has no outputs, display it's inputs, because that's what the output node works with
-					foreach (NodeInput input in outputNode.Inputs)
-						outID += input.typeID + " " + (input.IsValueNull? "NULL" : input.GetValue ().ToString ()) + "; ";
-				}
-				else
-				{ // Else display the final output of the output node
-					foreach (NodeOutput output in outputNode.Outputs)
-						outID += output.typeID + " " + (output.IsValueNull? "NULL" : output.GetValue ().ToString ()) + "; ";
-				}
-				Debug.Log (outID);
+			{ // Display value of all output nodes
+				string outValueLog = "(OUT) " + outputNode.name + ": ";
+				// Use knob values - either output knobs, or input knobs if there are now output knobs
+				List<ConnectionKnob> sourceValueKnobs = outputNode.outputKnobs.Count == 0? outputNode.inputKnobs : outputNode.outputKnobs;
+				foreach (ValueConnectionKnob knob in sourceValueKnobs.OfType<ValueConnectionKnob> ())
+					outValueLog += knob.styleID + " " + knob.name + " = " + (knob.IsValueNull? "NULL" : knob.GetValue ().ToString ()) + "; ";
+				Debug.Log (outValueLog);
 			}
 		}
 
@@ -66,7 +60,7 @@ namespace NodeEditorFramework.Standard
 		public List<Node> getInputNodes () 
 		{
 			AssureCanvas ();
-			return canvas.nodes.Where ((Node node) => (node.Inputs.Count == 0 && node.Outputs.Count != 0) || node.Inputs.TrueForAll ((NodeInput input) => input.connection == null)).ToList ();
+			return canvas.nodes.Where ((Node node) => node.isInput ()).ToList ();
 		}
 
 		/// <summary>
@@ -75,7 +69,7 @@ namespace NodeEditorFramework.Standard
 		public List<Node> getOutputNodes () 
 		{
 			AssureCanvas ();
-			return canvas.nodes.Where ((Node node) => (node.Outputs.Count == 0 && node.Inputs.Count != 0) || node.Outputs.TrueForAll ((NodeOutput output) => output.connections.Count == 0)).ToList ();
+			return canvas.nodes.Where ((Node node) => node.isOutput ()).ToList ();
 		}
 	}
 }

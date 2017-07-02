@@ -5,64 +5,58 @@ using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework.Standard
 {
-	[System.Serializable]
 	[Node (false, "Float/Calculation")]
 	public class CalcNode : Node 
 	{
+		public const string ID = "calcNode";
+		public override string GetID { get { return ID; } }
+
+		public override string Title { get { return "Calc Node"; } }
+		public override Vector2 DefaultSize { get { return new Vector2 (200, 100); } }
+
 		public enum CalcType { Add, Substract, Multiply, Divide }
 		public CalcType type = CalcType.Add;
 
-		public const string ID = "calcNode";
-		public override string GetID { get { return ID; } }
+		[ValueConnectionKnob("Input 1", Direction.In, "Float")]
+		public ValueConnectionKnob input1Knob;
+		[ValueConnectionKnob("Input 2", Direction.In, "Float")]
+		public ValueConnectionKnob input2Knob;
+
+		[ValueConnectionKnob("Output", Direction.Out, "Float")]
+		public ValueConnectionKnob outputKnob;
 
 		public float Input1Val = 1f;
 		public float Input2Val = 1f;
 
-		public override Node Create (Vector2 pos) 
-		{
-			CalcNode node = CreateInstance <CalcNode> ();
-			
-			node.name = "Calc Node";
-			node.rect = new Rect (pos.x, pos.y, 200, 100);
-			
-			node.CreateInput ("Input 1", "Float");
-			node.CreateInput ("Input 2", "Float");
-			
-			node.CreateOutput ("Output 1", "Float");
-
-			return node;
-		}
-
-		protected internal override void NodeGUI () 
+		public override void NodeGUI () 
 		{
 			GUILayout.BeginHorizontal ();
 			GUILayout.BeginVertical ();
 
-			if (Inputs [0].connection != null)
-				GUILayout.Label (Inputs [0].name);
+			// First input
+			if (input1Knob.connected ())
+				GUILayout.Label (input1Knob.name);
 			else
 				Input1Val = RTEditorGUI.FloatField (GUIContent.none, Input1Val);
-			InputKnob (0);
-			// --
-			if (Inputs [1].connection != null)
-				GUILayout.Label (Inputs [1].name);
+			input1Knob.SetPosition ();
+
+			// Second input
+			if (input2Knob.connected ())
+				GUILayout.Label (input2Knob.name);
 			else
 				Input2Val = RTEditorGUI.FloatField (GUIContent.none, Input2Val);
-			InputKnob (1);
+			input2Knob.SetPosition ();
 
 			GUILayout.EndVertical ();
 			GUILayout.BeginVertical ();
 
-			Outputs [0].DisplayLayout ();
+			// Output
+			outputKnob.DisplayLayout ();
 
 			GUILayout.EndVertical ();
 			GUILayout.EndHorizontal ();
 
-	#if UNITY_EDITOR
-			type = (CalcType)UnityEditor.EditorGUILayout.EnumPopup (new GUIContent ("Calculation Type", "The type of calculation performed on Input 1 and Input 2"), type);
-	#else
-			GUILayout.Label (new GUIContent ("Calculation Type: " + type.ToString (), "The type of calculation performed on Input 1 and Input 2"));
-	#endif
+			type = (CalcType)RTEditorGUI.EnumPopup (new GUIContent ("Calculation Type", "The type of calculation performed on Input 1 and Input 2"), type);
 
 			if (GUI.changed)
 				NodeEditor.curNodeCanvas.OnNodeChange (this);
@@ -70,24 +64,24 @@ namespace NodeEditorFramework.Standard
 
 		public override bool Calculate () 
 		{
-			if (Inputs[0].connection != null)
-				Input1Val = Inputs[0].connection.GetValue<float> ();
-			if (Inputs[1].connection != null)
-				Input2Val = Inputs[1].connection.GetValue<float> ();
-
+			if (input1Knob.connected ())
+				Input1Val = input1Knob.GetValue<float> ();
+			if (input2Knob.connected ())
+				Input2Val = input2Knob.GetValue<float> ();
+			
 			switch (type) 
 			{
 			case CalcType.Add:
-				Outputs[0].SetValue<float> (Input1Val + Input2Val);
+				outputKnob.SetValue<float> (Input1Val + Input2Val);
 				break;
 			case CalcType.Substract:
-				Outputs[0].SetValue<float> (Input1Val - Input2Val);
+				outputKnob.SetValue<float> (Input1Val - Input2Val);
 				break;
 			case CalcType.Multiply:
-				Outputs[0].SetValue<float> (Input1Val * Input2Val);
+				outputKnob.SetValue<float> (Input1Val * Input2Val);
 				break;
 			case CalcType.Divide:
-				Outputs[0].SetValue<float> (Input1Val / Input2Val);
+				outputKnob.SetValue<float> (Input1Val / Input2Val);
 				break;
 			}
 

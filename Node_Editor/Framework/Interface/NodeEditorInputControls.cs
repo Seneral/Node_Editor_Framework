@@ -16,13 +16,13 @@ namespace NodeEditorFramework
 
 		[ContextFillerAttribute (ContextType.Canvas)]
 		private static void FillAddNodes (NodeEditorInputInfo inputInfo, GenericMenu canvasContextMenu) 
-		{ // Show all nodes, and if a connection is drawn, only compatible nodes to auto-connect
+		{ // Fill context menu with nodes to add to the canvas
 			NodeEditorState state = inputInfo.editorState;
-			List<Node> displayedNodes = state.connectOutput != null? NodeTypes.getCompatibleNodes (state.connectOutput) : NodeTypes.nodes.Keys.ToList ();
-			foreach (Node compatibleNode in displayedNodes)
-			{
-				if (NodeCanvasManager.CheckCanvasCompability (compatibleNode.GetID, inputInfo.editorState.canvas) && inputInfo.editorState.canvas.CanAddNode (compatibleNode.GetID))
-					canvasContextMenu.AddItem (new GUIContent ("Add " + NodeTypes.nodes[compatibleNode].adress), false, CreateNodeCallback, new NodeEditorInputInfo (compatibleNode.GetID, state));
+			List<string> nodes = NodeTypes.getCompatibleNodes (state.connectKnob);
+			foreach (string node in nodes)
+			{ // Only add nodes to the context menu that are compatible
+				if (NodeCanvasManager.CheckCanvasCompability (node, inputInfo.editorState.canvas.GetType ()) && inputInfo.editorState.canvas.CanAddNode (node))
+					canvasContextMenu.AddItem (new GUIContent ("Add " + NodeTypes.getNodeData(node).adress), false, CreateNodeCallback, new NodeEditorInputInfo (node, state));
 			}
 		}
 
@@ -33,8 +33,8 @@ namespace NodeEditorFramework
 				throw new UnityException ("Callback Object passed by context is not of type NodeEditorInputInfo!");
 
 			callback.SetAsCurrentEnvironment ();
-			Node.Create (callback.message, NodeEditor.ScreenToCanvasSpace (callback.inputPos), callback.editorState.connectOutput);
-			callback.editorState.connectOutput = null;
+			Node.Create (callback.message, NodeEditor.ScreenToCanvasSpace (callback.inputPos), callback.editorState.connectKnob);
+			callback.editorState.connectKnob = null;
 			NodeEditor.RepaintClients ();
 		}
 
@@ -60,10 +60,10 @@ namespace NodeEditorFramework
 			NodeEditorState state = inputInfo.editorState;
 			if (state.focusedNode != null && NodeEditor.curNodeCanvas.CanAddNode (state.focusedNode.GetID)) 
 			{ // Create new node of same type
-				Node duplicatedNode = Node.Create (state.focusedNode.GetID, NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos), state.connectOutput);
+				Node duplicatedNode = Node.Create (state.focusedNode.GetID, NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos), state.connectKnob);
 				state.selectedNode = state.focusedNode = duplicatedNode;
-				state.connectOutput = null;
-				inputInfo.inputEvent.Use ();
+				state.connectKnob = null;
+				inputInfo.inputEvent.Use();
 			}
 		}
 
@@ -95,7 +95,7 @@ namespace NodeEditorFramework
 				else if (inputInfo.inputEvent.keyCode == KeyCode.UpArrow)
 					pos = new Vector2(pos.x, pos.y - shiftAmount);
 
-				state.selectedNode.rect.position = pos;
+				state.selectedNode.position = pos;
 				inputInfo.inputEvent.Use();
 			}
 			NodeEditor.RepaintClients();
@@ -114,7 +114,7 @@ namespace NodeEditorFramework
 				return; // GUI has control
 
 			NodeEditorState state = inputInfo.editorState;
-			if (inputInfo.inputEvent.button == 0 && state.focusedNode != null && state.focusedNode == state.selectedNode && state.focusedNodeKnob == null) 
+			if (inputInfo.inputEvent.button == 0 && state.focusedNode != null && state.focusedNode == state.selectedNode && state.focusedConnectionKnob == null) 
 			{ // Clicked inside the selected Node, so start dragging it
 				state.dragNode = true;
 				state.StartDrag ("node", inputInfo.inputPos, state.focusedNode.rect.position);
@@ -130,7 +130,7 @@ namespace NodeEditorFramework
 				if (state.selectedNode != null && GUIUtility.hotControl == 0 && inputInfo.editorState.dragUserID == "node")
 				{ // Apply new position for the dragged node
 					state.UpdateDrag ("node", inputInfo.inputPos);
-					state.selectedNode.rect.position = state.dragObjectPos;
+					state.selectedNode.position = state.dragObjectPos;
 					NodeEditor.RepaintClients ();
 				} 
 				else
@@ -147,7 +147,7 @@ namespace NodeEditorFramework
 				Vector2 totalDrag = inputInfo.editorState.EndDrag ("node");
 				if (inputInfo.editorState.dragNode && inputInfo.editorState.selectedNode != null)
 				{
-					inputInfo.editorState.selectedNode.rect.position = totalDrag;
+					inputInfo.editorState.selectedNode.position = totalDrag;
 					NodeEditorCallbacks.IssueOnMoveNode (inputInfo.editorState.selectedNode);
 				}
 			}
@@ -201,22 +201,21 @@ namespace NodeEditorFramework
 
 		[EventHandlerAttribute (EventType.MouseDown)]
 		private static void HandleConnectionDrawing (NodeEditorInputInfo inputInfo) 
-		{
+		{ // TODO: Revamp Multi-Multi knob editing
 			NodeEditorState state = inputInfo.editorState;
-			if (inputInfo.inputEvent.button == 0 && state.focusedNodeKnob != null)
-			{ // Left-Clicked on a NodeKnob, so check if any of them is a nodeInput or -Output
-				if (state.focusedNodeKnob is NodeOutput)
-				{ // Output clicked -> Draw new connection from it
-					state.connectOutput = (NodeOutput)state.focusedNodeKnob;
+			if (inputInfo.inputEvent.button == 0 && state.focusedConnectionKnob != null)
+			{ // Left-Clicked on a ConnectionKnob, handle editing
+				if (state.focusedConnectionKnob.maxConnectionCount == ConnectionCount.Multi)
+				{ // Knob with multiple connections clicked -> Draw new connection from it
+					state.connectKnob = state.focusedConnectionKnob;
 					inputInfo.inputEvent.Use ();
 				}
-				else if (state.focusedNodeKnob is NodeInput)
-				{ // Input clicked -> Loose and edit connection from it
-					NodeInput clickedInput = (NodeInput)state.focusedNodeKnob;
-					if (clickedInput.connection != null)
+				else if (state.focusedConnectionKnob.maxConnectionCount == ConnectionCount.Single)
+				{ // Knob with single connection clicked -> Loose and edit connection from it
+					if (state.focusedConnectionKnob.connected ())
 					{
-						state.connectOutput = clickedInput.connection;
-						clickedInput.RemoveConnection ();
+						state.connectKnob = state.focusedConnectionKnob.connection(0);
+						state.focusedConnectionKnob.RemoveConnection (state.connectKnob);
 						inputInfo.inputEvent.Use ();
 					}
 				}
@@ -227,13 +226,12 @@ namespace NodeEditorFramework
 		private static void HandleApplyConnection (NodeEditorInputInfo inputInfo) 
 		{
 			NodeEditorState state = inputInfo.editorState;
-			if (inputInfo.inputEvent.button == 0 && state.connectOutput != null && state.focusedNode != null && state.focusedNodeKnob != null && state.focusedNodeKnob is NodeInput) 
-			{ // An input was clicked, it'll will now be connected
-				NodeInput clickedInput = state.focusedNodeKnob as NodeInput;
-				clickedInput.TryApplyConnection (state.connectOutput);
+			if (inputInfo.inputEvent.button == 0 && state.connectKnob != null && state.focusedNode != null && state.focusedConnectionKnob != null && state.focusedConnectionKnob != state.connectKnob) 
+			{ // A connection curve was dragged and released onto a connection knob
+				state.focusedConnectionKnob.TryApplyConnection (state.connectKnob);
 				inputInfo.inputEvent.Use ();
 			}
-			state.connectOutput = null;
+			state.connectKnob = null;
 		}
 
 		#endregion
@@ -281,9 +279,9 @@ namespace NodeEditorFramework
 			NodeEditorState state = inputInfo.editorState;
 			if (state.selectedNode != null)
 			{ // Snap selected Node's position and the drag to multiples of 10
-				state.selectedNode.rect.x = Mathf.Round (state.selectedNode.rect.x/10) * 10;
-				state.selectedNode.rect.y = Mathf.Round (state.selectedNode.rect.y/10) * 10;
 				inputInfo.inputEvent.Use ();
+				state.selectedNode.position.x = Mathf.Round (state.selectedNode.rect.x/10) * 10;
+				state.selectedNode.position.y = Mathf.Round (state.selectedNode.rect.y/10) * 10;
 			}
 			if (state.activeGroup != null)
 			{
@@ -297,6 +295,5 @@ namespace NodeEditorFramework
 		#endregion
 
 	}
-
 }
 

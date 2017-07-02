@@ -4,40 +4,34 @@ using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework.Standard
 {
-	/// <summary>
-	/// Example Node for showing how to create child nodes along with a parent node directly from the create menu and automatically link them with connections
-	/// </summary>
 	[Node (false, "Example/Graph Root")]
 	public class RootGraphNode : Node 
 	{
 		public const string ID = "rootGraphNode";
 		public override string GetID { get { return ID; } }
 
-		public override Node Create (Vector2 pos) 
-		{
-			RootGraphNode node = CreateInstance<RootGraphNode> ();
+		public override string Title { get { return "Graph Root Node"; } }
+		public override Vector2 DefaultSize { get { return new Vector2 (150, 100); } }
 
-			node.rect = new Rect (pos.x, pos.y, 150, 100);
-			node.name = "Graph Root Node";
+		[ConnectionKnob("Child 1", Direction.Out, "Flow")]
+		public ConnectionKnob flowChild1;
+		[ConnectionKnob("Child 2", Direction.Out, "Flow")]
+		public ConnectionKnob flowChild2;
+		[ConnectionKnob("Child 3", Direction.Out, "Flow")]
+		public ConnectionKnob flowChild3;
 
-			node.CreateOutput ("Child 1", "Flow");
-			node.CreateOutput ("Child 2", "Flow");
-			node.CreateOutput ("Child 3", "Flow");
-
-			return node;
-		}
-
-		protected internal override void NodeGUI () 
+		public override void NodeGUI () 
 		{
 			name = GUILayout.TextField (name);
 
-			foreach (NodeOutput output in Outputs) 
-				output.DisplayLayout ();
-		}
-
-		public override bool Calculate () 
-		{
-			return true;
+			foreach (ConnectionKnob knob in connectionKnobs) 
+				knob.DisplayLayout ();
+			// OR
+			/*
+			flowChild1.DisplayLayout ();
+			flowChild2.DisplayLayout ();
+			flowChild3.DisplayLayout ();
+			*/
 		}
 	}
 }

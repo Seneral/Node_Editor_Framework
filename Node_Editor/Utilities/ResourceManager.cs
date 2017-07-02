@@ -99,20 +99,35 @@ namespace NodeEditorFramework.Utilities
 		/// Loads up a texture tinted with col, and manages it in a memory for later use.
 		/// It's adviced to prepare the texPath using the function before to create a uniform 'path format', because textures are compared through their paths
 		/// </summary>
-		public static Texture2D GetTintedTexture (string texPath, Color col) 
+		public static Texture2D GetTintedTexture(string texPath, Color col)
 		{
-			string texMod = "Tint:" + col.ToString ();
-			Texture2D tintedTexture = GetTexture (texPath, texMod);
+			string texMod = "Tint:" + col.ToString();
+			Texture2D tintedTexture = GetTexture(texPath, texMod);
 			if (tintedTexture == null)
 			{ // We have to create a tinted version, perhaps even load the default texture if not yet in memory, and store it
-				tintedTexture = LoadTexture (texPath);
-				AddTextureToMemory (texPath, tintedTexture); // Register default texture for re-use
-				tintedTexture = NodeEditorFramework.Utilities.RTEditorGUI.Tint (tintedTexture, col);
-				AddTextureToMemory (texPath, tintedTexture, texMod); // Register texture for re-use
+				tintedTexture = LoadTexture(texPath);
+				tintedTexture = RTEditorGUI.Tint(tintedTexture, col);
+				AddTextureToMemory(texPath, tintedTexture, texMod); // Register texture for re-use
 			}
 			return tintedTexture;
 		}
-		
+
+		/// <summary>
+		/// Loads up a texture tinted with col, and manages it in a memory for later use.
+		/// It's adviced to prepare the texPath using the function before to create a uniform 'path format', because textures are compared through their paths
+		/// </summary>
+		public static Texture2D GetTintedTexture(Texture2D tex, Color col)
+		{
+			MemoryTexture memTex = FindInMemory(tex);
+			if (memTex != null && !string.IsNullOrEmpty (memTex.path))
+				return GetTintedTexture(memTex.path, col);
+
+			string texMod = "Tint:" + col.ToString();
+			Texture2D tintedTexture = RTEditorGUI.Tint(tex, col);
+			AddTextureToMemory(tex.name, tintedTexture, texMod); // Register texture for re-use
+			return tintedTexture;
+		}
+
 		/// <summary>
 		/// Records an additional texture for the manager memory with optional modifications
 		/// It's adviced to prepare the texPath using the function before to create a uniform 'path format', because textures are compared through their paths
@@ -167,10 +182,30 @@ namespace NodeEditorFramework.Utilities
 			MemoryTexture memTex = GetMemoryTexture (texturePath, modifications);
 			return memTex == null? null : memTex.texture;
 		}
+
+		/// <summary>
+		/// Gets a texture already in manager memory with specified modifications (check with 'HasInMemory' before!)
+		/// It's adviced to prepare the texPath using the function before to create a uniform 'path format', because textures are compared through their paths
+		/// </summary>
+		public static bool TryGetTexture (string texturePath, ref Texture2D tex, params string[] modifications)
+		{
+			MemoryTexture memTex = GetMemoryTexture (texturePath, modifications);
+			if (memTex != null)
+				tex = memTex.texture;
+			return memTex != null;
+		}
 		
 		private static bool EqualModifications (string[] modsA, string[] modsB) 
 		{
 			return modsA.Length == modsB.Length && Array.TrueForAll (modsA, mod => modsB.Count (oMod => mod == oMod) == modsA.Count (oMod => mod == oMod));
+		}
+
+		public static string[] AppendMod (string[] modifications, string newModification) 
+		{
+			string[] mods = new string[modifications.Length+1];
+			modifications.CopyTo (mods, 0);
+			mods[mods.Length-1] = newModification;
+			return mods;
 		}
 		
 		public class MemoryTexture 

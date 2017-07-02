@@ -103,89 +103,49 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Validates this canvas, checking for any broken nodes or references and cleans them.
 		/// </summary>
-		public void Validate (bool deepValidate = false) 
-		{
-			if (nodes == null)
-			{
-				Debug.LogWarning ("NodeCanvas '" + name + "' nodes were erased and set to null! Automatically fixed!");
-				nodes = new List<Node> ();
-			}
-			if (deepValidate)
-			{
-				for (int groupCnt = 0; groupCnt < groups.Count; groupCnt++) 
+		public void Validate ()
 				{
-					NodeGroup group = groups[groupCnt];
-					if (group == null)
-					{
-						Debug.LogWarning ("NodeCanvas '" + name + "' contained broken (null) group! Automatically fixed!");
-						groups.RemoveAt (groupCnt);
-						groupCnt--;
-						continue;
-					}
-				}
-				for (int nodeCnt = 0; nodeCnt < nodes.Count; nodeCnt++) 
-				{
-					Node node = nodes[nodeCnt];
-					if (node == null)
-					{
-						Debug.LogWarning ("NodeCanvas '" + saveName + "' (" + name + ") contained broken (null) node! Automatically fixed!");
-						nodes.RemoveAt (nodeCnt);
-						nodeCnt--;
-						continue;
-					}
-					for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++) 
-					{
-						NodeKnob nodeKnob = node.nodeKnobs[knobCnt];
-						if (nodeKnob == null)
-						{
-							Debug.LogWarning ("NodeCanvas '" + name + "' Node '" + node.name + "' contained broken (null) NodeKnobs! Automatically fixed!");
-							nodes.RemoveAt (nodeCnt);
-							nodeCnt--;
-							break;
-//							node.nodeKnobs.RemoveAt (knobCnt);
-//							knobCnt--;
-//							continue;
-						}
+			// Check Groups
+			CheckNodeCanvasList(ref groups, "groups");
 
-						if (nodeKnob is NodeInput)
-						{
-							NodeInput input = nodeKnob as NodeInput;
-							if (input.connection != null && input.connection.body == null)
-							{ // References broken node; Clear connection
-								input.connection = null;
-							}
-							//						for (int conCnt = 0; conCnt < (nodeKnob as NodeInput).connection.Count; conCnt++)
-						}
-						else if (nodeKnob is NodeOutput)
-						{
-							NodeOutput output = nodeKnob as NodeOutput;
-							for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
-							{
-								NodeInput con = output.connections[conCnt];
-								if (con == null || con.body == null)
-								{ // Broken connection; Clear connection
-									output.connections.RemoveAt (conCnt);
-									conCnt--;
-								}
-							}
-						}
-					}
-				}
+			// Check Nodes and their connection ports
+			CheckNodeCanvasList(ref nodes, "nodes");
+			foreach (Node node in nodes)
+				ConnectionPortManager.UpdateConnectionPorts(node);
+
+			// Check EditorStates
 				if (editorStates == null)
-				{
-					Debug.LogWarning ("NodeCanvas '" + name + "' editorStates were erased! Automatically fixed!");
 					editorStates = new NodeEditorState[0];
-				}
 				editorStates = editorStates.Where ((NodeEditorState state) => state != null).ToArray ();
 				foreach (NodeEditorState state in editorStates)
 				{
 					if (!nodes.Contains (state.selectedNode))
 						state.selectedNode = null;
 				}
-			}
+
+			// Validate CanvasType-specific stuff
 			ValidateSelf ();
 		}
 
+		/// <summary>
+		/// Checks the specified list and assures it is initialized, contains no null nodes and it it does, removes them and outputs an error.
+		/// </summary>
+		private void CheckNodeCanvasList<T> (ref List<T> list, string listName)
+		{
+			if (list == null)
+			{
+				Debug.LogWarning("NodeCanvas '" + name + "' " + listName + " were erased and set to null! Automatically fixed!");
+				list = new List<T>();
+			}
+			int originalCount = list.Count;
+			list = list.Where((T o) => o != null).ToList();
+			if (originalCount != list.Count)
+				Debug.LogWarning("NodeCanvas '" + name + "' contained " + (originalCount - list.Count) + " broken (null) " + listName + "! Automatically fixed!");
+		}
+
+		/// <summary>
+		/// Updates the source of this canvas to the specified path, updating saveName and savePath aswell as livesInScene when prefixed with "SCENE/"
+		/// </summary>
 		public bool UpdateSource (string path) 
 		{
 			if (path == savePath)

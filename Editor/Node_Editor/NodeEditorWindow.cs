@@ -91,13 +91,13 @@ namespace NodeEditorFramework.Standard
 			canvasCache.SetupCacheEvents();
 			if (canvasCache.nodeCanvas.GetType () == typeof(NodeCanvas))
 				ShowNotification(new GUIContent("The Canvas has no specific type. Please use the convert button to assign a type and re-save the canvas!"));
-			canvasCache.nodeCanvas.Validate (false);
+			canvasCache.nodeCanvas.Validate ();
 		}
 
 		private void NormalReInit()
 		{
 			NodeEditor.ReInit(false);
-			canvasCache.nodeCanvas.Validate (false);
+			canvasCache.nodeCanvas.Validate ();
 		}
 
 		private void OnDestroy()
@@ -221,9 +221,7 @@ namespace NodeEditorFramework.Standard
 				GenericMenu menu = new GenericMenu();
 
 				// Canvas creation
-				foreach (System.Collections.Generic.KeyValuePair<Type, NodeCanvasTypeData> data in NodeCanvasManager.CanvasTypes)
-					menu.AddItem(new GUIContent("New Canvas/" + data.Value.DisplayString), false, CreateCanvasCallback, data.Key);
-//				menu.AddItem(new GUIContent("New Standard Canvas"), false, CreateCanvasCallback, null);
+				NodeCanvasManager.FillCanvasTypeMenu(ref menu, CreateCanvas, "New Canvas/");
 				menu.AddSeparator("");              
 
 				// Scene Saving
@@ -378,9 +376,9 @@ namespace NodeEditorFramework.Standard
 
 		#region Menu Callbacks
 
-		private void CreateCanvasCallback(object userdata)
+		private void CreateCanvas(Type type)
 		{
-			editor.canvasCache.NewNodeCanvas((Type)userdata);
+			editor.canvasCache.NewNodeCanvas(type);
 		}	
 
 		private void LoadCanvas()

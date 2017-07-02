@@ -9,185 +9,125 @@ namespace NodeEditorFramework
 {
 	public abstract partial class Node : ScriptableObject
 	{
-		public virtual Vector2 MinSize { get { return new Vector2(); } }
-		public virtual bool Resizable { get { return false; } } // set to false to avoid breaking existing nodes
-		public Rect rect = new Rect ();
+		public Vector2 position;
+		private Vector2 autoSize;
+		public Vector2 size { get { return AutoLayout? autoSize : DefaultSize; } }
+		public Rect rect { get { return new Rect (position, size); } }
 
-		internal Vector2 contentOffset = Vector2.zero;
-		internal Vector2 resizeToPosition;
-
-		[SerializeField]
-		public List<NodeKnob> nodeKnobs = new List<NodeKnob> ();
+		// Connection Ports - representative lists of actual port declarations in the node
+		[NonSerialized] public List<ConnectionPort> connectionPorts = new List<ConnectionPort> ();
+		[NonSerialized] public List<ConnectionPort> inputPorts = new List<ConnectionPort> ();
+		[NonSerialized] public List<ConnectionPort> outputPorts = new List<ConnectionPort> ();
+		[NonSerialized] public List<ConnectionKnob> connectionKnobs = new List<ConnectionKnob> ();
+		[NonSerialized] public List<ConnectionKnob> inputKnobs = new List<ConnectionKnob> ();
+		[NonSerialized] public List<ConnectionKnob> outputKnobs = new List<ConnectionKnob> ();
 
 		// Calculation graph
-		[SerializeField]
-		public List<NodeInput> Inputs = new List<NodeInput>();
-		[SerializeField]
-		public List<NodeOutput> Outputs = new List<NodeOutput>();
-		[HideInInspector]
-		[NonSerialized]
+		[HideInInspector] [NonSerialized]
 		internal bool calculated = true;
 
+		// Internal
+		internal Vector2 contentOffset = Vector2.zero;
+		internal Vector2 nodeGUIHeight;
+
+		// Style
 		public Color backgroundColor = Color.white;
 		private Color lastBGColor = Color.white;
 		private GUIStyle nodeBGStyle;
 
-		#region General
+
+		#region Properties and Settings
 
 		/// <summary>
-		/// Init the Node Base after the Node has been created. This includes adding to canvas, and to calculate for the first time
-		/// </summary>
-		protected internal void InitBase () 
-		{
-			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
-				NodeEditor.curNodeCanvas.nodes.Add (this);
-			NodeEditor.curNodeCanvas.OnNodeChange (this);
-			#if UNITY_EDITOR
-			if (String.IsNullOrEmpty (name))
-				name = UnityEditor.ObjectNames.NicifyVariableName (GetID);
-			#endif
-			NodeEditor.RepaintClients ();
-		}
-
-		/// <summary>
-		/// Deletes this Node from curNodeCanvas and the save file
-		/// </summary>
-		public void Delete () 
-		{
-			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
-				throw new UnityException ("The Node " + name + " does not exist on the Canvas " + NodeEditor.curNodeCanvas.name + "!");
-			NodeEditorCallbacks.IssueOnDeleteNode (this);
-			NodeEditor.curNodeCanvas.nodes.Remove (this);
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-			{
-				NodeOutput output = Outputs [outCnt];
-				while (output.connections.Count != 0)
-					output.connections[0].RemoveConnection ();
-				DestroyImmediate (output, true);
-			}
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-			{
-				NodeInput input = Inputs [inCnt];
-				if (input.connection != null)
-					input.connection.connections.Remove (input);
-				DestroyImmediate (input, true);
-			}
-			for (int knobCnt = 0; knobCnt < nodeKnobs.Count; knobCnt++) 
-			{ // Inputs/Outputs need specific treatment, unfortunately
-				if (nodeKnobs[knobCnt] != null)
-					DestroyImmediate (nodeKnobs[knobCnt], true);
-			}
-			DestroyImmediate (this, true);
-			NodeEditor.curNodeCanvas.Validate ();
-		}
-
-		/// <summary>
-		/// Create the a Node of the type specified by the nodeID at position
-		/// </summary>
-		public static Node Create (string nodeID, Vector2 position) 
-		{
-			return Create (nodeID, position, null);
-		}
-
-		/// <summary>
-		/// Create the a Node of the type specified by the nodeID at position
-		/// Auto-connects the passed connectingOutput if not null to the first compatible input
-		/// </summary>
-		public static Node Create (string nodeID, Vector2 position, NodeOutput connectingOutput) 
-		{
-			if (!NodeCanvasManager.CheckCanvasCompability (nodeID, NodeEditor.curNodeCanvas))
-				throw new UnityException ("Cannot create Node with ID '" + nodeID + "' as it is not compatible with the current canavs type (" + NodeEditor.curNodeCanvas.GetType ().ToString () + ")!");
-			if (!NodeEditor.curNodeCanvas.CanAddNode (nodeID))
-				throw new UnityException ("Cannot create another Node with ID '" + nodeID + "' on the current canvas of type (" + NodeEditor.curNodeCanvas.GetType ().ToString () + ")!");
-			Node node = NodeTypes.getDefaultNode (nodeID);
-			if (node == null)
-				throw new UnityException ("Cannot create Node as ID '" + nodeID + "' is not registered!");
-
-			node = node.Create (position);
-
-			if(node == null)
-				return null;
-
-			node.InitBase ();
-
-			if (connectingOutput != null)
-			{ // Handle auto-connection and link the output to the first compatible input
-				foreach (NodeInput input in node.Inputs)
-				{
-					if (input.TryApplyConnection (connectingOutput))
-						break;
-				}
-			}
-
-			NodeEditorCallbacks.IssueOnAddNode (node);
-			NodeEditor.curNodeCanvas.Validate ();
-
-			return node;
-		}
-
-		/// <summary>
-		/// Makes sure this Node has migrated from the previous save version of NodeKnobs to the current mixed and generic one
-		/// </summary>
-		internal void CheckNodeKnobMigration () 
-		{ // TODO: Migration from previous NodeKnob system; Remove later on
-			if (nodeKnobs.Count == 0 && (Inputs.Count != 0 || Outputs.Count != 0)) 
-			{
-				nodeKnobs.AddRange (Inputs.Cast<NodeKnob> ());
-				nodeKnobs.AddRange (Outputs.Cast<NodeKnob> ());
-			}
-		}
-
-		#endregion
-
-		#region Dynamic Members
-
-		#region Node Type Methods
-
-		/// <summary>
-		/// Get the ID of the Node
+		/// Gets the ID of the Node
 		/// </summary>
 		public abstract string GetID { get; }
 
 		/// <summary>
-		/// Create an instance of this Node at the given position
+		/// Specifies the node title.
 		/// </summary>
-		public abstract Node Create (Vector2 pos);
-		
-		/// <summary>
-		/// Draw the Node immediately
-		/// </summary>
-		protected internal abstract void NodeGUI ();
+		public virtual string Title { get { 
+			#if UNITY_EDITOR
+				return UnityEditor.ObjectNames.NicifyVariableName (GetID);
+			#else
+				return name;
+			#endif
+			} }
 
 		/// <summary>
-		/// Used to display a custom node property editor in the side window of the NodeEditorWindow
-		/// Optionally override this to implement
+		/// Specifies the default size of the node when automatic resizing is turned off.
 		/// </summary>
-		public virtual void DrawNodePropertyEditor () { }
-		
-		/// <summary>
-		/// Calculate the outputs of this Node
-		/// Return Success/Fail
-		/// Might be dependant on previous nodes
-		/// </summary>
-		public virtual bool Calculate () { return true; }
-
-		#endregion
-
-		#region Node Type Properties
+		public virtual Vector2 DefaultSize { get { return new Vector2(200, 100); } }
 
 		/// <summary>
-		/// Does this node allow recursion? Recursion is allowed if atleast a single Node in the loop allows for recursion
+		/// Specifies whether the size of this node should be automatically calculated.
+		/// If this is overridden to true, MinSize should be set, too.
+		/// </summary>
+		public virtual bool AutoLayout { get { return false; } }
+
+		/// <summary>
+		/// Specifies the minimum size the node can have if no content is present.
+		/// </summary>
+		public virtual Vector2 MinSize { get { return new Vector2(100, 50); } }
+
+		/// <summary>
+		/// Specifies if this node handles recursive node loops on the canvas.
+		/// A loop requires atleast a single node to handle recursion to be permitted.
 		/// </summary>
 		public virtual bool AllowRecursion { get { return false; } }
 
 		/// <summary>
-		/// Should the following Nodes be calculated after finishing the Calculation function of this node?
+		/// Specifies if calculation should continue with the nodes connected to the outputs after the Calculation function returns success
 		/// </summary>
 		public virtual bool ContinueCalculation { get { return true; } }
 
 		#endregion
 
-		#region Protected Callbacks
+
+		#region Node Implementation
+
+		/// <summary>
+		/// Initializes the node with Inputs/Outputs and other data if necessary.
+		/// </summary>
+		protected virtual void Init () {}
+		
+		/// <summary>
+		/// Draws the Node GUI including all controls and potentially Input/Output labels.
+		/// By default, it displays all Input/Output labels.
+		/// </summary>
+		public virtual void NodeGUI () 
+		{
+			GUILayout.BeginHorizontal ();
+			GUILayout.BeginVertical ();
+
+			foreach (ConnectionKnob input in inputKnobs)
+				input.DisplayLayout ();
+
+			GUILayout.EndVertical ();
+			GUILayout.BeginVertical ();
+
+			foreach (ConnectionKnob output in outputKnobs)
+				output.DisplayLayout ();
+
+			GUILayout.EndVertical ();
+			GUILayout.EndHorizontal ();
+		}
+
+		/// <summary>
+		/// Used to display a custom node property editor in the GUI.
+		/// By default shows the standard NodeGUI.
+		/// </summary>
+		public virtual void DrawNodePropertyEditor ()  { NodeGUI (); }
+		
+		/// <summary>
+		/// Calculates the outputs of this Node depending on the inputs.
+		/// Returns success
+		/// </summary>
+		public virtual bool Calculate () { return true; }
+
+		#endregion
+
+		#region Callbacks
 
 		/// <summary>
 		/// Callback when the node is deleted
@@ -195,18 +135,9 @@ namespace NodeEditorFramework
 		protected internal virtual void OnDelete () {}
 
 		/// <summary>
-		/// Callback when the NodeInput was assigned a new connection
+		/// Callback when the given port on this node was assigned a new connection
 		/// </summary>
-		protected internal virtual void OnAddInputConnection (NodeInput input) {}
-
-		/// <summary>
-		/// Callback when the NodeOutput was assigned a new connection (the last in the list)
-		/// </summary>
-		protected internal virtual void OnAddOutputConnection (NodeOutput output) {}
-
-		#endregion
-
-		#region Additional Serialization
+		protected internal virtual void OnAddConnection (ConnectionPort port, ConnectionPort connection) {}
 
 		/// <summary>
 		/// Should return all additional ScriptableObjects this Node references
@@ -220,11 +151,103 @@ namespace NodeEditorFramework
 
 		#endregion
 
+
+		#region General
+
+		/// <summary>
+		/// Creates a node of the specified ID at pos on the current canvas, optionally auto-connecting the specified output to a matching input
+		/// </summary>
+		public static Node Create (string nodeID, Vector2 pos, ConnectionPort connectingPort = null, bool silent = false) 
+		{
+			return Create (nodeID, pos, NodeEditor.curNodeCanvas, connectingPort, silent);
+		}
+
+		/// <summary>
+		/// Creates a node of the specified ID at pos on the specified canvas, optionally auto-connecting the specified output to a matching input
+		/// </summary>
+		public static Node Create (string nodeID, Vector2 pos, NodeCanvas hostCanvas, ConnectionPort connectingPort = null, bool silent = false)
+		{
+			if (string.IsNullOrEmpty (nodeID) || hostCanvas == null)
+				throw new ArgumentException ();
+			if (!NodeCanvasManager.CheckCanvasCompability (nodeID, hostCanvas.GetType ()))
+				throw new UnityException ("Cannot create Node with ID '" + nodeID + "' as it is not compatible with the current canavs type (" + hostCanvas.GetType ().ToString () + ")!");
+			if (!hostCanvas.CanAddNode (nodeID))
+				throw new UnityException ("Cannot create Node with ID '" + nodeID + "' on the current canvas of type (" + hostCanvas.GetType ().ToString () + ")!");
+
+			// Create node from data
+			NodeTypeData data = NodeTypes.getNodeData (nodeID);
+			Node node = (Node)CreateInstance (data.type);
+			if(node == null)
+				return null;
+
+			// Init node state
+			node.name = node.Title;
+			node.autoSize = node.DefaultSize;
+			node.position = pos;
+			ConnectionPortManager.UpdateConnectionPorts (node);
+			node.Init ();
+
+			if (connectingPort != null)
+			{ // Handle auto-connection and link the output to the first compatible input
+				foreach (ConnectionPort port in node.connectionPorts)
+				{
+					if (port.TryApplyConnection (connectingPort, silent))
+						break;
+				}
+			}
+
+			// Add node to host canvas
+			hostCanvas.nodes.Add (node);
+			if (!silent)
+			{ // Callbacks
+				hostCanvas.OnNodeChange(connectingPort != null ? connectingPort.body : node);
+				NodeEditorCallbacks.IssueOnAddNode(node);
+				hostCanvas.Validate();
+				NodeEditor.RepaintClients();
+			}
+
+			return node;
+		}
+
+		/// <summary>
+		/// Returns an unassigned sample of the specified node ID
+		/// </summary>
+		internal static Node CreateSample (Type nodeType) 
+		{
+			Node sample = (Node)ScriptableObject.CreateInstance (nodeType);
+			if (sample != null)
+				sample.Init ();
+			return sample;
+		}
+
+		/// <summary>
+		/// Deletes this Node from curNodeCanvas and the save file
+		/// </summary>
+		public void Delete (bool silent = false) 
+		{
+			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
+				throw new UnityException ("The Node " + name + " does not exist on the Canvas " + NodeEditor.curNodeCanvas.name + "!");
+			if (!silent)
+				NodeEditorCallbacks.IssueOnDeleteNode (this);
+			NodeEditor.curNodeCanvas.nodes.Remove (this);
+			for (int i = 0; i < connectionPorts.Count; i++) 
+			{
+				connectionPorts[i].ClearConnections (silent);
+				DestroyImmediate (connectionPorts[i], true);
+			}
+			DestroyImmediate (this, true);
+			if (!silent)
+				NodeEditor.curNodeCanvas.Validate ();
+		}
+
 		#endregion
 
 		#region Drawing
 
 #if UNITY_EDITOR
+		/// <summary>
+		/// If overridden, the Node can draw to the scene view GUI in the Editor.
+		/// </summary>
 		public virtual void OnSceneGUI()
 		{
 
@@ -248,7 +271,7 @@ namespace NodeEditorFramework
 			// Create a headerRect out of the previous rect and draw it, marking the selected node as such by making the header bold
 			Rect headerRect = new Rect (nodeRect.x, nodeRect.y, nodeRect.width, contentOffset.y);
 			GUI.Box (headerRect, GUIContent.none, nodeBGStyle);
-			GUI.Label (headerRect, name, NodeEditor.curEditorState.selectedNode == this? NodeEditorGUI.nodeLabelBoldCentered : NodeEditorGUI.nodeLabelCentered);
+			GUI.Label (headerRect, Title, NodeEditor.curEditorState.selectedNode == this? NodeEditorGUI.nodeLabelBoldCentered : NodeEditorGUI.nodeLabelCentered);
 
 			// Begin the body frame around the NodeGUI
 			Rect bodyRect = new Rect (nodeRect.x, nodeRect.y + contentOffset.y, nodeRect.width, nodeRect.height - contentOffset.y);
@@ -260,89 +283,58 @@ namespace NodeEditorFramework
 			GUI.changed = false;
 			NodeGUI ();
 
-			if(Resizable && Event.current.type == EventType.Repaint)
-				resizeToPosition = GUILayoutUtility.GetLastRect().max + contentOffset;
+			if(Event.current.type == EventType.Repaint)
+				nodeGUIHeight = GUILayoutUtility.GetLastRect().max + contentOffset;
 
 			// End NodeGUI frame
 			GUILayout.EndArea ();
 			GUI.EndGroup ();
 
-			ResizeNode();
+			// Automatically node if desired
+			AutoLayoutNode ();
 		}
 
 		/// <summary>
-		/// Resizes the node to either the MinSize or to fit size of the GUILayout in #NodeGUI()
+		/// Resizes the node to either the MinSize or to fit size of the GUILayout in NodeGUI
 		/// </summary>
-		protected internal virtual void ResizeNode()
+		protected internal virtual void AutoLayoutNode()
 		{
-			if (Event.current.type != EventType.Repaint)
-				return;
-
-			if (!Resizable)
+			if (!AutoLayout || Event.current.type != EventType.Repaint)
 				return;
 
 			Rect nodeRect = rect;
+			Vector2 size = new Vector2();
+			size.y = Math.Max(nodeGUIHeight.y, MinSize.y) + 4;
 
-			Vector2 maxSize = new Vector2();
-
-			maxSize.y = Math.Max(resizeToPosition.y, MinSize.y);
-
-			List<NodeKnob> topBottomKnobs = nodeKnobs.Where(x => x.side == NodeSide.Bottom || x.side == NodeSide.Top).ToList();
-			if (topBottomKnobs.Any())
-			{
-				float knobSize = topBottomKnobs.Max(x => x.GetGUIKnob().xMax - nodeRect.xMin);
-				float minWidth = MinSize.x;
-
-				maxSize.x = Math.Max(knobSize, minWidth);
-			}
-			else
-			{
-				maxSize.x = MinSize.x;
-			}
-
-			if (maxSize != nodeRect.size)
-				nodeRect.size = maxSize;
-
-			if (rect.size != nodeRect.size)
-			{
-				rect = nodeRect;
-				NodeEditor.RepaintClients ();
-			}
+			// Account for potential knobs that might occupy horizontal space
+			float knobSize = 0;
+			List<ConnectionKnob> verticalKnobs = connectionKnobs.Where (x => x.side == NodeSide.Bottom || x.side == NodeSide.Top).ToList ();
+			if (verticalKnobs.Count > 0)
+				knobSize = verticalKnobs.Max ((ConnectionKnob knob) => knob.GetGUIKnob ().xMax - nodeRect.xMin);
+			size.x = Math.Max (knobSize, MinSize.x);
+			
+			autoSize = size;
+			NodeEditor.RepaintClients ();
 		}
 
 		/// <summary>
-		/// Draws the nodeKnobs
+		/// Draws the connectionKnobs of this node
 		/// </summary>
 		protected internal virtual void DrawKnobs () 
 		{
-			CheckNodeKnobMigration ();
-			for (int knobCnt = 0; knobCnt < nodeKnobs.Count; knobCnt++) 
-				nodeKnobs[knobCnt].DrawKnob ();
+			for (int i = 0; i < connectionKnobs.Count; i++) 
+				connectionKnobs[i].DrawKnob ();
 		}
 
 		/// <summary>
-		/// Draws the node curves
+		/// Draws the connections from this node's connectionPorts
 		/// </summary>
 		protected internal virtual void DrawConnections () 
 		{
-			CheckNodeKnobMigration ();
 			if (Event.current.type != EventType.Repaint)
 				return;
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++) 
-			{
-				NodeOutput output = Outputs [outCnt];
-				Vector2 startPos = output.GetGUIKnob ().center;
-				Vector2 startDir = output.GetDirection ();
-
-				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++) 
-				{
-					NodeInput input = output.connections [conCnt];
-					Vector2 endPos = input.GetGUIKnob ().center;
-					Vector2 endDir = input.GetDirection();
-					NodeEditorGUI.OptimiseBezierDirections (startPos, ref startDir, endPos, ref endDir);
-					NodeEditorGUI.DrawConnection (startPos, startDir, endPos, endDir, output.typeData.Color);
-				}
-			}
+			for (int i = 0; i < outputPorts.Count; i++)
+				outputPorts[i].DrawConnections ();
 		}
 
 		private void AssureNodeBGStyle ()
@@ -357,172 +349,65 @@ namespace NodeEditorFramework
 
 
 		#endregion
-		
-		#region Calculation Utility
-		
+
+		#region Node Utility
+
 		/// <summary>
-		/// Checks if there are no unassigned and no null-value inputs.
+		/// Tests the node whether the specified position is inside any of the node's elements and returns a potentially focused connection knob.
 		/// </summary>
-		protected internal bool allInputsReady ()
+		public bool ClickTest(Vector2 position, out ConnectionKnob focusedKnob)
 		{
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++) 
-			{
-				if (Inputs[inCnt].connection == null || Inputs[inCnt].connection.IsValueNull)
-					return false;
-			}
-			return true;
-		}
-		/// <summary>
-		/// Checks if there are any unassigned inputs.
-		/// </summary>
-		protected internal bool hasUnassignedInputs () 
-		{
-			for (int inCnt = 0; inCnt < Inputs.Count; inCnt++)
-				if (Inputs [inCnt].connection == null)
+			focusedKnob = null;
+			if (rect.Contains(position))
+				return true;
+			foreach (ConnectionKnob knob in connectionKnobs)
+			{ // Check if any nodeKnob is focused instead
+				if (knob.GetCanvasSpaceKnob().Contains(position))
+				{
+					focusedKnob = knob;
 					return true;
-			return false;
-		}
-		
-		/// <summary>
-		/// Returns whether every direct dexcendant has been calculated
-		/// </summary>
-		protected internal bool descendantsCalculated () 
-		{
-			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
-			{
-				if (Inputs [cnt].connection != null && !Inputs [cnt].connection.body.calculated)
-					return false;
+				}
 			}
-			return true;
+			return false;
 		}
 
 		/// <summary>
 		/// Returns whether the node acts as an input (no inputs or no inputs assigned)
 		/// </summary>
-		protected internal bool isInput () 
+		public bool isInput()
 		{
-			for (int cnt = 0; cnt < Inputs.Count; cnt++)
-				if (Inputs [cnt].connection != null)
+			for (int i = 0; i < inputPorts.Count; i++)
+				if (!inputPorts[i].connected())
 					return false;
 			return true;
 		}
 
-		#endregion
-
-		#region Knob Utility
-
-		// -- OUTPUTS --
-
 		/// <summary>
-		/// Creates and output on your Node of the given type.
+		/// Returns whether the node acts as an output (no outputs or no outputs assigned)
 		/// </summary>
-		public NodeOutput CreateOutput (string outputName, string outputType)
+		public bool isOutput()
 		{
-			return NodeOutput.Create (this, outputName, outputType);
-		}
-		/// <summary>
-		/// Creates and output on this Node of the given type at the specified NodeSide.
-		/// </summary>
-		public NodeOutput CreateOutput (string outputName, string outputType, NodeSide nodeSide)
-		{
-			return NodeOutput.Create (this, outputName, outputType, nodeSide);
-		}
-		/// <summary>
-		/// Creates and output on this Node of the given type at the specified NodeSide and position.
-		/// </summary>
-		public NodeOutput CreateOutput (string outputName, string outputType, NodeSide nodeSide, float sidePosition)
-		{
-			return NodeOutput.Create (this, outputName, outputType, nodeSide, sidePosition);
+			for (int i = 0; i < outputPorts.Count; i++)
+				if (!outputPorts[i].connected())
+					return false;
+			return true;
 		}
 
 		/// <summary>
-		/// Aligns the OutputKnob on it's NodeSide with the last GUILayout control drawn.
+		/// Returns whether every direct descendant has been calculated
 		/// </summary>
-		/// <param name="outputIdx">The index of the output in the Node's Outputs list</param>
-		protected void OutputKnob (int outputIdx)
+		public bool descendantsCalculated () 
 		{
-			if (Event.current.type == EventType.Repaint)
-				Outputs[outputIdx].SetPosition ();
+			foreach (ConnectionPort inputPort in inputPorts)
+			{
+				foreach (ConnectionPort connectionPort in inputPort.connections)
+				{
+					if (!connectionPort.body.calculated)
+						return false;
+				}
+			}
+			return true;
 		}
-
-
-		// -- INPUTS --
-
-		/// <summary>
-		/// Creates and input on your Node of the given type.
-		/// </summary>
-		public NodeInput CreateInput (string inputName, string inputType)
-		{
-			return NodeInput.Create (this, inputName, inputType);
-		}
-		/// <summary>
-		/// Creates and input on this Node of the given type at the specified NodeSide.
-		/// </summary>
-		public NodeInput CreateInput (string inputName, string inputType, NodeSide nodeSide)
-		{
-			return NodeInput.Create (this, inputName, inputType, nodeSide);
-		}
-		/// <summary>
-		/// Creates and input on this Node of the given type at the specified NodeSide and position.
-		/// </summary>
-		public NodeInput CreateInput (string inputName, string inputType, NodeSide nodeSide, float sidePosition)
-		{
-			return NodeInput.Create (this, inputName, inputType, nodeSide, sidePosition);
-		}
-
-		/// <summary>
-		/// Aligns the InputKnob on it's NodeSide with the last GUILayout control drawn.
-		/// </summary>
-		/// <param name="inputIdx">The index of the input in the Node's Inputs list</param>
-		protected void InputKnob (int inputIdx)
-		{
-			if (Event.current.type == EventType.Repaint)
-				Inputs[inputIdx].SetPosition ();
-		}
-
-		/// <summary>
-		/// Reassigns the type of the given output. This actually recreates it
-		/// </summary>
-		protected static void ReassignOutputType (ref NodeOutput output, Type newOutputType) 
-		{
-			Node body = output.body;
-			string outputName = output.name;
-			// Store all valid connections that are not affected by the type change
-			IEnumerable<NodeInput> validConnections = output.connections.Where ((NodeInput connection) => connection.typeData.Type.IsAssignableFrom (newOutputType));
-			// Delete the output of the old type
-			output.Delete ();
-			// Create Output with new type
-			NodeEditorCallbacks.IssueOnAddNodeKnob (NodeOutput.Create (body, outputName, newOutputType.AssemblyQualifiedName));
-			output = body.Outputs[body.Outputs.Count-1];
-			// Restore the valid connections
-			foreach (NodeInput input in validConnections)
-				input.ApplyConnection (output);
-		}
-
-		/// <summary>
-		/// Reassigns the type of the given output. This actually recreates it
-		/// </summary>
-		protected static void ReassignInputType (ref NodeInput input, Type newInputType) 
-		{
-			Node body = input.body;
-			string inputName = input.name;
-			// Store the valid connection if it's not affected by the type change
-			NodeOutput validConnection = null;
-			if (input.connection != null && newInputType.IsAssignableFrom (input.connection.typeData.Type))
-				validConnection = input.connection;
-			// Delete the input of the old type
-			input.Delete ();
-			// Create Output with new type
-			NodeEditorCallbacks.IssueOnAddNodeKnob (NodeInput.Create (body, inputName, newInputType.AssemblyQualifiedName));
-			input = body.Inputs[body.Inputs.Count-1];
-			// Restore the valid connections
-			if (validConnection != null)
-				input.ApplyConnection (validConnection);
-		}
-
-		#endregion
-
-		#region Node Utility
 
 		/// <summary>
 		/// Recursively checks whether this node is a child of the other node
@@ -532,18 +417,14 @@ namespace NodeEditorFramework
 			if (otherNode == null || otherNode == this)
 				return false;
 			if (BeginRecursiveSearchLoop ()) return false;
-			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
+			foreach (ConnectionPort inputPort in inputPorts)
 			{
-				NodeOutput connection = Inputs [cnt].connection;
-				if (connection != null) 
+				foreach (ConnectionPort connectionPort in inputPort.connections)
 				{
-					if (connection.body != startRecursiveSearchNode)
+					if (connectionPort.body != startRecursiveSearchNode && (connectionPort.body == otherNode || connectionPort.body.isChildOf (otherNode)))
 					{
-						if (connection.body == otherNode || connection.body.isChildOf (otherNode))
-						{
-							StopRecursiveSearchLoop ();
-							return true;
-						}
+						StopRecursiveSearchLoop ();
+						return true;
 					}
 				}
 			}
@@ -557,13 +438,15 @@ namespace NodeEditorFramework
 		internal bool isInLoop ()
 		{
 			if (BeginRecursiveSearchLoop ()) return this == startRecursiveSearchNode;
-			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
+			foreach (ConnectionPort inputPort in inputPorts)
 			{
-				NodeOutput connection = Inputs [cnt].connection;
-				if (connection != null && connection.body.isInLoop ()) 
+				foreach (ConnectionPort connectionPort in inputPort.connections)
 				{
-					StopRecursiveSearchLoop ();
-					return true;
+					if (connectionPort.body.isInLoop ()) 
+					{
+						StopRecursiveSearchLoop ();
+						return true;
+					}
 				}
 			}
 			EndRecursiveSearchLoop ();
@@ -582,13 +465,15 @@ namespace NodeEditorFramework
 			if (otherNode == null)
 				return false;
 			if (BeginRecursiveSearchLoop ()) return false;
-			for (int cnt = 0; cnt < Inputs.Count; cnt++) 
+			foreach (ConnectionPort inputPort in inputPorts)
 			{
-				NodeOutput connection = Inputs [cnt].connection;
-				if (connection != null && connection.body.allowsLoopRecursion (otherNode)) 
+				foreach (ConnectionPort connectionPort in inputPort.connections)
 				{
-					StopRecursiveSearchLoop ();
-					return true;
+					if (connectionPort.body.allowsLoopRecursion (otherNode)) 
+					{
+						StopRecursiveSearchLoop ();
+						return true;
+					}
 				}
 			}
 			EndRecursiveSearchLoop ();
@@ -601,13 +486,20 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void ClearCalculation () 
 		{
-			if (BeginRecursiveSearchLoop ()) return;
 			calculated = false;
-			for (int outCnt = 0; outCnt < Outputs.Count; outCnt++)
+			if (BeginRecursiveSearchLoop ()) return;
+			foreach (ConnectionPort outputPort in outputPorts)
 			{
-				NodeOutput output = Outputs [outCnt];
-				for (int conCnt = 0; conCnt < output.connections.Count; conCnt++)
-					output.connections [conCnt].body.ClearCalculation ();
+				ValueConnectionKnob outputValueKnob = outputPort as ValueConnectionKnob;
+				if (outputValueKnob != null)
+					outputValueKnob.ResetValue ();
+				foreach (ConnectionPort connectionPort in outputPort.connections)
+				{
+					ValueConnectionKnob connectionValueKnob = connectionPort as ValueConnectionKnob;
+					if (connectionValueKnob != null)
+						connectionValueKnob.ResetValue ();
+					connectionPort.body.ClearCalculation ();
+				}
 			}
 			EndRecursiveSearchLoop ();
 		}

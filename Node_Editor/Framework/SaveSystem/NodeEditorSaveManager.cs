@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Reflection;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -125,13 +126,13 @@ namespace NodeEditorFramework
 
 			if (saveName.StartsWith ("SCENE/"))
 				saveName = saveName.Substring (6);
-			
+
 			if (!nodeCanvas.livesInScene
 		#if UNITY_EDITOR // Make sure the canvas has no reference to an asset
 			|| UnityEditor.AssetDatabase.Contains (nodeCanvas)
 		#endif
 			) {
-				Debug.LogWarning ("Creating scene save '" + nodeCanvas.name + "' for canvas saved as an asset! Forcing creation of working copy!"); 
+				Debug.LogWarning ("Creating scene save '" + nodeCanvas.name + "' for canvas saved as an asset! Forcing creation of working copy!");
 				ProcessCanvas (ref nodeCanvas, true);
 			}
 
@@ -212,7 +213,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void SaveNodeCanvas (string path, ref NodeCanvas nodeCanvas, bool createWorkingCopy, bool safeOverwrite = true) 
 		{
-		#if !UNITY_EDITOR
+	#if !UNITY_EDITOR
 			throw new System.NotImplementedException ();
 
 			// TODO: Node Editor: Need to implement ingame-saving (Resources, AsssetBundles, ... won't work)
@@ -221,7 +222,7 @@ namespace NodeEditorFramework
 			if (string.IsNullOrEmpty (path)) throw new System.ArgumentNullException ("Cannot save NodeCanvas: No path specified!");
 			if (nodeCanvas == null) throw new System.ArgumentNullException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path '" + path + "' is null!");
 			if (nodeCanvas.GetType () == typeof(NodeCanvas)) throw new System.ArgumentException ("Cannot save NodeCanvas: The NodeCanvas has no explicit type! Please convert it to a valid sub-type of NodeCanvas!");
-
+			
 			if (nodeCanvas.livesInScene)
 			{
 				Debug.LogWarning ("Attempting to save scene canvas '" + nodeCanvas.name + "' to an asset, references to scene object may be broken!" + (!createWorkingCopy? " Forcing creation of working copy!" : ""));
@@ -230,7 +231,7 @@ namespace NodeEditorFramework
 		#if UNITY_EDITOR
 			if (UnityEditor.AssetDatabase.Contains (nodeCanvas) && UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas) != path) 
 			{ 
-				Debug.LogWarning ("Trying to create a duplicate save file for '" + nodeCanvas.name + "'! Forcing creation of working copy!"); 
+				Debug.LogWarning ("Trying to create a duplicate save file for '" + nodeCanvas.name + "'! Forcing creation of working copy!");
 				ProcessCanvas (ref nodeCanvas, true);
 			}
 		#endif
@@ -254,10 +255,10 @@ namespace NodeEditorFramework
 				for (int nodeCnt = 0; nodeCnt < prevSave.nodes.Count; nodeCnt++) 
 				{
 					Node node = prevSave.nodes[nodeCnt];
-					for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++)
+					for (int k = 0; k < node.connectionPorts.Count; k++)
 					{
-						if (node.nodeKnobs[knobCnt] != null)
-							Object.DestroyImmediate (node.nodeKnobs[knobCnt], true);
+						if (node.connectionPorts[k] != null)
+							Object.DestroyImmediate (node.connectionPorts[k], true);
 					}
 					Object.DestroyImmediate (node, true);
 				}
@@ -282,22 +283,22 @@ namespace NodeEditorFramework
 			{ // Write node and additional scriptable objects
 				AddSubAsset (node, canvasSave);
 				AddSubAssets (node.GetScriptableObjects (), node);
-				foreach (NodeKnob knob in node.nodeKnobs)
-					AddSubAsset (knob, node);
+				foreach (ConnectionPort port in node.connectionPorts)
+					AddSubAsset (port, node);
 			}
 
 			//UnityEditor.AssetDatabase.SaveAssets ();
 			//UnityEditor.AssetDatabase.Refresh ();
 
 			NodeEditorCallbacks.IssueOnSaveCanvas (canvasSave);
-
-		#endif
+			
+	#endif
 		}
 
 		/// <summary>
 		/// Loads the NodeCanvas from the asset file at path and optionally creates a working copy of it before returning
 		/// </summary>
-		public static NodeCanvas LoadNodeCanvas (string path, bool createWorkingCopy) 
+		public static NodeCanvas LoadNodeCanvas (string path, bool createWorkingCopy)
 		{
 			if (string.IsNullOrEmpty (path))
 				throw new System.ArgumentNullException ("Cannot load Canvas: No path specified!");
@@ -307,7 +308,7 @@ namespace NodeEditorFramework
 			NodeCanvas nodeCanvas = ResourceManager.LoadResource<NodeCanvas> (path);
 			if (nodeCanvas == null) 
 				throw new UnityException ("Cannot load NodeCanvas: The file at the specified path '" + path + "' is no valid save file as it does not contain a NodeCanvas!");
-
+			
 		#if UNITY_EDITOR
 			if (!Application.isPlaying && (nodeCanvas.editorStates == null || nodeCanvas.editorStates.Length == 0))
 			{ // Try to load any contained editorStates, as the canvas did not reference any
@@ -327,7 +328,7 @@ namespace NodeEditorFramework
 
 		#region Utility
 
-		#if UNITY_EDITOR
+#if UNITY_EDITOR
 
 		/// <summary>
 		/// Adds the specified hidden subAssets to the mainAsset
@@ -373,7 +374,7 @@ namespace NodeEditorFramework
 			if (workingCopy)
 				canvas = CreateWorkingCopy (canvas, true);
 			else
-				canvas.Validate (true);
+				canvas.Validate ();
 		}
 
 		#endregion
@@ -388,7 +389,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static NodeCanvas CreateWorkingCopy (NodeCanvas nodeCanvas, bool editorStates) 
 		{
-			nodeCanvas.Validate (true);
+			nodeCanvas.Validate ();
 
 			// Lists holding initial and cloned version of each ScriptableObject for later replacement of references
 			List<ScriptableObject> allSOs = new List<ScriptableObject> ();
@@ -403,15 +404,14 @@ namespace NodeEditorFramework
 			for (int nodeCnt = 0; nodeCnt < nodeCanvas.nodes.Count; nodeCnt++) 
 			{
 				Node node = nodeCanvas.nodes[nodeCnt];
-				node.CheckNodeKnobMigration ();
 
 				// Clone Node and additional scriptableObjects
 				Node clonedNode = AddClonedSO (allSOs, clonedSOs, node);
 				AddClonedSOs (allSOs, clonedSOs, clonedNode.GetScriptableObjects ());
-
-				// Clone NodeKnobs
-				foreach (NodeKnob knob in clonedNode.nodeKnobs)
-					AddClonedSO (allSOs, clonedSOs, knob);
+				
+				// Clone ConnectionPorts from their declaring fields
+				foreach (ConnectionPortDeclaration portDecl in ConnectionPortManager.GetPortDeclarationEnumerator (clonedNode))
+					AddClonedSO (allSOs, clonedSOs, (ConnectionPort)portDecl.portField.GetValue (clonedNode));
 			}
 
 			// Replace every reference to any of the initial SOs of the first list with the respective clones of the second list
@@ -425,19 +425,15 @@ namespace NodeEditorFramework
 				Node clonedNode = nodeCanvas.nodes[nodeCnt] = ReplaceSO (allSOs, clonedSOs, node);
 				clonedNode.CopyScriptableObjects (copySOs);
 
-				// Replace NodeKnobs and restore Inputs/Outputs by NodeKnob type
-				clonedNode.Inputs = new List<NodeInput> ();
-				clonedNode.Outputs = new List<NodeOutput> ();
-				for (int knobCnt = 0; knobCnt < clonedNode.nodeKnobs.Count; knobCnt++) 
-				{ // Clone generic NodeKnobs
-					NodeKnob knob = clonedNode.nodeKnobs[knobCnt] = ReplaceSO (allSOs, clonedSOs, clonedNode.nodeKnobs[knobCnt]);
-					knob.body = clonedNode;
-					knob.CopyScriptableObjects (copySOs);
-					// Add inputs/outputs to their lists again
-					if (knob is NodeInput)
-						clonedNode.Inputs.Add (knob as NodeInput);
-					else if (knob is NodeOutput) 
-						clonedNode.Outputs.Add (knob as NodeOutput);
+				// Replace ConnectionPorts
+				foreach (ConnectionPortDeclaration portDecl in ConnectionPortManager.GetPortDeclarationEnumerator (clonedNode, true))
+				{ // Iterate over each port declaration and replace it with it's connections
+					ConnectionPort port = (ConnectionPort)portDecl.portField.GetValue (clonedNode);
+					port = ReplaceSO (allSOs, clonedSOs, port);
+					for (int i = 0; i < port.connections.Count; i++)
+						port.connections[i] = ReplaceSO (allSOs, clonedSOs, port.connections[i]);
+					port.body = clonedNode;
+					portDecl.portField.SetValue (clonedNode, port);
 				}
 			}
 
@@ -549,14 +545,14 @@ namespace NodeEditorFramework
 			}
 			if (state == null)
 			{ // Create editorState
-				state = ScriptableObject.CreateInstance<NodeEditorState> ();
+				state = ScriptableObject.CreateInstance<NodeEditorState>();
 				state.canvas = canvas;
 				// Insert into list
 				int index = canvas.editorStates.Length;
-				System.Array.Resize (ref canvas.editorStates, index+1);
+				System.Array.Resize(ref canvas.editorStates, index + 1);
 				canvas.editorStates[index] = state;
 			#if UNITY_EDITOR
-				UnityEditor.EditorUtility.SetDirty (canvas);
+				UnityEditor.EditorUtility.SetDirty(canvas);
 			#endif
 			}
 			state.name = stateName;

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using System.Linq;
 using NodeEditorFramework;
 
 namespace NodeEditorFramework.Standard
@@ -26,19 +27,19 @@ namespace NodeEditorFramework.Standard
 			if (GUILayout.Button ("Calculate and debug Output")) 
 				RTCalc.CalculateCanvas ();
 
-			if (inputNodes == null)
-				inputNodes = RTCalc.getInputNodes ();
 			DisplayInputValues ();
 		}
 
 		private void DisplayInputValues () 
 		{
+			if (inputNodes == null)
+				inputNodes = RTCalc.getInputNodes ();
 			foreach (Node inputNode in inputNodes) 
 			{
-				string outID = "(IN) " + inputNode.name + ": ";
-				foreach (NodeOutput output in inputNode.Outputs)
-					outID += output.typeID + " " + (output.IsValueNull? "NULL" : output.GetValue ().ToString ()) + "; ";
-				GUILayout.Label (outID);
+				string outValueLog = "(IN) " + inputNode.name + ": ";
+				foreach (ValueConnectionKnob knob in inputNode.outputKnobs.OfType<ValueConnectionKnob> ())
+					outValueLog += knob.styleID + " " + knob.name + " = " + (knob.IsValueNull? "NULL" : knob.GetValue ().ToString ()) + "; ";
+				GUILayout.Label (outValueLog);
 			}
 		}
 	}

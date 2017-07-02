@@ -11,73 +11,119 @@ namespace NodeEditorFramework
 {
 	public class NodeCanvasManager
 	{
-		public static Dictionary<Type, NodeCanvasTypeData> CanvasTypes;
-		private static Action<Type> _callBack;
+		private static Dictionary<Type, NodeCanvasTypeData> CanvasTypes;
 
-		public static void GetAllCanvasTypes()
+		private static Action<Type> _menuCallback;
+
+		/// <summary>
+		/// Fetches every CanvasType Declaration in the script assemblies to provide the framework with custom canvas types
+		/// </summary>
+		public static void FetchCanvasTypes ()
 		{
 			CanvasTypes = new Dictionary<Type, NodeCanvasTypeData>();
-
-			IEnumerable<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies()
-				.Where((Assembly assembly) => assembly.FullName.Contains("Assembly"));
-			foreach (Assembly assembly in scriptAssemblies)
+			foreach (Type type in ReflectionUtility.getSubTypes (typeof(NodeCanvas), typeof(NodeCanvasTypeAttribute)))
 			{
-				foreach (Type type in assembly.GetTypes()
-					.Where( T => T.IsClass && !T.IsAbstract && 
-						(T != typeof(NodeCanvas) && T.IsSubclassOf (typeof(NodeCanvas))) &&
-							T.GetCustomAttributes(typeof (NodeCanvasTypeAttribute), false).Length > 0))
-				{
-					object[] nodeAttributes = type.GetCustomAttributes(typeof (NodeCanvasTypeAttribute), false);
-					NodeCanvasTypeAttribute attr = nodeAttributes[0] as NodeCanvasTypeAttribute;
-					CanvasTypes.Add(type, new NodeCanvasTypeData() {CanvasType = type, DisplayString = attr.Name});
-				}
+				object[] nodeAttributes = type.GetCustomAttributes (typeof(NodeCanvasTypeAttribute), false);
+				NodeCanvasTypeAttribute attr = nodeAttributes[0] as NodeCanvasTypeAttribute;
+				CanvasTypes.Add(type, new NodeCanvasTypeData() { CanvasType = type, DisplayString = attr.Name });
 			}
 		}
 
-		private static void unwrapTypeCallback(object userdata)
+		/// <summary>
+		/// Returns all recorded canvas definitions found by the system
+		/// </summary>
+		public static List<NodeCanvasTypeData> getCanvasDefinitions () 
 		{
-			NodeCanvasTypeData data = (NodeCanvasTypeData)userdata;
-			_callBack(data.CanvasType);
+			return CanvasTypes.Values.ToList ();
 		}
 
-		public static void FillCanvasTypeMenu(ref GenericMenu menu, Action<Type> newNodeCanvas)
+		/// <summary>
+		/// Returns the NodeData for the given canvas
+		/// </summary>
+		public static NodeCanvasTypeData GetCanvasTypeData (NodeCanvas canvas)
 		{
-			_callBack = newNodeCanvas;
-			foreach (KeyValuePair<Type, NodeCanvasTypeData> data in CanvasTypes)
-			{
-				menu.AddItem(new GUIContent(data.Value.DisplayString), false, unwrapTypeCallback, (object)data.Value);
-			}
+			return GetCanvasTypeData (canvas.GetType ());
 		}
 
-		public static bool CheckCanvasCompability (string nodeID, NodeCanvas canvas) 
-		{
-			NodeData data = NodeTypes.getNodeData (nodeID);
-			return data.limitToCanvasTypes == null || data.limitToCanvasTypes.Length == 0 || data.limitToCanvasTypes.Contains (canvas.GetType ());
-		}
-
-		public static NodeCanvasTypeData getCanvasTypeData (NodeCanvas canvas)
+		/// <summary>
+		/// Returns the NodeData for the given canvas type
+		/// </summary>
+		public static NodeCanvasTypeData GetCanvasTypeData (Type canvasType)
 		{
 			NodeCanvasTypeData data;
-			CanvasTypes.TryGetValue (canvas.GetType (), out data);
+			CanvasTypes.TryGetValue (canvasType, out data);
 			return data;
 		}
 
 		/// <summary>
-		/// Converts the type of the canvas to the specified type.
+		/// Returns the NodeData for the given canvas name (type name, display string, etc.)
+		/// </summary>
+		public static NodeCanvasTypeData GetCanvasTypeData (string name)
+		{
+			return CanvasTypes.Values.FirstOrDefault ((NodeCanvasTypeData data) => data.CanvasType.FullName.Contains (name) || data.DisplayString.Contains (name) || name.Contains (data.DisplayString));
+		}
+
+		/// <summary>
+		/// Checks whether the süecified nodeID is compatible with the given canvas type
+		/// </summary>
+		public static bool CheckCanvasCompability (string nodeID, Type canvasType) 
+		{
+			NodeTypeData data = NodeTypes.getNodeData (nodeID);
+			return data.limitToCanvasTypes == null || data.limitToCanvasTypes.Length == 0 || data.limitToCanvasTypes.Contains (canvasType);
+		}
+
+		/// <summary>
+		/// Converts the given canvas to the specified type
 		/// </summary>
 		public static NodeCanvas ConvertCanvasType (NodeCanvas canvas, Type newType)
 		{
 			NodeCanvas convertedCanvas = canvas;
-			if (canvas.GetType () != newType && newType != typeof(NodeCanvas) && newType.IsSubclassOf (typeof(NodeCanvas)))
+			if (canvas.GetType () != newType && newType.IsSubclassOf (typeof(NodeCanvas)))
 			{
+				canvas.Validate();
 				canvas = NodeEditorSaveManager.CreateWorkingCopy (canvas, true);
 				convertedCanvas = NodeCanvas.CreateCanvas(newType);
 				convertedCanvas.nodes = canvas.nodes;
+				convertedCanvas.groups = canvas.groups;
 				convertedCanvas.editorStates = canvas.editorStates;
+				for (int i = 0; i < convertedCanvas.nodes.Count; i++)
+				{
+					if (!CheckCanvasCompability (convertedCanvas.nodes[i].GetID, newType))
+					{ // Check if nodes is even compatible with the canvas, if not delete it
+						convertedCanvas.nodes[i].Delete ();
+						i--;
+					}
+				}
 				convertedCanvas.Validate ();
 			}
 			return convertedCanvas;
 		}
+
+		#region Canvas Type Menu
+
+		public static void FillCanvasTypeMenu(ref GenericMenu menu, Action<Type> NodeCanvasSelection, string path = "")
+		{
+			_menuCallback = NodeCanvasSelection;
+			foreach (NodeCanvasTypeData data in CanvasTypes.Values)
+				menu.AddItem(new GUIContent(path + data.DisplayString), false, unwrapCanvasTypeCallback, (object)data);
+		}
+
+	#if UNITY_EDITOR
+		public static void FillCanvasTypeMenu(ref UnityEditor.GenericMenu menu, Action<Type> NodeCanvasSelection, string path = "")
+		{
+			_menuCallback = NodeCanvasSelection;
+			foreach (NodeCanvasTypeData data in CanvasTypes.Values)
+				menu.AddItem(new GUIContent(path + data.DisplayString), false, unwrapCanvasTypeCallback, (object)data);
+		}
+	#endif
+
+		private static void unwrapCanvasTypeCallback(object data)
+		{
+			NodeCanvasTypeData typeData = (NodeCanvasTypeData)data;
+			_menuCallback(typeData.CanvasType);
+		}
+
+		#endregion
 	}
 
 	public struct NodeCanvasTypeData

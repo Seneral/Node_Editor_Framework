@@ -6,38 +6,32 @@ using NodeEditorFramework.Utilities;
 namespace NodeEditorFramework.Standard
 {
 	[System.Serializable]
-	[Node (false, "Float/Input")]
-	public class InputNode : Node 
+	[Node(false, "Float/Input")]
+	public class InputNode : Node
 	{
 		public const string ID = "inputNode";
 		public override string GetID { get { return ID; } }
 
+		public override string Title { get { return "Input Node"; } }
+		public override Vector2 DefaultSize { get { return new Vector2(200, 50); } }
+
+		[ValueConnectionKnob("Value", Direction.Out, "Float")]
+		public ValueConnectionKnob outputKnob;
+
 		public float value = 1f;
 
-		public override Node Create (Vector2 pos) 
+		public override void NodeGUI()
 		{
-			InputNode node = CreateInstance <InputNode> ();
-
-			node.name = "Input Node";
-			node.rect = new Rect (pos.x, pos.y, 200, 50);;
-
-			NodeOutput.Create (node, "Value", "Float");
-
-			return node;
-		}
-
-		protected internal override void NodeGUI () 
-		{
-			value = RTEditorGUI.FloatField (new GUIContent ("Value", "The input value of type float"), value);
-			OutputKnob (0);
+			value = RTEditorGUI.FloatField(new GUIContent("Value", "The input value of type float"), value);
+			outputKnob.SetPosition();
 
 			if (GUI.changed)
-				NodeEditor.curNodeCanvas.OnNodeChange (this);
+				NodeEditor.curNodeCanvas.OnNodeChange(this);
 		}
 
-		public override bool Calculate () 
+		public override bool Calculate()
 		{
-			Outputs[0].SetValue<float> (value);
+			outputKnob.SetValue<float>(value);
 			return true;
 		}
 	}

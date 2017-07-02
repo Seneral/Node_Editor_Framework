@@ -3,89 +3,74 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
-using NodeEditorFramework;
+
+using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework 
 {
 	/// <summary>
-	/// Handles fetching and storing of all NodeDeclarations
+	/// Handles fetching and storing of all Node declarations
 	/// </summary>
 	public static class NodeTypes
 	{
-		public static Dictionary<Node, NodeData> nodes;
+		private static Dictionary<string, NodeTypeData> nodes;
 
 		/// <summary>
-		/// Fetches every Node Declaration in the assembly and stores them in the nodes List.
-		/// nodes List contains a default instance of each node type in the key and editor specific NodeData in the value
+		/// Fetches every Node Declaration in the script assemblies to provide the framework with custom node types
 		/// </summary>
-		public static void FetchNodes() 
+		public static void FetchNodeTypes() 
 		{
-			nodes = new Dictionary<Node, NodeData> ();
-
-			IEnumerable<Assembly> scriptAssemblies = AppDomain.CurrentDomain.GetAssemblies ().Where ((Assembly assembly) => assembly.FullName.Contains ("Assembly"));
-			foreach (Assembly assembly in scriptAssemblies) 
+			nodes = new Dictionary<string, NodeTypeData> ();
+			foreach (Type type in ReflectionUtility.getSubTypes (typeof(Node)))	
 			{
-				foreach (Type type in assembly.GetTypes().Where(T => T.IsClass && !T.IsAbstract && T.IsSubclassOf(typeof(Node))))
-				{
-					object[] nodeAttributes = type.GetCustomAttributes(typeof(NodeAttribute), false);                    
-					NodeAttribute attr = nodeAttributes[0] as NodeAttribute;
-					if(attr == null || !attr.hide)
-					{
-						Node node = (Node)ScriptableObject.CreateInstance (type); // Create a 'raw' instance (not setup using the appropriate Create function)
-						node = node.Create (Vector2.zero); // From that, call the appropriate Create Method to init the previously 'raw' instance
-						nodes.Add (node, new NodeData (attr == null? node.name : attr.contextText, attr.limitToCanvasTypes));
-					}
+				object[] nodeAttributes = type.GetCustomAttributes(typeof(NodeAttribute), false);                    
+				NodeAttribute attr = nodeAttributes[0] as NodeAttribute;
+				if(attr == null || !attr.hide)
+				{ // Only regard if it is not marked as hidden
+					// Fetch node information and add it
+					string ID = (string)type.GetField ("ID").GetValue (null);
+					FieldInfo TitleField = type.GetField ("Title");
+					string Title = TitleField != null? (string)TitleField.GetValue (null) : "None";
+					NodeTypeData data = attr == null?  // Switch between explicit information by the attribute or node information
+						new NodeTypeData(ID, Title, type, new Type[0]) :
+						new NodeTypeData(ID, attr.contextText, type, attr.limitToCanvasTypes);
+					nodes.Add (ID, data);
 				}
 			}
 		}
 
 		/// <summary>
-		/// Returns the NodeData for the given Node
+		/// Returns all recorded node definitions found by the system
 		/// </summary>
-		public static NodeData getNodeData (string nodeID)
+		public static List<NodeTypeData> getNodeDefinitions () 
 		{
-			return nodes [getDefaultNode (nodeID)];
+			return nodes.Values.ToList ();
 		}
 
 		/// <summary>
-		/// Returns the default node from the given nodeID. 
-		/// The default node is a dummy used to create other nodes (Due to various limitations creation has to be performed on Node instances)
+		/// Returns the NodeData for the given node type ID
 		/// </summary>
-		public static Node getDefaultNode (string nodeID)
+		public static NodeTypeData getNodeData (string typeID)
 		{
-			return nodes.Keys.Single<Node> ((Node node) => node.GetID == nodeID);
+			NodeTypeData data;
+			nodes.TryGetValue (typeID, out data);
+			return data;
 		}
 
 		/// <summary>
-		/// Returns the default node from the node type. 
-		/// The default node is a dummy used to create other nodes (Due to various limitations creation has to be performed on Node instances)
+		/// Returns all node IDs that can automatically connect to the specified port.
+		/// If port is null, all node IDs are returned.
 		/// </summary>
-		public static T getDefaultNode<T> () where T : Node
+		public static List<string> getCompatibleNodes (ConnectionPort port)
 		{
-			return nodes.Keys.Single<Node> ((Node node) => node.GetType () == typeof (T)) as T;
-		}
-
-		/// <summary>
-		/// Gets the compatible nodes that have atleast one NodeInput that can connect to the given nodeOutput
-		/// </summary>
-		public static List<Node> getCompatibleNodes (NodeOutput nodeOutput)
-		{
-			if (nodeOutput == null)
-				throw new ArgumentNullException ("nodeOutput");
-			List<Node> compatibleNodes = new List<Node> ();
-			foreach (Node node in NodeTypes.nodes.Keys)
-			{ // Check if any of the NodeInputs is able to connect to the given NodeOutput
-				for (int inputCnt = 0; inputCnt < node.Inputs.Count; inputCnt++)
-				{ // Checking for compability, not using CanApplyConnection to leave out unnessecary dependancy checks
-					NodeInput input = node.Inputs[inputCnt];
-					if (input == null)
-						throw new UnityException ("Input " + inputCnt + " is null!");
-					if (input.typeData.Type.IsAssignableFrom (nodeOutput.typeData.Type))
-					{
-						compatibleNodes.Add (node);
-						break;
-					}
-				}
+			if (port == null)
+				return NodeTypes.nodes.Keys.ToList ();
+			List<string> compatibleNodes = new List<string> ();
+			foreach (NodeTypeData nodeData in NodeTypes.nodes.Values)
+			{ // Iterate over all nodes to check compability of any of their connection ports
+				if (ConnectionPortManager.GetPortDeclarations (nodeData.typeID).Any (
+					(ConnectionPortDeclaration portDecl) => portDecl.portInfo.IsCompatibleWith (port)))
+					compatibleNodes.Add (nodeData.typeID);
 			}
 			return compatibleNodes;
 		}
@@ -94,14 +79,18 @@ namespace NodeEditorFramework
 	/// <summary>
 	/// The NodeData contains the additional, editor specific data of a node type
 	/// </summary>
-	public struct NodeData 
+	public struct NodeTypeData 
 	{
+		public string typeID;
 		public string adress;
+		public Type type;
 		public Type[] limitToCanvasTypes;
 
-		public NodeData (string name, Type[] limitedCanvasTypes)
+		public NodeTypeData(string ID, string name, Type nodeType, Type[] limitedCanvasTypes)
 		{
+			typeID = ID;
 			adress = name;
+			type = nodeType;
 			limitToCanvasTypes = limitedCanvasTypes;
 		}
 	}

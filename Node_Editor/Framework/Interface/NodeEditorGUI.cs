@@ -5,6 +5,8 @@ using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework 
 {
+	public enum ConnectionDrawMethod { Bezier, StraightLine }
+
 	public static partial class NodeEditorGUI 
 	{
 		internal static string curEditorUser;
@@ -30,6 +32,8 @@ namespace NodeEditorFramework
 		public static GUIStyle nodeLabelSelected;
 		public static GUIStyle nodeLabelCentered;
 		public static GUIStyle nodeLabelBoldCentered;
+		public static GUIStyle nodeLabelLeft;
+		public static GUIStyle nodeLabelRight;
 
 		public static GUIStyle nodeBox;
 		public static GUIStyle nodeBoxBold;
@@ -52,6 +56,9 @@ namespace NodeEditorFramework
 			// Label
 			nodeSkin.label.normal.textColor = NE_TextColor;
 			nodeLabel = nodeSkin.label;
+			nodeLabelLeft = new GUIStyle (nodeLabel) { alignment = TextAnchor.MiddleLeft };
+			nodeLabelRight = new GUIStyle (nodeLabel) { alignment = TextAnchor.MiddleRight };
+
 			// Box
 			nodeSkin.box.normal.textColor = NE_TextColor;
 			nodeSkin.box.normal.background = GUIBox;
@@ -113,6 +120,16 @@ namespace NodeEditorFramework
 			Vector2 startVector = startPos.x <= endPos.x? Vector2.right : Vector2.left;
 			DrawConnection (startPos, startVector, endPos, -startVector, col);
 		}
+
+		/// <summary>
+		/// Draws a node connection from start to end, horizontally
+		/// </summary>
+		public static void DrawConnection (Vector2 startPos, Vector2 endPos, ConnectionDrawMethod drawMethod, Color col) 
+		{
+			Vector2 startVector = startPos.x <= endPos.x? Vector2.right : Vector2.left;
+			DrawConnection (startPos, startVector, endPos, -startVector, drawMethod, col);
+		}
+
 		/// <summary>
 		/// Draws a node connection from start to end with specified vectors
 		/// </summary>
@@ -124,6 +141,7 @@ namespace NodeEditorFramework
 			DrawConnection (startPos, startDir, endPos, endDir, ConnectionDrawMethod.Bezier, col);
 			#endif
 		}
+
 		/// <summary>
 		/// Draws a node connection from start to end with specified vectors
 		/// </summary>
@@ -131,6 +149,7 @@ namespace NodeEditorFramework
 		{
 			if (drawMethod == ConnectionDrawMethod.Bezier) 
 			{
+				NodeEditorGUI.OptimiseBezierDirections (startPos, ref startDir, endPos, ref endDir);
 				float dirFactor = 80;//Mathf.Pow ((startPos-endPos).magnitude, 0.3f) * 20;
 				//Debug.Log ("DirFactor is " + dirFactor + "with a bezier lenght of " + (startPos-endPos).magnitude);
 				RTEditorGUI.DrawBezier (startPos, endPos, startPos + startDir * dirFactor, endPos + endDir * dirFactor, col * Color.gray, null, 3);

@@ -108,7 +108,7 @@ namespace NodeEditorFramework
 			//Debug.Log ("Checking for cache save!");
 			if (UnityEditor.EditorApplication.timeSinceStartup-lastCacheTime > cacheIntervalSec)
 			{
-				if (editorState.dragUserID == "" && editorState.connectOutput == null && GUIUtility.hotControl <= 0 && !OverlayGUI.HasPopupControl ())
+				if (editorState.dragUserID == "" && editorState.connectKnob == null && GUIUtility.hotControl <= 0 && !OverlayGUI.HasPopupControl ())
 				{ // Only save when the user currently does not perform an action that could be interrupted by the save
 					lastCacheTime = UnityEditor.EditorApplication.timeSinceStartup;
 					SaveCache ();
@@ -296,7 +296,7 @@ namespace NodeEditorFramework
 		{
 			if (nodeCanvas != canvas)
 			{
-				canvas.Validate (true);
+				canvas.Validate ();
 				nodeCanvas = canvas;
 				editorState = NodeEditorSaveManager.ExtractEditorState (nodeCanvas, MainEditorStateIdentifier);
 				RecreateCache ();
@@ -418,7 +418,7 @@ namespace NodeEditorFramework
 
 		private void UpdateCanvasInfo () 
 		{
-			typeData = NodeCanvasManager.getCanvasTypeData (nodeCanvas);
+			typeData = NodeCanvasManager.GetCanvasTypeData (nodeCanvas);
 		}
 	}
 

@@ -9,33 +9,28 @@ namespace NodeEditorFramework.Standard
 	{
 		public const string ID = "exampleNode";
 		public override string GetID { get { return ID; } }
+
+		public override string Title { get { return "Example Node"; } }
+		public override Vector2 DefaultSize { get { return new Vector2 (150, 60); } }
+
+		[ValueConnectionKnob("Input", Direction.In, "Float")]
+		public ValueConnectionKnob inputKnob;
+		[ValueConnectionKnob("Output", Direction.Out, "Float")]
+		public ValueConnectionKnob outputKnob;
 		
-		public override Node Create (Vector2 pos) 
-		{
-			ExampleNode node = CreateInstance<ExampleNode> ();
-			
-			node.rect = new Rect (pos.x, pos.y, 150, 60);
-			node.name = "Example Node";
-			
-			node.CreateInput ("Value", "Float");
-			node.CreateOutput ("Output val", "Float");
-			
-			return node;
-		}
-		
-		protected internal override void NodeGUI () 
+		public override void NodeGUI () 
 		{
 			GUILayout.Label ("This is a custom Node!");
 
 			GUILayout.BeginHorizontal ();
 			GUILayout.BeginVertical ();
 
-			Inputs [0].DisplayLayout ();
+			inputKnob.DisplayLayout ();
 
 			GUILayout.EndVertical ();
 			GUILayout.BeginVertical ();
 			
-			Outputs [0].DisplayLayout ();
+			outputKnob.DisplayLayout ();
 			
 			GUILayout.EndVertical ();
 			GUILayout.EndHorizontal ();
@@ -44,9 +39,7 @@ namespace NodeEditorFramework.Standard
 		
 		public override bool Calculate () 
 		{
-			if (!allInputsReady ())
-				return false;
-			Outputs[0].SetValue<float> (Inputs[0].GetValue<float> () * 5);
+			outputKnob.SetValue<float> (inputKnob.GetValue<float> () * 5);
 			return true;
 		}
 	}

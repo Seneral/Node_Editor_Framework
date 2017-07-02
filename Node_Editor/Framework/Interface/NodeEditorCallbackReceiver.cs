@@ -19,10 +19,10 @@ namespace NodeEditorFramework
 		public virtual void OnAddNode (Node node) {}
 		public virtual void OnDeleteNode (Node node) {}
 		public virtual void OnMoveNode (Node node) {}
-		public virtual void OnAddNodeKnob (NodeKnob knob) {}
+		public virtual void OnAddConnectionPort (ConnectionPort knob) {}
 		// Connection
-		public virtual void OnAddConnection (NodeInput input) {}
-		public virtual void OnRemoveConnection (NodeInput input) {}
+		public virtual void OnAddConnection (ConnectionPort port1, ConnectionPort port2) {}
+		public virtual void OnRemoveConnection (ConnectionPort port1, ConnectionPort port2) {}
 	}
 
 	public static partial class NodeEditorCallbacks
@@ -159,17 +159,17 @@ namespace NodeEditorFramework
 			}
 		}
 
-		public static Action<NodeKnob> OnAddNodeKnob;
-		public static void IssueOnAddNodeKnob (NodeKnob nodeKnob) 
+		public static Action<ConnectionPort> OnAddConnectionPort;
+		public static void IssueOnAddConnectionPort (ConnectionPort connectionPort) 
 		{
-			if (OnAddNodeKnob != null)
-				OnAddNodeKnob.Invoke (nodeKnob);
+			if (OnAddConnectionPort != null)
+				OnAddConnectionPort.Invoke (connectionPort);
 			for (int cnt = 0; cnt < receiverCount; cnt++) 
 			{
 				if (callbackReceiver [cnt] == null)
 					callbackReceiver.RemoveAt (cnt--);
 				else
-					callbackReceiver [cnt].OnAddNodeKnob (nodeKnob);
+					callbackReceiver [cnt].OnAddConnectionPort (connectionPort);
 			}
 		}
 
@@ -177,31 +177,31 @@ namespace NodeEditorFramework
 
 		#region Connection (2)
 
-		public static Action<NodeInput> OnAddConnection;
-		public static void IssueOnAddConnection (NodeInput input) 
+		public static Action<ConnectionPort, ConnectionPort> OnAddConnection;
+		public static void IssueOnAddConnection (ConnectionPort port1, ConnectionPort port2) 
 		{
 			if (OnAddConnection != null)
-				OnAddConnection.Invoke (input);
+				OnAddConnection.Invoke (port1, port2);
 			for (int cnt = 0; cnt < receiverCount; cnt++) 
 			{
 				if (callbackReceiver [cnt] == null)
 					callbackReceiver.RemoveAt (cnt--);
 				else
-					callbackReceiver [cnt].OnAddConnection (input);
+					callbackReceiver [cnt].OnAddConnection (port1, port2);
 			}
 		}
 
-		public static Action<NodeInput> OnRemoveConnection;
-		public static void IssueOnRemoveConnection (NodeInput input) 
+		public static Action<ConnectionPort, ConnectionPort> OnRemoveConnection;
+		public static void IssueOnRemoveConnection (ConnectionPort port1, ConnectionPort port2)
 		{
 			if (OnRemoveConnection != null)
-				OnRemoveConnection.Invoke (input);
+				OnRemoveConnection.Invoke (port1, port2);
 			for (int cnt = 0; cnt < receiverCount; cnt++) 
 			{
 				if (callbackReceiver [cnt] == null)
 					callbackReceiver.RemoveAt (cnt--);
 				else
-					callbackReceiver [cnt].OnRemoveConnection (input);
+					callbackReceiver [cnt].OnRemoveConnection (port1, port2);
 			}
 		}
 

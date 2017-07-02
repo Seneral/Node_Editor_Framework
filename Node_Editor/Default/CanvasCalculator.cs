@@ -9,17 +9,11 @@ namespace NodeEditorFramework.Standard
 	{
 		// A list of Nodes from which calculation originates -> Call StartCalculation
 		public List<Node> workList;
-		private int calculationCount;
-		
-		private const int maxTriesOnSingleNode = 1000;
 
-		public CanvasCalculator (NodeCanvas canvas) : base(canvas)
-		{
-		}
+		public CanvasCalculator (NodeCanvas canvas) : base(canvas) {}
 
 		/// <summary>
-		/// Recalculate from every Input Node.
-		/// Usually does not need to be called at all, the smart calculation system is doing the job just fine
+		/// Recalculate from every node regarded as an input node
 		/// </summary>
 		public override void TraverseAll () 
 		{
@@ -36,8 +30,7 @@ namespace NodeEditorFramework.Standard
 		}
 
 		/// <summary>
-		/// Recalculate from this node. 
-		/// Usually does not need to be called manually
+		/// Recalculate from the specified node
 		/// </summary>
 		public override void OnChange (Node node) 
 		{
@@ -47,58 +40,57 @@ namespace NodeEditorFramework.Standard
 		}
 
 		/// <summary>
-		/// Iterates through workList and calculates everything, including children
+		/// Iteratively calculates all nodes from the worklist, including child nodes, until no further calculation is possible
 		/// </summary>
 		private void StartCalculation () 
 		{
 			if (workList == null || workList.Count == 0)
 				return;
-			// this blocks iterates through the worklist and starts calculating
-			// if a node returns false, it stops and adds the node to the worklist
-			// this workList is worked on until it's empty or a limit is reached
-			calculationCount = 0;
+			
 			bool limitReached = false;
-			for (int roundCnt = 0; !limitReached; roundCnt++)
-			{ // Runs until every node possible is calculated
+			while (!limitReached)
+			{ // Runs until the whole workList is calculated thoroughly or no further calculation is possible
 				limitReached = true;
 				for (int workCnt = 0; workCnt < workList.Count; workCnt++)
-				{
+				{ // Iteratively check workList
 					if (ContinueCalculation (workList[workCnt]))
 						limitReached = false;
 				}
-				if (roundCnt > maxTriesOnSingleNode)
-					limitReached = true;
+			}
+			if (workList.Count > 0)
+			{
+				Debug.LogError("Did not complete calculation! " + workList.Count + " nodes block calculation from advancing!");
+				foreach (Node node in workList)
+					Debug.LogError("" + node.name + " blocks calculation!");
 			}
 		}
 
 		/// <summary>
-		/// Recursive function which continues calculation on this node and all the child nodes
-		/// Usually does not need to be called manually
-		/// Returns success/failure of this node only
+		/// Recursively calculates this node and it's children
+		/// All nodes that could not be calculated in the current state are added to the workList for later calculation
+		/// Returns whether calculation could advance at all
 		/// </summary>
 		private bool ContinueCalculation (Node node) 
 		{
-			if (node.calculated)
-				return false;
-			if ((node.descendantsCalculated () || node.isInLoop ()) && node.Calculate ())
-			{ // finished Calculating, continue with the children
-				node.calculated = true;
-				calculationCount++;
+			if (node.calculated && !node.AllowRecursion)
+			{ // Already calulated
 				workList.Remove (node);
-				if (node.ContinueCalculation && calculationCount < 1000) 
-				{
-					foreach (NodeOutput output in node.Outputs)
-					{
-						foreach (NodeInput connection in output.connections)
-							ContinueCalculation (connection.body);
-					}
+				return true;
+			}
+			if (node.descendantsCalculated () && node.Calculate ())
+			{ // Calculation was successful
+				node.calculated = true;
+				workList.Remove (node);
+				if (node.ContinueCalculation)
+				{ // Continue with children
+					foreach (ConnectionPort outputPort in node.outputPorts)
+						foreach (ConnectionPort connectionPort in outputPort.connections)
+							ContinueCalculation (connectionPort.body);
 				}
-				else if (calculationCount >= 1000)
-					Debug.LogError ("Stopped calculation because of suspected Recursion. Maximum calculation iteration is currently at 1000!");
 				return true;
 			}
 			else if (!workList.Contains (node)) 
-			{ // failed to calculate, add it to check later
+			{ // Calculation failed, record to calculate later on
 				workList.Add (node);
 			}
 			return false;

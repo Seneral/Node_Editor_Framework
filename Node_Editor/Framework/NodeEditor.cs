@@ -75,9 +75,10 @@ namespace NodeEditorFramework
 			ResourceManager.SetDefaultResourcePath (editorPath + "Resources/");
 
 			// Run fetching algorithms searching the script assemblies for Custom Nodes / Connection Types / NodeCanvas Types
-			ConnectionTypes.FetchTypes ();
-			NodeTypes.FetchNodes ();
-			NodeCanvasManager.GetAllCanvasTypes();
+			ConnectionPortStyles.FetchConnectionPortStyles();
+			NodeTypes.FetchNodeTypes ();
+			NodeCanvasManager.FetchCanvasTypes ();
+			ConnectionPortManager.FetchNodeConnectionDeclarations ();
 
 			// Setup Callback system
 			NodeEditorCallbacks.SetupReceivers ();
@@ -131,7 +132,7 @@ namespace NodeEditorFramework
 				string[] assets = UnityEditor.AssetDatabase.FindAssets ("NodeEditorCallbackReceiver"); // Something relatively unique
 				if (assets.Length != 1) 
 				{
-					assets = UnityEditor.AssetDatabase.FindAssets ("ConnectionTypes"); // Another try
+					assets = UnityEditor.AssetDatabase.FindAssets ("ConnectionPortManager"); // Another try
 					if (assets.Length != 1) 
 						throw new UnityException ("Node Editor: Not installed in default directory '" + editorPath + "'! Correct path could not be detected! Please correct the editorPath variable in NodeEditor.cs!");
 				}
@@ -208,16 +209,9 @@ namespace NodeEditorFramework
 				RepaintClients ();
 			}
 
-			if (curEditorState.connectOutput != null)
+			if (curEditorState.connectKnob != null)
 			{ // Draw the currently drawn connection
-				NodeOutput output = curEditorState.connectOutput;
-				Vector2 startPos = output.GetGUIKnob ().center;
-				Vector2 startDir = output.GetDirection ();
-				Vector2 endPos = Event.current.mousePosition;
-				Vector2 endDir = -startDir; // NodeEditorGUI.GetSecondConnectionVector (startPos, endPos, startDir); <- causes unpleasant jumping when switching polarity
-
-				NodeEditorGUI.OptimiseBezierDirections (startPos, ref startDir, endPos, ref endDir);
-				NodeEditorGUI.DrawConnection (startPos, startDir, endPos, endDir, output.typeData.Color);
+				curEditorState.connectKnob.DrawConnection (Event.current.mousePosition);
 				RepaintClients ();
 			}
 
@@ -285,14 +279,14 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static Node NodeAtPosition (Vector2 canvasPos)
 		{
-			NodeKnob focusedKnob;
+			ConnectionKnob focusedKnob;
 			return NodeAtPosition (curEditorState, canvasPos, out focusedKnob);
 		}
 
 		/// <summary>
 		/// Returns the node at the specified canvas-space position in the current editor and returns a possible focused knob aswell
 		/// </summary>
-		public static Node NodeAtPosition (Vector2 canvasPos, out NodeKnob focusedKnob)
+		public static Node NodeAtPosition (Vector2 canvasPos, out ConnectionKnob focusedKnob)
 		{
 			return NodeAtPosition (curEditorState, canvasPos, out focusedKnob);
 		}
@@ -300,25 +294,17 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Returns the node at the specified canvas-space position in the specified editor and returns a possible focused knob aswell
 		/// </summary>
-		public static Node NodeAtPosition (NodeEditorState editorState, Vector2 canvasPos, out NodeKnob focusedKnob)
+		public static Node NodeAtPosition (NodeEditorState editorState, Vector2 canvasPos, out ConnectionKnob focusedKnob)
 		{
 			focusedKnob = null;
-			if (NodeEditorInputSystem.shouldIgnoreInput (editorState))
+			if (editorState == null || NodeEditorInputSystem.shouldIgnoreInput (editorState))
 				return null;
 			NodeCanvas canvas = editorState.canvas;
 			for (int nodeCnt = canvas.nodes.Count-1; nodeCnt >= 0; nodeCnt--) 
 			{ // Check from top to bottom because of the render order
 				Node node = canvas.nodes [nodeCnt];
-				if (node.rect.Contains (canvasPos))
-					return node;
-				for (int knobCnt = 0; knobCnt < node.nodeKnobs.Count; knobCnt++)
-				{ // Check if any nodeKnob is focused instead
-					if (node.nodeKnobs[knobCnt].GetCanvasSpaceKnob ().Contains (canvasPos)) 
-					{
-						focusedKnob = node.nodeKnobs[knobCnt];
-						return node;
-					}
-				}
+				if (node.ClickTest (canvasPos, out focusedKnob))
+					return node; // Node is clicked on
 			}
 			return null;
 		}

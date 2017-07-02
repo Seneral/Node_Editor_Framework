@@ -16,8 +16,6 @@ namespace NodeEditorFramework.Standard
 
 		public void OnEnable () 
 		{
-			if (Traversal == null)
-				Traversal = new CanvasCalculator (this);
 			// Register to other callbacks, f.E.:
 			//NodeEditorCallbacks.OnDeleteNode += OnDeleteNode;
 		}

@@ -4,12 +4,10 @@ using NodeEditorFramework;
 
 namespace NodeEditorFramework.Standard
 {
-	public class FloatType : IConnectionTypeDeclaration 
+	public class FloatConnectionType : ValueConnectionType
 	{
-		public string Identifier { get { return "Float"; } }
-		public Type Type { get { return typeof(float); } }
-		public Color Color { get { return Color.cyan; } }
-		public string InKnobTex { get { return "Textures/In_Knob.png"; } }
-		public string OutKnobTex { get { return "Textures/Out_Knob.png"; } }
+		public override string Identifier { get { return "Float"; } }
+		public override Color Color { get { return Color.cyan; } }
+		public override Type Type { get { return typeof(float); } }
 	}
 }

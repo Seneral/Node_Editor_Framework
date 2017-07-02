@@ -438,7 +438,7 @@ namespace NodeEditorFramework
 				{ // Dragging -> Apply drag to body and pinned nodes
 					active.rect.position = newSizePos;
 					foreach (Node pinnedNode in pinnedNodes)
-						pinnedNode.rect.position += dragChange;
+						pinnedNode.position += dragChange;
 					foreach (NodeGroup pinnedGroup in pinnedGroups)
 						pinnedGroup.rect.position += dragChange;
 				}
