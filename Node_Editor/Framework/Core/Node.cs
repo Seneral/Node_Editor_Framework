@@ -208,17 +208,6 @@ namespace NodeEditorFramework
 		}
 
 		/// <summary>
-		/// Returns an unassigned sample of the specified node ID
-		/// </summary>
-		internal static Node CreateSample (Type nodeType) 
-		{
-			Node sample = (Node)ScriptableObject.CreateInstance (nodeType);
-			if (sample != null)
-				sample.Init ();
-			return sample;
-		}
-
-		/// <summary>
 		/// Deletes this Node from curNodeCanvas and the save file
 		/// </summary>
 		public void Delete (bool silent = false) 
