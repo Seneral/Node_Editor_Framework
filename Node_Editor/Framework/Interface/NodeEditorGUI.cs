@@ -9,7 +9,6 @@ namespace NodeEditorFramework
 
 	public static partial class NodeEditorGUI 
 	{
-		internal static string curEditorUser;
 		internal static bool isEditorWindow;
 
 		// static GUI settings, textures and styles
@@ -121,22 +120,19 @@ namespace NodeEditorFramework
 			return true;
 		}
 
-		public static void StartNodeGUI (string editorUser, bool IsEditorWindow) 
+		public static void StartNodeGUI (bool IsEditorWindow) 
 		{
 			NodeEditor.checkInit(true);
 
-			curEditorUser = editorUser;
 			isEditorWindow = IsEditorWindow;
 
 			defaultSkin = GUI.skin;
 			if (nodeSkin != null)
 				GUI.skin = nodeSkin;
-			OverlayGUI.StartOverlayGUI (curEditorUser);
 		}
 
 		public static void EndNodeGUI () 
 		{
-			OverlayGUI.EndOverlayGUI ();
 			GUI.skin = defaultSkin;
 		}
 

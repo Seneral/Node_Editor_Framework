@@ -193,36 +193,27 @@ namespace NodeEditorFramework.Utilities
 		
 		public void Draw () 
 		{
-			bool inRect = DrawGroup (position, menuItems);
+			int inRect = DrawGroup (position, menuItems);
 			
 			while (groupToDraw != null && !close)
 			{
 				MenuItem group = groupToDraw;
 				groupToDraw = null;
-				if (group.group)
-				{
-					if (DrawGroup (group.groupPos, group.subItems))
-						inRect = true;
-				}
+				if (group.group) // Draw group and find if the mouse is in group rect
+					inRect = Mathf.Max(inRect, DrawGroup(group.groupPos, group.subItems));
 			}
-			
-			if (!inRect || close) 
+
+			if (close || inRect < 2 || (Event.current.type == EventType.MouseDown && inRect < 3)) 
 				OverlayGUI.ClosePopup ();
 
 			NodeEditor.RepaintClients ();
 		}
 		
-		private bool DrawGroup (Rect pos, List<MenuItem> menuItems) 
+		private int DrawGroup (Rect pos, List<MenuItem> menuItems) 
 		{
 			Rect rect = calculateRect (pos.position, menuItems, minWidth);
 
-			Rect clickRect = new Rect (rect);
-			clickRect.xMax += minCloseDistance;
-			clickRect.xMin -= minCloseDistance;
-			clickRect.yMax += minCloseDistance;
-			clickRect.yMin -= minCloseDistance;
-			bool inRect = rect.Contains (Event.current.mousePosition) || (Event.current.type != EventType.MouseDown && clickRect.Contains(Event.current.mousePosition));
-
+			// DRAW GROUP
 			currentItemHeight = backgroundStyle.contentOffset.y;
 			GUI.BeginGroup (extendRect (rect, backgroundStyle.contentOffset), GUIContent.none, backgroundStyle);
 			for (int itemCnt = 0; itemCnt < menuItems.Count; itemCnt++)
@@ -231,7 +222,18 @@ namespace NodeEditorFramework.Utilities
 				if (close) break;
 			}
 			GUI.EndGroup ();
-			
+
+			// MOUSE POS RECT TEST
+			int inRect = 1; // State 1: Outside of all rects
+			if (rect.Contains(Event.current.mousePosition))
+				inRect = 3; // State 3: Inside group rect
+			else
+			{
+				Rect clickRect = new Rect(rect.x - minCloseDistance, rect.y - minCloseDistance, rect.width + 2 * minCloseDistance, rect.height + 2 * minCloseDistance);
+				if (clickRect.Contains(Event.current.mousePosition))
+					inRect = 2; // State 2: Inside extended click rect
+			}
+
 			return inRect;
 		}
 		
@@ -395,7 +397,7 @@ namespace NodeEditorFramework.Utilities
 				editorMenu.ShowAsContext();
 			else
 #endif
-				popup.Show (Event.current.mousePosition);
+				popup.Show (GUIScaleUtility.GUIToScreenSpace(Event.current.mousePosition));
 		}
 
 		public void Show(Vector2 pos, float MinWidth = 40)

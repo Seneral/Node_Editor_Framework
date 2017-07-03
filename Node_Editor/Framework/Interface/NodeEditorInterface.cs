@@ -39,9 +39,11 @@ namespace NodeEditorFramework.Standard
 
 #region GUI
 
-		public void DrawToolbarGUI(float width)
+		public void DrawToolbarGUI(Rect rect)
 		{
-			GUILayout.BeginHorizontal(NodeEditorGUI.toolbar, GUILayout.Width (width));
+			rect.height = toolbarHeight;
+			GUILayout.BeginArea (rect, NodeEditorGUI.toolbar);
+			GUILayout.BeginHorizontal();
 			float curToolbarHeight = 0;
 
 			if (GUILayout.Button("File", NodeEditorGUI.toolbarDropdown, GUILayout.Width(50)))
@@ -103,6 +105,7 @@ namespace NodeEditorFramework.Standard
 			GUI.backgroundColor = Color.white;
 
 			GUILayout.EndHorizontal();
+			GUILayout.EndArea();
 			if (Event.current.type == EventType.Repaint)
 				toolbarHeight = curToolbarHeight;
 		}

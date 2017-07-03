@@ -36,8 +36,8 @@ namespace NodeEditorFramework.Standard
 		{
 			_editor = GetWindow<NodeEditorWindow>();
 			_editor.minSize = new Vector2(400, 200);
-			NodeEditor.ReInit (false);
 
+			NodeEditor.ReInit (false);
 			Texture iconTexture = ResourceManager.LoadTexture (EditorGUIUtility.isProSkin? "Textures/Icon_Dark.png" : "Textures/Icon_Light.png");
 			_editor.titleContent = new GUIContent ("Node Editor", iconTexture);
 
@@ -53,7 +53,7 @@ namespace NodeEditorFramework.Standard
 			if (Selection.activeObject != null && Selection.activeObject is NodeCanvas)
 			{
 				string NodeCanvasPath = AssetDatabase.GetAssetPath(instanceID);
-				NodeEditorWindow.OpenNodeEditor().canvasCache.LoadNodeCanvas(NodeCanvasPath);
+				OpenNodeEditor().canvasCache.LoadNodeCanvas(NodeCanvasPath);
 				return true;
 			}
 			return false;
@@ -62,59 +62,63 @@ namespace NodeEditorFramework.Standard
 		private void OnEnable()
 		{
 			_editor = this;
-			NodeEditor.checkInit(false);
+			NormalReInit();
 
+			// Subscribe to events
 			NodeEditor.ClientRepaints -= Repaint;
 			NodeEditor.ClientRepaints += Repaint;
-
 			EditorLoadingControl.justLeftPlayMode -= NormalReInit;
 			EditorLoadingControl.justLeftPlayMode += NormalReInit;
-			// Here, both justLeftPlayMode and justOpenedNewScene have to act because of timing
 			EditorLoadingControl.justOpenedNewScene -= NormalReInit;
 			EditorLoadingControl.justOpenedNewScene += NormalReInit;
-
 			SceneView.onSceneGUIDelegate -= OnSceneGUI;
 			SceneView.onSceneGUIDelegate += OnSceneGUI;
-			
-			// Setup Cache
-			canvasCache = new NodeEditorUserCache(Path.GetDirectoryName(AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject (this))));
-			editorInterface = new NodeEditorInterface();
-			editorInterface.canvasCache = canvasCache;
-			editorInterface.ShowNotificationAction = ShowNotification;
 		}
-
-		private void NormalReInit()
-		{
-			NodeEditor.ReInit(false);
-			if (canvasCache.nodeCanvas)
-				canvasCache.nodeCanvas.Validate ();
-		}
-
+		
 		private void OnDestroy()
 		{
+			// Unsubscribe from events
 			NodeEditor.ClientRepaints -= Repaint;
-
 			EditorLoadingControl.justLeftPlayMode -= NormalReInit;
 			EditorLoadingControl.justOpenedNewScene -= NormalReInit;
-
 			SceneView.onSceneGUIDelegate -= OnSceneGUI;
 
 			// Clear Cache
-			canvasCache.ClearCacheEvents ();
+			canvasCache.ClearCacheEvents();
 		}
 
 		private void OnLostFocus () 
 		{ // Save any changes made while focussing this window
 			// Will also save before possible assembly reload, scene switch, etc. because these require focussing of a different window
-			canvasCache.SaveCache ();
+			canvasCache.SaveCache();
 		}
 
 		private void OnFocus () 
 		{ // Make sure the canvas hasn't been corrupted externally
+			NormalReInit();
+		}
+
+		private void NormalReInit()
+		{
+			NodeEditor.ReInit(false);
+			AssureSetup();
+			if (canvasCache.nodeCanvas)
+				canvasCache.nodeCanvas.Validate();
+		}
+
+		private void AssureSetup()
+		{
 			if (canvasCache == null)
-				return;
-			if (canvasCache.nodeCanvas != null)
-				canvasCache.nodeCanvas.Validate ();
+			{ // Create cache
+				canvasCache = new NodeEditorUserCache(Path.GetDirectoryName(AssetDatabase.GetAssetPath(MonoScript.FromScriptableObject(this))));
+			}
+			canvasCache.AssureCanvas();
+			if (editorInterface == null)
+			{ // Setup editor interface
+				editorInterface = new NodeEditorInterface();
+				editorInterface.canvasCache = canvasCache;
+				editorInterface.ShowNotificationAction = ShowNotification;
+			}
 		}
 
 		#endregion
@@ -125,38 +129,47 @@ namespace NodeEditorFramework.Standard
 		{
 			// Initiation
 			NodeEditor.checkInit(true);
-			if (NodeEditor.InitiationError || canvasCache == null)
+			if (NodeEditor.InitiationError)
 			{
 				GUILayout.Label("Node Editor Initiation failed! Check console for more information!");
 				return;
 			}
 			AssureEditor ();
-			canvasCache.AssureCanvas ();
+			AssureSetup();
 
-			NodeEditorGUI.StartNodeGUI ("NodeEditorWindow", true);
+			// ROOT: Start Overlay GUI for popups
+			OverlayGUI.StartOverlayGUI("NodeEditorWindow");
+
+			// Begin Node Editor GUI and set canvas rect
+			NodeEditorGUI.StartNodeGUI(true);
+			canvasCache.editorState.canvasRect = canvasWindowRect;
 
 			try
 			{ // Perform drawing with error-handling
-				canvasCache.editorState.canvasRect = canvasWindowRect;
-				NodeEditor.DrawCanvas (canvasCache.nodeCanvas, canvasCache.editorState);
+				NodeEditor.DrawCanvas(canvasCache.nodeCanvas, canvasCache.editorState);
 			}
 			catch (UnityException e)
 			{ // On exceptions in drawing flush the canvas to avoid locking the UI
-				canvasCache.NewNodeCanvas ();
-				NodeEditor.ReInit (true);
-				Debug.LogError ("Unloaded Canvas due to an exception during the drawing phase!");
-				Debug.LogException (e);
+				canvasCache.NewNodeCanvas();
+				NodeEditor.ReInit(true);
+				Debug.LogError("Unloaded Canvas due to an exception during the drawing phase!");
+				Debug.LogException(e);
 			}
 
 			// Draw Interface
-			editorInterface.DrawToolbarGUI (Screen.width);
-			editorInterface.DrawModalPanel ();
+			editorInterface.DrawToolbarGUI(new Rect(0, 0, Screen.width, 0));
+			editorInterface.DrawModalPanel();
 
+			// End Node Editor GUI
 			NodeEditorGUI.EndNodeGUI();
+
+			// END ROOT: End Overlay GUI and draw popups
+			OverlayGUI.EndOverlayGUI();
 		}
 
 		private void OnSceneGUI(SceneView sceneview)
 		{
+			AssureSetup();
 			if (canvasCache.editorState != null && canvasCache.editorState.selectedNode != null)
 				canvasCache.editorState.selectedNode.OnSceneGUI();
 			SceneView.lastActiveSceneView.Repaint();
