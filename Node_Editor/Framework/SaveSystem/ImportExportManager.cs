@@ -163,6 +163,11 @@ namespace NodeEditorFramework.IO
 				}
 			}
 
+			foreach (NodeGroup group in canvas.groups)
+			{ // Record all groups
+				canvasData.groups.Add(new GroupData(group));
+			}
+
 			canvasData.editorStates = new EditorStateData[canvas.editorStates.Length];
 			for (int i = 0; i < canvas.editorStates.Length; i++)
 			{ // Record all editorStates
@@ -189,6 +194,8 @@ namespace NodeEditorFramework.IO
 			foreach (NodeData nodeData in canvasData.nodes.Values)
 			{ // Read all nodes
 				Node node = Node.Create (nodeData.typeID, nodeData.nodePos, null, true);
+				if (!string.IsNullOrEmpty(nodeData.name))
+					node.name = nodeData.name;
 				if (node == null)
 					continue;
 				foreach (ConnectionPortDeclaration portDecl in ConnectionPortManager.GetPortDeclarationEnumerator(node))
@@ -213,6 +220,15 @@ namespace NodeEditorFramework.IO
 					continue;
 				}
 				conData.port1.port.TryApplyConnection(conData.port2.port, true);
+			}
+			
+			foreach (GroupData groupData in canvasData.groups)
+			{ // Recreate groups
+				NodeGroup group = new NodeGroup();
+				group.title = groupData.name;
+				group.rect = groupData.rect;
+				group.color = groupData.color;
+				nodeCanvas.groups.Add(group);
 			}
 
 			nodeCanvas.editorStates = new NodeEditorState[canvasData.editorStates.Length];

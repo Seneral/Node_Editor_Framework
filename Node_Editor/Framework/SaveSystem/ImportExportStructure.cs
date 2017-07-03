@@ -13,6 +13,7 @@ namespace NodeEditorFramework.IO
 		public Type type;
 
 		public EditorStateData[] editorStates;
+		public List<GroupData> groups = new List<GroupData>();
 
 		public Dictionary<int, NodeData> nodes = new Dictionary<int, NodeData>();
 		public List<ConnectionData> connections = new List<ConnectionData>();
@@ -97,10 +98,32 @@ namespace NodeEditorFramework.IO
 		}
 	}
 
+	public class GroupData
+	{
+		public string name;
+		public Rect rect;
+		public Color color;
+
+		public GroupData(NodeGroup group)
+		{
+			name = group.title;
+			rect = group.rect;
+			color = group.color;
+		}
+
+		public GroupData(string Name, Rect Rect, Color Color)
+		{
+			name = Name;
+			rect = Rect;
+			color = Color;
+		}
+	}
+
 	public class NodeData
 	{
 		public Node node;
 
+		public string name;
 		public int nodeID;
 		public string typeID;
 		public Vector2 nodePos;
@@ -111,13 +134,15 @@ namespace NodeEditorFramework.IO
 		public NodeData(Node n)
 		{
 			node = n;
+			name = n.name;
 			typeID = node.GetID;
 			nodeID = node.GetHashCode();
 			nodePos = node.rect.position;
 		}
 
-		public NodeData(string TypeID, int NodeID, Vector2 Pos)
+		public NodeData(string Name, string TypeID, int NodeID, Vector2 Pos)
 		{
+			name = Name;
 			typeID = TypeID;
 			nodeID = NodeID;
 			nodePos = Pos;

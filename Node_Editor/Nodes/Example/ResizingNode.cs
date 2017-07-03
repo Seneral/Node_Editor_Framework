@@ -13,7 +13,7 @@ namespace NodeEditorFramework.Standard
 		public override Vector2 MinSize { get { return new Vector2(200, 10); } }
 		public override bool AutoLayout { get { return true; } }
 
-		private List<string> labels = new List<string>();
+		public List<string> labels = new List<string>();
 		private string newLabel = "";
 
 		public override void NodeGUI()
