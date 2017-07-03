@@ -28,7 +28,7 @@ namespace NodeEditorFramework
 
 		public Rect rect;
 		public string title;
-		public Color color { get { return _color; } set { _color = value; } }
+		public Color color { get { return _color; } set { _color = value; GenerateStyles(); } }
 		[SerializeField]
 		private Color _color = Color.blue;
 
@@ -36,8 +36,8 @@ namespace NodeEditorFramework
 
 		// Resizing and dragging state for active node group
 		private static BorderSelection resizeDir;
-		internal static List<Node> pinnedNodes = new List<Node> ();
-		internal static List<NodeGroup> pinnedGroups = new List<NodeGroup> ();
+		[NonSerialized] private List<Node> pinnedNodes = new List<Node> ();
+		[NonSerialized] private List<NodeGroup> pinnedGroups = new List<NodeGroup> ();
 
 		// Settings
 		private static bool headerFree = true;
@@ -50,15 +50,20 @@ namespace NodeEditorFramework
 		private Rect bodyRect { get { return new Rect (rect.x, rect.y + (headerFree? 0 : headerHeight), rect.width, rect.height - (headerFree? 0 : headerHeight)); } }
 
 		/// <summary>
+		/// Silently creates a NodeGroup
+		/// </summary>
+		internal NodeGroup() {}
+
+		/// <summary>
 		/// Creates a new NodeGroup with the specified title at pos and adds it to the current canvas
 		/// </summary>
-		private NodeGroup (string groupTitle, Vector2 pos)
+		public NodeGroup(string groupTitle, Vector2 pos)
 		{
 			title = groupTitle;
-			rect = new Rect (pos.x, pos.y, 400, 400);
-			GenerateStyles ();
-			NodeEditor.curNodeCanvas.groups.Add (this);
-			UpdateGroupOrder ();
+			rect = new Rect(pos.x, pos.y, 400, 400);
+			GenerateStyles();
+			NodeEditor.curNodeCanvas.groups.Add(this);
+			UpdateGroupOrder();
 		}
 
 		/// <summary>
@@ -76,29 +81,17 @@ namespace NodeEditorFramework
 		/// </summary>
 		private void UpdatePins ()
 		{
-			pinnedNodes = new List<Node> ();
 			pinnedGroups = new List<NodeGroup> ();
-			AddPins ();
-		}
-
-		/// <summary>
-		/// Recursively adds the pinned nodes and subGroups to the active group's pinned nodes and groups
-		/// </summary>
-		private void AddPins ()
-		{
-			for (int groupCnt = NodeEditor.curNodeCanvas.groups.IndexOf (this); groupCnt < NodeEditor.curNodeCanvas.groups.Count; groupCnt++)
+			foreach (NodeGroup group in NodeEditor.curNodeCanvas.groups)
 			{ // Get all pinned groups -> all groups atleast half in the group
-				NodeGroup group = NodeEditor.curNodeCanvas.groups[groupCnt];
-				if (rect.Contains (group.rect.center) && group != this && !pinnedGroups.Contains (group))
-				{
-					pinnedGroups.Add (group);
-					group.AddPins ();
-				}
+				if (group != this && rect.Contains(group.headerRect.center))
+					pinnedGroups.Add(group);
 			}
-			foreach (Node node in NodeEditor.curNodeCanvas.nodes) 
+			pinnedNodes = new List<Node>();
+			foreach (Node node in NodeEditor.curNodeCanvas.nodes)
 			{ // Get all pinned nodes -> all nodes atleast half in the group
-				if (rect.Contains (node.rect.center) && !pinnedNodes.Contains (node))
-					pinnedNodes.Add (node);
+				if (rect.Contains(node.rect.center))
+					pinnedNodes.Add(node);
 			}
 		}
 
@@ -107,7 +100,13 @@ namespace NodeEditorFramework
 		/// </summary>
 		private static void UpdateGroupOrder () 
 		{
-			NodeEditor.curNodeCanvas.groups.Sort ((x, y) => -(x.rect.size.x*x.rect.size.y).CompareTo (y.rect.size.x*y.rect.size.y));
+			foreach (NodeGroup group in NodeEditor.curNodeCanvas.groups)
+				group.UpdatePins();
+			//NodeEditor.curNodeCanvas.groups.Sort((x, y) => -x.pinnedGroups.Count.CompareTo(y.pinnedGroups.Count));
+			NodeEditor.curNodeCanvas.groups = NodeEditor.curNodeCanvas.groups
+				.OrderByDescending((x) => x.pinnedGroups.Count) // Order by pin hierarchy level
+				.ThenByDescending ((x) => x.rect.size.x * x.rect.size.y) // Incase of equal level, prefer smaller groups
+				.ToList();
 		}
 
 		#endregion
@@ -133,11 +132,11 @@ namespace NodeEditorFramework
 		private void GenerateStyles ()
 		{
 			// Transparent background
-			Texture2D background = RTEditorGUI.ColorToTex (8, _color * new Color (1, 1, 1, 0.4f));
+			Texture2D background = RTEditorGUI.ColorToTex (8, color * new Color (1, 1, 1, 0.4f));
 			// lighter, less transparent background
-			Texture2D altBackground = RTEditorGUI.ColorToTex (8, _color * new Color (1, 1, 1, 0.6f));
+			Texture2D altBackground = RTEditorGUI.ColorToTex (8, color * new Color (1, 1, 1, 0.6f));
 			// nearly opaque background
-			Texture2D opBackground = RTEditorGUI.ColorToTex (8, _color * new Color (1, 1, 1, 0.9f));
+			Texture2D opBackground = RTEditorGUI.ColorToTex (8, color * new Color (1, 1, 1, 0.9f));
 
 			backgroundStyle = new GUIStyle ();
 			backgroundStyle.normal.background = background;
@@ -179,15 +178,15 @@ namespace NodeEditorFramework
 			groupRect.position += state.zoomPanAdjust + state.panOffset;
 
 			// Resize handles
-//			Rect leftSideRect = new Rect(groupRect.x, groupRect.y, borderWidth, groupRect.height);
-//			Rect rightSideRect = new Rect(groupRect.x + groupRect.width - borderWidth, groupRect.y, borderWidth, groupRect.height);
-//			Rect topSideRect = new Rect(groupRect.x, groupRect.y, groupRect.width, borderWidth);
-//			Rect bottomSideRect = new Rect(groupRect.x, groupRect.y + groupRect.height - borderWidth, groupRect.width, borderWidth);
-//
-//			GUI.Box (leftSideRect, GUIContent.none, dragHandleStyle);
-//			GUI.Box (rightSideRect, GUIContent.none, dragHandleStyle);
-//			GUI.Box (topSideRect, GUIContent.none, dragHandleStyle);
-//			GUI.Box (bottomSideRect, GUIContent.none, dragHandleStyle);
+			//Rect leftSideRect = new Rect(groupRect.x, groupRect.y, borderWidth, groupRect.height);
+			//Rect rightSideRect = new Rect(groupRect.x + groupRect.width - borderWidth, groupRect.y, borderWidth, groupRect.height);
+			//Rect topSideRect = new Rect(groupRect.x, groupRect.y, groupRect.width, borderWidth);
+			//Rect bottomSideRect = new Rect(groupRect.x, groupRect.y + groupRect.height - borderWidth, groupRect.width, borderWidth);
+
+			//GUI.Box(leftSideRect, GUIContent.none, dragHandleStyle);
+			//GUI.Box(rightSideRect, GUIContent.none, dragHandleStyle);
+			//GUI.Box(topSideRect, GUIContent.none, dragHandleStyle);
+			//GUI.Box(bottomSideRect, GUIContent.none, dragHandleStyle);
 
 			if (state.activeGroup == this && state.resizeGroup)
 			{ // Highlight the currently resized border
@@ -211,21 +210,18 @@ namespace NodeEditorFramework
 
 			// Header Title
 			if (edit)
-				title = GUILayout.TextField (title, headerTitleEditStyle);
+				title = GUILayout.TextField (title, headerTitleEditStyle, GUILayout.MinWidth (40));
 			else
-				GUILayout.Label (title, headerTitleStyle);
+				GUILayout.Label (title, headerTitleStyle, GUILayout.MinWidth(40));
+
+			GUILayout.Space(10);
 
 			// Header Color Edit
-			#if UNITY_EDITOR
-			if (edit)
+#if UNITY_EDITOR
+			if (edit && !Application.isPlaying)
 			{
 				GUILayout.Space (10);
-				Color col = UnityEditor.EditorGUILayout.ColorField (_color);
-				if (col != _color)
-				{
-					_color = col;
-					GenerateStyles ();
-				}
+				color = UnityEditor.EditorGUILayout.ColorField (color);
 			}
 			#endif
 
@@ -250,10 +246,9 @@ namespace NodeEditorFramework
 		{
 			if (NodeEditorInputSystem.shouldIgnoreInput(state))
 				return null;
-			NodeCanvas canvas = state.canvas;
-			for (int groupCnt = canvas.groups.Count-1; groupCnt >= 0; groupCnt--)
+			for (int i = state.canvas.groups.Count-1; i >= 0; i--)
 			{
-				NodeGroup group = canvas.groups[groupCnt];
+				NodeGroup group = state.canvas.groups[i];
 				if (group.headerRect.Contains(canvasPos))
 					return group;
 			}
@@ -261,17 +256,34 @@ namespace NodeEditorFramework
 		}
 
 		/// <summary>
-		/// Gets a NodeGroup under the mouse. If multiple groups are adressed, the smallest is returned.
+		/// Gets a NodeGroup under the mouse. If multiple groups are adressed, the group lowest in the pin hierarchy is returned.
 		/// </summary>
-		private static NodeGroup GroupAtPosition (NodeEditorState state, Vector2 canvasPos)
+		private static NodeGroup GroupAtPosition(NodeEditorState state, Vector2 canvasPos)
 		{
-			if (NodeEditorInputSystem.shouldIgnoreInput (state))
+			if (NodeEditorInputSystem.shouldIgnoreInput(state))
 				return null;
-			NodeCanvas canvas = state.canvas;
-			for (int groupCnt = canvas.groups.Count-1; groupCnt >= 0; groupCnt--)
+			for (int i = state.canvas.groups.Count - 1; i >= 0; i--)
 			{
-				if (canvas.groups [groupCnt].rect.Contains (canvasPos) || canvas.groups [groupCnt].headerRect.Contains (canvasPos))
-					return canvas.groups [groupCnt];
+				NodeGroup group = state.canvas.groups[i];
+				if (group.headerRect.Contains(canvasPos) || group.rect.Contains(canvasPos))
+					return group;
+			}
+			return null;
+		}
+
+		/// <summary>
+		/// Gets a NodeGroup under the mouse that requires input (header or border). If multiple groups are adressed, the group lowest in the pin hierarchy is returned.
+		/// </summary>
+		private static NodeGroup GroupAtPositionInput(NodeEditorState state, Vector2 canvasPos)
+		{
+			if (NodeEditorInputSystem.shouldIgnoreInput(state))
+				return null;
+			for (int i = state.canvas.groups.Count - 1; i >= 0; i--)
+			{
+				NodeGroup group = state.canvas.groups[i];
+				BorderSelection border;
+				if (group.headerRect.Contains(canvasPos) || CheckBorderSelection (state, group.rect, canvasPos, out border))
+					return group;
 			}
 			return null;
 		}
@@ -330,8 +342,7 @@ namespace NodeEditorFramework
 		[ContextEntryAttribute (ContextType.Canvas, "Create Group")]
 		private static void CreateGroup (NodeEditorInputInfo info) 
 		{
-			NodeEditor.curEditorState = info.editorState;
-			NodeEditor.curNodeCanvas = info.editorState.canvas;
+			info.SetAsCurrentEnvironment();
 			new NodeGroup ("Group", NodeEditor.ScreenToCanvasSpace (info.inputPos));
 		}
 
@@ -339,7 +350,7 @@ namespace NodeEditorFramework
 		/// Handles the group context click (on the header only)
 		/// </summary>
 		[EventHandlerAttribute (EventType.MouseDown, -1)] // Before the other context clicks because they won't account for groups
-		private static void HandleGroupContextClick (NodeEditorInputInfo inputInfo) 
+		private static void HandleGroupContextClick (NodeEditorInputInfo inputInfo)
 		{
 			NodeEditorState state = inputInfo.editorState;
 			if (inputInfo.inputEvent.button == 1 && state.focusedNode == null)
@@ -367,10 +378,10 @@ namespace NodeEditorFramework
 			NodeEditorState state = inputInfo.editorState;
 			if (inputInfo.inputEvent.button == 0 && state.focusedNode == null && state.dragNode == false) 
 			{ // Do not interfere with other dragging stuff
-				UpdateGroupOrder ();
-				NodeGroup focusedGroup = GroupAtPosition (state, NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos));
+				NodeGroup focusedGroup = GroupAtPositionInput (state, NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos));
 				if (focusedGroup != null)
 				{ // Start dragging the focused group
+					UpdateGroupOrder();
 					Vector2 canvasInputPos = NodeEditor.ScreenToCanvasSpace(inputInfo.inputPos);
 					if (CheckBorderSelection (state, focusedGroup.rect, canvasInputPos, out NodeGroup.resizeDir)) 
 					{ // Resizing
@@ -437,9 +448,9 @@ namespace NodeEditorFramework
 				else 
 				{ // Dragging -> Apply drag to body and pinned nodes
 					active.rect.position = newSizePos;
-					foreach (Node pinnedNode in pinnedNodes)
+					foreach (Node pinnedNode in active.pinnedNodes)
 						pinnedNode.position += dragChange;
-					foreach (NodeGroup pinnedGroup in pinnedGroups)
+					foreach (NodeGroup pinnedGroup in active.pinnedGroups)
 						pinnedGroup.rect.position += dragChange;
 				}
 				inputInfo.inputEvent.Use ();
@@ -461,6 +472,7 @@ namespace NodeEditorFramework
 				inputInfo.editorState.EndDrag ("group");
 				NodeEditor.RepaintClients();
 			}
+			UpdateGroupOrder();
 			inputInfo.editorState.activeGroup = null;
 			inputInfo.editorState.resizeGroup = false;
 		}
