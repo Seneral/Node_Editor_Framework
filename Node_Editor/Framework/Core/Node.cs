@@ -29,6 +29,7 @@ namespace NodeEditorFramework
 		// Internal
 		internal Vector2 contentOffset = Vector2.zero;
 		internal Vector2 nodeGUIHeight;
+		internal bool ignoreGUIKnobPlacement;
 
 		// Style
 		public Color backgroundColor = Color.white;
@@ -115,7 +116,22 @@ namespace NodeEditorFramework
 		/// Used to display a custom node property editor in the GUI.
 		/// By default shows the standard NodeGUI.
 		/// </summary>
-		public virtual void DrawNodePropertyEditor ()  { NodeGUI (); }
+		public virtual void DrawNodePropertyEditor ()
+		{
+			try
+			{ // Draw Node GUI without disturbing knob placement
+				ignoreGUIKnobPlacement = true;
+				NodeEditorGUI.StartNodeGUI(false);
+				GUILayout.BeginVertical(GUI.skin.box);
+				NodeGUI();
+				GUILayout.EndVertical();
+				NodeEditorGUI.EndNodeGUI();
+			}
+			finally
+			{ // Be sure to always reset the state to not mess up other GUI code
+				ignoreGUIKnobPlacement = false;
+			}
+		}
 		
 		/// <summary>
 		/// Calculates the outputs of this Node depending on the inputs.

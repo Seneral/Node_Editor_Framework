@@ -247,7 +247,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void SetPosition () 
 		{
-			if (Event.current.type != EventType.Repaint)
+			if (Event.current.type != EventType.Repaint || body.ignoreGUIKnobPlacement)
 				return;
 			Vector2 pos = GUILayoutUtility.GetLastRect ().center + body.contentOffset;
 			SetPosition (side == NodeSide.Bottom || side == NodeSide.Top? pos.x : pos.y);
@@ -258,6 +258,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void SetPosition(float position, NodeSide nodeSide)
 		{
+			if (body.ignoreGUIKnobPlacement)
+				return;
 			if (side != nodeSide)
 			{
 				side = nodeSide;
@@ -271,6 +273,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void SetPosition(float position)
 		{
+			if (body.ignoreGUIKnobPlacement)
+				return;
 			sidePosition = position;
 		}
 

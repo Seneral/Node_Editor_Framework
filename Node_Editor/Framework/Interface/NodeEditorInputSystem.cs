@@ -251,11 +251,13 @@ namespace NodeEditorFramework
 				unfocusControlsForState = state;
 				state.selectedNode = state.focusedNode;
 				NodeEditor.RepaintClients ();
-			#if UNITY_EDITOR
-				if (state.selectedNode != null)
-					UnityEditor.Selection.activeObject = state.selectedNode;
-			#endif
 			}
+#if UNITY_EDITOR
+			if (state.selectedNode != null)
+				UnityEditor.Selection.activeObject = state.selectedNode;
+			else
+				UnityEditor.Selection.activeObject = state.canvas;
+#endif
 		}
 
 		// CONTEXT CLICKS
