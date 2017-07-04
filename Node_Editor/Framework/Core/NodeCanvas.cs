@@ -117,6 +117,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		public void Validate ()
 		{
+			NodeEditor.checkInit(false);
+
 			// Check Groups
 			CheckNodeCanvasList(ref groups, "groups");
 

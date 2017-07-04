@@ -243,13 +243,14 @@ namespace NodeEditorFramework.Utilities
 		/// <summary>
 		/// Text Field with label for ingame purposes. Behaves like UnityEditor.EditorGUILayout.TextField
 		/// </summary>
-		public static string TextField (GUIContent label, string text, GUIStyle style, params GUILayoutOption[] options)
+		public static string TextField (GUIContent label, string text, GUIStyle style = null, params GUILayoutOption[] options)
 		{
 			#if UNITY_EDITOR
 			if (!Application.isPlaying)
 				return UnityEditor.EditorGUILayout.TextField (label, text);
 			#endif
 			if (style == null) style = GUI.skin.textField;
+			if (text == null) text = "";
 			Rect totalPos = GetFieldRect (label, style, options);
 			Rect fieldPos = PrefixLabel (totalPos, 0.5f, label, GUI.skin.label);
 			text = GUI.TextField (fieldPos, text);

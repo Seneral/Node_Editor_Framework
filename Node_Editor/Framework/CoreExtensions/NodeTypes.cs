@@ -113,14 +113,7 @@ namespace NodeEditorFramework
 		public string contextText { get; private set; }
 		public Type[] limitToCanvasTypes { get; private set; }
 
-		public NodeAttribute (bool HideNode, string ReplacedContextText)
-		{
-			hide = HideNode;
-			contextText = ReplacedContextText;
-			limitToCanvasTypes = null;
-		}
-
-		public NodeAttribute (bool HideNode, string ReplacedContextText, Type[] limitedCanvasTypes)
+		public NodeAttribute (bool HideNode, string ReplacedContextText, params Type[] limitedCanvasTypes)
 		{
 			hide = HideNode;
 			contextText = ReplacedContextText;
