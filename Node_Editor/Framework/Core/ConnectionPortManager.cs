@@ -55,7 +55,7 @@ namespace NodeEditorFramework
 				}
 				else 
 				{ // Check port values against port declaration
-					portDecl.portInfo.UpdatePropeties (port);
+					portDecl.portInfo.UpdateProperties (port);
 				}
 			}
 		}
@@ -63,7 +63,7 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Updates the connectionPorts and connectionKnobs lists of the given node with all declared nodes
 		/// </summary>
-		public static void UpdatePortList (Node node) 
+		public static void UpdatePortLists (Node node) 
 		{
 			foreach (ConnectionPortDeclaration portDecl in GetPortDeclarationEnumerator (node, true))
 			{ /* Triggering is enough to update the list */ }

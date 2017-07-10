@@ -126,7 +126,11 @@ namespace NodeEditorFramework
 			// Check Nodes and their connection ports
 			CheckNodeCanvasList(ref nodes, "nodes");
 			foreach (Node node in nodes)
+			{
 				ConnectionPortManager.UpdateConnectionPorts(node);
+				foreach (ConnectionPort port in node.connectionPorts)
+					port.Validate(node);
+			}
 
 			// Check EditorStates
 			if (editorStates == null)

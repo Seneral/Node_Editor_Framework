@@ -256,11 +256,10 @@ namespace NodeEditorFramework
 				for (int nodeCnt = 0; nodeCnt < prevSave.nodes.Count; nodeCnt++) 
 				{
 					Node node = prevSave.nodes[nodeCnt];
+					// Make sure all node ports are included in the representative connectionPorts list
+					ConnectionPortManager.UpdatePortLists(node);
 					for (int k = 0; k < node.connectionPorts.Count; k++)
-					{
-						if (node.connectionPorts[k] != null)
-							Object.DestroyImmediate (node.connectionPorts[k], true);
-					}
+						Object.DestroyImmediate(node.connectionPorts[k], true);
 					Object.DestroyImmediate (node, true);
 				}
 				for (int i = 0; i < prevSave.editorStates.Length; i++)
@@ -284,12 +283,14 @@ namespace NodeEditorFramework
 			{ // Write node and additional scriptable objects
 				AddSubAsset (node, canvasSave);
 				AddSubAssets (node.GetScriptableObjects (), node);
+				// Make sure all node ports are included in the representative connectionPorts list
+				ConnectionPortManager.UpdatePortLists(node);
 				foreach (ConnectionPort port in node.connectionPorts)
 					AddSubAsset (port, node);
 			}
 
-			//UnityEditor.AssetDatabase.SaveAssets ();
-			//UnityEditor.AssetDatabase.Refresh ();
+			UnityEditor.AssetDatabase.SaveAssets ();
+			UnityEditor.AssetDatabase.Refresh ();
 
 			NodeEditorCallbacks.IssueOnSaveCanvas (canvasSave);
 			
@@ -402,10 +403,10 @@ namespace NodeEditorFramework
 				// Clone Node and additional scriptableObjects
 				Node clonedNode = AddClonedSO (allSOs, clonedSOs, node);
 				AddClonedSOs (allSOs, clonedSOs, clonedNode.GetScriptableObjects ());
-				
-				// Clone ConnectionPorts from their declaring fields
-				foreach (ConnectionPortDeclaration portDecl in ConnectionPortManager.GetPortDeclarationEnumerator (clonedNode))
-					AddClonedSO (allSOs, clonedSOs, (ConnectionPort)portDecl.portField.GetValue (clonedNode));
+
+				// Update representative port list connectionPorts with all ports and clone them
+				ConnectionPortManager.UpdatePortLists(clonedNode);
+				AddClonedSOs(allSOs, clonedSOs, clonedNode.connectionPorts);
 			}
 
 			// Replace every reference to any of the initial SOs of the first list with the respective clones of the second list
@@ -420,14 +421,14 @@ namespace NodeEditorFramework
 				clonedNode.CopyScriptableObjects (copySOs);
 
 				// Replace ConnectionPorts
-				foreach (ConnectionPortDeclaration portDecl in ConnectionPortManager.GetPortDeclarationEnumerator (clonedNode, true))
+				foreach (ConnectionPortDeclaration portDecl in ConnectionPortManager.GetPortDeclarationEnumerator(clonedNode, true))
 				{ // Iterate over each port declaration and replace it with it's connections
-					ConnectionPort port = (ConnectionPort)portDecl.portField.GetValue (clonedNode);
-					port = ReplaceSO (allSOs, clonedSOs, port);
+					ConnectionPort port = (ConnectionPort)portDecl.portField.GetValue(clonedNode);
+					port = ReplaceSO(allSOs, clonedSOs, port);
 					for (int i = 0; i < port.connections.Count; i++)
 						port.connections[i] = ReplaceSO (allSOs, clonedSOs, port.connections[i]);
 					port.body = clonedNode;
-					portDecl.portField.SetValue (clonedNode, port);
+					portDecl.portField.SetValue(clonedNode, port);
 				}
 			}
 
@@ -482,12 +483,15 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Clones SOs and writes both the initial and cloned versions into the respective list
 		/// </summary>
-		private static void AddClonedSOs (List<ScriptableObject> scriptableObjects, List<ScriptableObject> clonedScriptableObjects, ScriptableObject[] initialSOs)
+		private static void AddClonedSOs<T> (List<ScriptableObject> scriptableObjects, List<ScriptableObject> clonedScriptableObjects, IEnumerable<T> initialSOs) where T : ScriptableObject
 		{
-			// Filter out all new SOs and clone them
-			IEnumerable<ScriptableObject> newSOs = initialSOs.Where ((ScriptableObject so) => !scriptableObjects.Contains (so));
-			scriptableObjects.AddRange (newSOs);
-			clonedScriptableObjects.AddRange (newSOs.Select ((ScriptableObject so) => Clone (so)));
+			// Filter out all new SOs to add
+			IEnumerable<T> newSOs = initialSOs.Where ((T so) => !scriptableObjects.Contains (so));
+			foreach (T SO in newSOs)
+			{ // Clone and record them
+				scriptableObjects.Add(SO);
+				clonedScriptableObjects.Add(Clone(SO));
+			}
 		}
 
 		/// <summary>
@@ -500,7 +504,7 @@ namespace NodeEditorFramework
 			// Do not clone again if it already has been
 			int existing;
 			if ((existing = scriptableObjects.IndexOf (initialSO)) >= 0)
-				return (T)clonedScriptableObjects[existing];
+				return clonedScriptableObjects[existing] as T;
 			// Clone SO and add both versions to the respective list
 			scriptableObjects.Add (initialSO);
 			T clonedSO = Clone (initialSO);
@@ -517,8 +521,18 @@ namespace NodeEditorFramework
 				return null;
 			int soInd = scriptableObjects.IndexOf (initialSO);
 			if (soInd < 0)
-				Debug.LogError ("GetWorkingCopy: ScriptableObject " + initialSO.name + " was not copied before! It will be null!");
-			return soInd < 0? null : (T)clonedScriptableObjects[soInd];
+				Debug.LogError("GetWorkingCopy: ScriptableObject " + initialSO.name + " was not copied before! It will be null!");
+			else
+			{
+				ScriptableObject SO = clonedScriptableObjects[soInd];
+				if (!SO)
+					Debug.LogError("GetWorkingCopy: ScriptableObject " + initialSO.name + " has been recorded with a null copy!");
+				else if (SO is T)
+					return clonedScriptableObjects[soInd] as T;
+				else
+					Debug.LogError("GetWorkingCopy: ScriptableObject " + initialSO.name + " is not of the same type as copy " + clonedScriptableObjects[soInd].name + "!");
+			}
+			return null;
 		}
 
 		#endregion

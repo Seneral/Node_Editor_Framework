@@ -17,7 +17,6 @@ namespace NodeEditorFramework
 	{
 		// Properties
 		public Node body;
-		public Color color = Color.white;
 		public Direction direction = Direction.None;
 		public ConnectionCount maxConnectionCount = ConnectionCount.Multi;
 		public virtual ConnectionShape shape { get { return ConnectionShape.Line; } }
@@ -27,6 +26,8 @@ namespace NodeEditorFramework
 		protected ConnectionPortStyle _connectionStyle;
 		protected ConnectionPortStyle ConnectionStyle { get { CheckConnectionStyle (); return _connectionStyle; } }
 		protected virtual Type styleBaseClass { get { return typeof(ConnectionPortStyle); } }
+		[NonSerialized]
+		public Color color = Color.white;
 
 		// Connections
 		[SerializeField]
@@ -37,6 +38,21 @@ namespace NodeEditorFramework
 		{
 			body = nodeBody;
 			name = knobName;
+		}
+
+		public void Validate(Node nodeBody)
+		{
+			if (body == null)
+			{
+				Debug.LogError("Port " + name + " has no node body assigned! Fixed!");
+				body = nodeBody;
+			}
+			if (_connections == null)
+				_connections = new List<ConnectionPort>();
+			int originalCount = _connections.Count;
+			_connections = _connections.Where(o => o != null).ToList();
+			if (originalCount != _connections.Count)
+				Debug.LogWarning("Removed " + (originalCount - _connections.Count) + " broken (null) connections from node " + body.name + "! Automatically fixed!");
 		}
 
 		#region Connection GUI
@@ -283,7 +299,7 @@ namespace NodeEditorFramework
 			return port;
 		}
 
-		public virtual void UpdatePropeties (ConnectionPort port) 
+		public virtual void UpdateProperties (ConnectionPort port) 
 		{
 			port.name = Name;
 			port.direction = Direction;

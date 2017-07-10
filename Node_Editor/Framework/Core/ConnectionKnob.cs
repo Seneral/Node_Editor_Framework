@@ -345,7 +345,7 @@ namespace NodeEditorFramework
 			return knob;
 		}
 
-		public override void UpdatePropeties (ConnectionPort port) 
+		public override void UpdateProperties (ConnectionPort port) 
 		{
 			ConnectionKnob knob = (ConnectionKnob)port;
 			knob.name = Name;
