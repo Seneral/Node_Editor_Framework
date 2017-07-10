@@ -422,13 +422,22 @@ namespace NodeEditorFramework
 
 				// Replace ConnectionPorts
 				foreach (ConnectionPortDeclaration portDecl in ConnectionPortManager.GetPortDeclarationEnumerator(clonedNode, true))
-				{ // Iterate over each port declaration and replace it with it's connections
+				{ // Iterate over each static port declaration and replace it with it's connections
 					ConnectionPort port = (ConnectionPort)portDecl.portField.GetValue(clonedNode);
 					port = ReplaceSO(allSOs, clonedSOs, port);
-					for (int i = 0; i < port.connections.Count; i++)
-						port.connections[i] = ReplaceSO (allSOs, clonedSOs, port.connections[i]);
+					for (int c = 0; c < port.connections.Count; c++)
+						port.connections[c] = ReplaceSO(allSOs, clonedSOs, port.connections[c]);
 					port.body = clonedNode;
 					portDecl.portField.SetValue(clonedNode, port);
+				}
+				for (int i = 0; i < clonedNode.dynamicConnectionPorts.Count; i++)
+				{ // Iterate over all dynamic connection ports
+					ConnectionPort port = clonedNode.dynamicConnectionPorts[i];
+					port = ReplaceSO(allSOs, clonedSOs, port);
+					for (int c = 0; c < port.connections.Count; c++)
+						port.connections[c] = ReplaceSO(allSOs, clonedSOs, port.connections[c]);
+					port.body = clonedNode;
+					clonedNode.dynamicConnectionPorts[i] = port;
 				}
 			}
 

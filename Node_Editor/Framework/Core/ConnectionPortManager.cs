@@ -86,27 +86,43 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static IEnumerable GetPortDeclarationEnumerator (Node node, bool triggerUpdate = false) 
 		{
-			List<ConnectionPort> connectionPorts = new List<ConnectionPort> ();
+			List<ConnectionPort> declaredConnectionPorts = new List<ConnectionPort> ();
 			ConnectionPortDeclaration[] portDecls;
 			if (nodePortDeclarations.TryGetValue (node.GetID, out portDecls))
 			{
 				foreach (ConnectionPortDeclaration portDecl in portDecls)
 				{ // Iterate over each connection port and yield it's declaration
 					yield return portDecl;
-					connectionPorts.Add ((ConnectionPort)portDecl.portField.GetValue (node));
+					ConnectionPort port = (ConnectionPort)portDecl.portField.GetValue (node);
+					if (port != null)
+						declaredConnectionPorts.Add(port);
 				}
 			}
 			if (triggerUpdate)
 			{ // Update lists as values might have changes when calling this function
-				// Ports
-				node.connectionPorts = connectionPorts;
-				node.inputPorts = node.connectionPorts.Where ((ConnectionPort port) => port.direction == Direction.In).ToList ();
-				node.outputPorts = node.connectionPorts.Where ((ConnectionPort port) => port.direction == Direction.Out).ToList ();
-				// Knobs
-				node.connectionKnobs = connectionPorts.OfType<ConnectionKnob> ().ToList ();
-				node.inputKnobs = node.connectionKnobs.Where ((ConnectionKnob knob) => knob.direction == Direction.In).ToList ();
-				node.outputKnobs = node.connectionKnobs.Where ((ConnectionKnob knob) => knob.direction == Direction.Out).ToList ();
+				node.staticConnectionPorts = declaredConnectionPorts;
+				UpdateRepresentativePortLists(node);
 			}
+		}
+
+		/// <summary>
+		/// Update the differenciated representative port lists in the given node to accommodate to all static and dynamic connection ports
+		/// </summary>
+		public static void UpdateRepresentativePortLists(Node node)
+		{
+			// Clean source static and dynamic port lists
+			node.dynamicConnectionPorts = node.dynamicConnectionPorts.Where(o => o != null).ToList();
+			node.staticConnectionPorts = node.staticConnectionPorts.Where(o => o != null).ToList();
+			// Combine static and dynamic ports into one list
+			node.connectionPorts = new List<ConnectionPort>();
+			node.connectionPorts.AddRange(node.staticConnectionPorts);
+			node.connectionPorts.AddRange(node.dynamicConnectionPorts);
+			// Differenciate ports into types and direction
+			node.inputPorts = node.connectionPorts.Where((ConnectionPort port) => port.direction == Direction.In).ToList();
+			node.outputPorts = node.connectionPorts.Where((ConnectionPort port) => port.direction == Direction.Out).ToList();
+			node.connectionKnobs = node.connectionPorts.OfType<ConnectionKnob>().ToList();
+			node.inputKnobs = node.connectionKnobs.Where((ConnectionKnob knob) => knob.direction == Direction.In).ToList();
+			node.outputKnobs = node.connectionKnobs.Where((ConnectionKnob knob) => knob.direction == Direction.Out).ToList();
 		}
 	}
 

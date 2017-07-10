@@ -14,7 +14,11 @@ namespace NodeEditorFramework
 		public Vector2 size { get { return AutoLayout? autoSize : DefaultSize; } }
 		public Rect rect { get { return new Rect (position, size); } }
 
-		// Connection Ports - representative lists of actual port declarations in the node
+		// Dynamic connection ports
+		public List<ConnectionPort> dynamicConnectionPorts = new List<ConnectionPort>();
+		// Static connection ports stored in the actual declaration variables
+		[NonSerialized] public List<ConnectionPort> staticConnectionPorts = new List<ConnectionPort>();
+		// Representative lists of static port declarations aswell as dynamic ports
 		[NonSerialized] public List<ConnectionPort> connectionPorts = new List<ConnectionPort> ();
 		[NonSerialized] public List<ConnectionPort> inputPorts = new List<ConnectionPort> ();
 		[NonSerialized] public List<ConnectionPort> outputPorts = new List<ConnectionPort> ();
@@ -545,6 +549,44 @@ namespace NodeEditorFramework
 		}
 
 		#endregion
+
+		#endregion
+
+		#region Knob Utility
+
+		public ConnectionPort CreateConnectionPort(ConnectionPortAttribute specificationAttribute)
+		{
+			ConnectionPort port = specificationAttribute.CreateNew(this);
+			if (port == null)
+				return null;
+			dynamicConnectionPorts.Add(port);
+			ConnectionPortManager.UpdateRepresentativePortLists(this);
+			return port;
+		}
+
+		public ConnectionKnob CreateConnectionKnob(ConnectionKnobAttribute specificationAttribute)
+		{
+			return (ConnectionKnob)CreateConnectionPort(specificationAttribute);
+		}
+
+		public ValueConnectionKnob CreateValueConnectionKnob(ValueConnectionKnobAttribute specificationAttribute)
+		{
+			return (ValueConnectionKnob)CreateConnectionPort(specificationAttribute);
+		}
+
+		public void DeleteConnectionPort(ConnectionPort dynamicPort)
+		{
+			dynamicConnectionPorts.Remove(dynamicPort);
+			DestroyImmediate(dynamicPort);
+			ConnectionPortManager.UpdateRepresentativePortLists(this);
+		}
+
+		public void DeleteConnectionPort(int dynamicPortIndex)
+		{
+			DestroyImmediate(dynamicConnectionPorts[dynamicPortIndex]);
+			dynamicConnectionPorts.RemoveAt(dynamicPortIndex);
+			ConnectionPortManager.UpdateRepresentativePortLists(this);
+		}
 
 		#endregion
 	}
