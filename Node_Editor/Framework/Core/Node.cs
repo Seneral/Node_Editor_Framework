@@ -88,7 +88,7 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Initializes the node with Inputs/Outputs and other data if necessary.
 		/// </summary>
-		protected virtual void Init () {}
+		protected virtual void OnCreate() {}
 		
 		/// <summary>
 		/// Draws the Node GUI including all controls and potentially Input/Output labels.
@@ -171,15 +171,16 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Creates a node of the specified ID at pos on the current canvas, optionally auto-connecting the specified output to a matching input
 		/// </summary>
-		public static Node Create (string nodeID, Vector2 pos, ConnectionPort connectingPort = null, bool silent = false) 
+		public static Node Create (string nodeID, Vector2 pos, ConnectionPort connectingPort = null, bool silent = false, bool init = true)
 		{
-			return Create (nodeID, pos, NodeEditor.curNodeCanvas, connectingPort, silent);
+			return Create (nodeID, pos, NodeEditor.curNodeCanvas, connectingPort, silent, init);
 		}
 
 		/// <summary>
 		/// Creates a node of the specified ID at pos on the specified canvas, optionally auto-connecting the specified output to a matching input
+		/// silent disables any events, init specifies whether OnCreate should be called
 		/// </summary>
-		public static Node Create (string nodeID, Vector2 pos, NodeCanvas hostCanvas, ConnectionPort connectingPort = null, bool silent = false)
+		public static Node Create (string nodeID, Vector2 pos, NodeCanvas hostCanvas, ConnectionPort connectingPort = null, bool silent = false, bool init = true)
 		{
 			if (string.IsNullOrEmpty (nodeID) || hostCanvas == null)
 				throw new ArgumentException ();
@@ -199,7 +200,8 @@ namespace NodeEditorFramework
 			node.autoSize = node.DefaultSize;
 			node.position = pos;
 			ConnectionPortManager.UpdateConnectionPorts (node);
-			node.Init ();
+			if (init)
+				node.OnCreate();
 
 			if (connectingPort != null)
 			{ // Handle auto-connection and link the output to the first compatible input
