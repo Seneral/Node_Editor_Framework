@@ -54,11 +54,13 @@ namespace NodeEditorFramework.Standard
 
 			GUILayout.Space(10);
 
+			EditorGUI.BeginDisabledGroup(NodeEditor.curNodeCanvas != null && NodeEditor.curNodeCanvas.savePath == canvas.savePath);
 			if (GUILayout.Button("Open"))
 			{
 				string NodeCanvasPath = AssetDatabase.GetAssetPath(canvas);
 				NodeEditorWindow.OpenNodeEditor().canvasCache.LoadNodeCanvas(NodeCanvasPath);
 			}
+			EditorGUI.EndDisabledGroup();
 
 			GUILayout.Space(10);
 			
@@ -68,6 +70,13 @@ namespace NodeEditorFramework.Standard
 				string label =  node.Title;
 				EditorGUILayout.ObjectField(label, node, node.GetType(), true);
 			}
+
+			GUILayout.Space(10);
+
+			canvas.DrawCanvasPropertyEditor();
+
+			if (EditorGUI.EndChangeCheck())
+				NodeEditor.RepaintClients();
 		}
 	}
 }

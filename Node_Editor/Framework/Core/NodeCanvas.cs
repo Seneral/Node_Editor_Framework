@@ -62,7 +62,9 @@ namespace NodeEditorFramework
 
 		#endregion
 
-		#region Callbacks
+		#region Extension Methods
+
+		// GENERAL
 
 		protected virtual void OnCreate () {}
 
@@ -72,7 +74,11 @@ namespace NodeEditorFramework
 
 		public virtual bool CanAddNode (string nodeID) { return true; }
 
-		#region Additional Serialization
+		// GUI
+
+		public virtual void DrawCanvasPropertyEditor () { }
+
+		// ADDITIONAL SERIALIZATION
 
 		/// <summary>
 		/// Should return all additional ScriptableObjects this Node references
@@ -84,11 +90,10 @@ namespace NodeEditorFramework
 		/// </summary>
 		protected internal virtual void CopyScriptableObjects (System.Func<ScriptableObject, ScriptableObject> replaceSO) {}
 
-		#endregion
 
 		#endregion
 
-		#region Traversal
+		#region Methods
 
 		/// <summary>
 		/// Trigger traversal of the whole canvas
@@ -107,10 +112,6 @@ namespace NodeEditorFramework
 			if (Traversal != null && node != null)
 				Traversal.OnChange (node);
 		}
-
-		#endregion
-
-		#region Methods
 
 		/// <summary>
 		/// Validates this canvas, checking for any broken nodes or references and cleans them.
@@ -160,10 +161,10 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Updates the source of this canvas to the specified path, updating saveName and savePath aswell as livesInScene when prefixed with "SCENE/"
 		/// </summary>
-		public bool UpdateSource (string path) 
+		public void UpdateSource (string path) 
 		{
 			if (path == savePath)
-				return false;
+				return;
 			string newName;
 			if (path.StartsWith ("SCENE/"))
 			{
@@ -180,7 +181,7 @@ namespace NodeEditorFramework
 				saveName = newName;
 				livesInScene = path.StartsWith ("SCENE/");
 			}
-			return true;
+			return;
 		}
 
 		#endregion
