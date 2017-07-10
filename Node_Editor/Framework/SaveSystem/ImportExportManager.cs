@@ -128,11 +128,18 @@ namespace NodeEditorFramework.IO
 				// Create node data
 				NodeData nodeData = new NodeData (node);
 				canvasData.nodes.Add (nodeData.nodeID, nodeData);
-				
+
 				foreach (ConnectionPortDeclaration portDecl in ConnectionPortManager.GetPortDeclarationEnumerator(node))
-				{ // Fetch all connection ports and record them
+				{ // Fetch all static connection port declarations and record them
 					ConnectionPort port = (ConnectionPort)portDecl.portField.GetValue(node);
 					PortData portData = new PortData(nodeData, port, portDecl.portField.Name);
+					nodeData.connectionPorts.Add(portData);
+					portDatas.Add(port, portData);
+				}
+
+				foreach (ConnectionPort port in node.dynamicConnectionPorts)
+				{ // Fetch all dynamic connection ports and record them
+					PortData portData = new PortData(nodeData, port);
 					nodeData.connectionPorts.Add(portData);
 					portDatas.Add(port, portData);
 				}
@@ -193,17 +200,28 @@ namespace NodeEditorFramework.IO
 
 			foreach (NodeData nodeData in canvasData.nodes.Values)
 			{ // Read all nodes
-				Node node = Node.Create (nodeData.typeID, nodeData.nodePos, null, true);
+				Node node = Node.Create (nodeData.typeID, nodeData.nodePos, null, true, false);
 				if (!string.IsNullOrEmpty(nodeData.name))
 					node.name = nodeData.name;
 				if (node == null)
 					continue;
+
 				foreach (ConnectionPortDeclaration portDecl in ConnectionPortManager.GetPortDeclarationEnumerator(node))
 				{ // Find stored ports for each node port declaration
-					PortData portData = nodeData.connectionPorts.Find((PortData data) => data.varName == portDecl.portField.Name);
+					PortData portData = nodeData.connectionPorts.Find((PortData data) => data.name == portDecl.portField.Name);
 					if (portData != null) // Stored port has been found, record
 						portData.port = (ConnectionPort)portDecl.portField.GetValue(node);
 				}
+
+				foreach (PortData portData in nodeData.connectionPorts.Where(port => port.dynamic))
+				{ // Find stored dynamic connection ports
+					if (portData.port != null) // Stored port has been recreated
+					{
+						portData.port.body = node;
+						node.dynamicConnectionPorts.Add(portData.port);
+					}
+				}
+
 				foreach (VariableData varData in nodeData.variables)
 				{ // Restore stored variable to node
 					FieldInfo field = node.GetType().GetField(varData.name);
@@ -216,7 +234,7 @@ namespace NodeEditorFramework.IO
 			{ // Restore all connections
 				if (conData.port1.port == null || conData.port2.port == null)
 				{ // Not all ports where saved in canvasData
-					Debug.Log("Incomplete connection " + conData.port1.varName + " and " + conData.port2.varName + "!");
+					Debug.Log("Incomplete connection " + conData.port1.name + " and " + conData.port2.name + "!");
 					continue;
 				}
 				conData.port1.port.TryApplyConnection(conData.port2.port, true);

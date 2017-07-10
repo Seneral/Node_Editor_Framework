@@ -56,6 +56,11 @@ namespace NodeEditorFramework
 			return connections[index];
 		}
 
+		public override IEnumerable<string> AdditionalDynamicKnobData()
+		{
+			return base.AdditionalDynamicKnobData ().Concat (new List<string>() { "side", "sidePosition", "sideOffset" });
+		}
+
 		#region Knob Texture
 
 		/// <summary>

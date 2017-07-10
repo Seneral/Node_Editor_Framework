@@ -55,6 +55,11 @@ namespace NodeEditorFramework
 				Debug.LogWarning("Removed " + (originalCount - _connections.Count) + " broken (null) connections from node " + body.name + "! Automatically fixed!");
 		}
 
+		public virtual IEnumerable<string> AdditionalDynamicKnobData()
+		{
+			return new List<string>() { "styleID", "direction", "maxConnectionCount" };
+		}
+
 		#region Connection GUI
 
 		/// <summary>

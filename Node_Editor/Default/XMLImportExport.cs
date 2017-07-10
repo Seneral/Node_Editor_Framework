@@ -6,6 +6,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 using System.Xml.XPath;
+using System.Reflection;
 using UnityEngine;
 
 namespace NodeEditorFramework.IO
@@ -15,12 +16,12 @@ namespace NodeEditorFramework.IO
 		public override string FormatIdentifier { get { return "XML"; } }
 		public override string FormatExtension { get { return "xml"; } }
 
-		public override void ExportData (CanvasData data, params object[] args) 
+		public override void ExportData(CanvasData data, params object[] args)
 		{
-			if (args == null || args.Length != 1 || args[0].GetType () != typeof(string))
-				throw new ArgumentException ("Location Arguments");
+			if (args == null || args.Length != 1 || args[0].GetType() != typeof(string))
+				throw new ArgumentException("Location Arguments");
 			string path = (string)args[0];
-			
+
 			XmlDocument saveDoc = new XmlDocument();
 			XmlDeclaration decl = saveDoc.CreateXmlDeclaration("1.0", "UTF-8", null);
 			saveDoc.InsertBefore(decl, saveDoc.DocumentElement);
@@ -69,27 +70,37 @@ namespace NodeEditorFramework.IO
 				node.SetAttribute("type", nodeData.typeID);
 				node.SetAttribute("pos", nodeData.nodePos.x + "," + nodeData.nodePos.y);
 				nodes.AppendChild(node);
-				// Write port records
+
+				// NODE PORTS
+
 				foreach (PortData portData in nodeData.connectionPorts)
 				{
 					XmlElement port = saveDoc.CreateElement("Port");
-					port.SetAttribute("ID", portData.portID.ToString ());
-					port.SetAttribute("varName", portData.varName);
+					port.SetAttribute("ID", portData.portID.ToString());
+					port.SetAttribute("name", portData.name);
+					port.SetAttribute("dynamic", portData.dynamic.ToString());
+					if (portData.dynamic)
+					{ // Serialize dynamic port
+						port.SetAttribute("type", portData.dynaType.FullName);
+						foreach (string fieldName in portData.port.AdditionalDynamicKnobData())
+							SerializeFieldToXML(port, portData.port, fieldName); // Serialize all dynamic knob variables
+					}
 					node.AppendChild(port);
 				}
-				// Write variable data
+
+				// NODE VARIABLES
+
 				foreach (VariableData varData in nodeData.variables)
-				{
-					XmlElement variable = saveDoc.CreateElement("Variable");
-					variable.SetAttribute("name", varData.name);
-					node.AppendChild(variable);
+				{ // Serialize all node variables
 					if (varData.refObject != null)
+					{ // Serialize reference-type variables as 'Variable' element
+						XmlElement variable = saveDoc.CreateElement("Variable");
+						variable.SetAttribute("name", varData.name);
 						variable.SetAttribute("refID", varData.refObject.refID.ToString());
-					else
-					{ // Serialize value and append
-						variable.SetAttribute("type", varData.value.GetType ().FullName);
-						SerializeObjectToXML(variable, varData.value);
+						node.AppendChild(variable);
 					}
+					else // Serialize value-type fields in-line
+						SerializeFieldToXML(node, nodeData.node, varData.name);
 				}
 			}
 
@@ -100,8 +111,8 @@ namespace NodeEditorFramework.IO
 			foreach (ConnectionData connectionData in data.connections)
 			{
 				XmlElement connection = saveDoc.CreateElement("Connection");
-				connection.SetAttribute("port1ID", connectionData.port1.portID.ToString ());
-				connection.SetAttribute("port2ID", connectionData.port2.portID.ToString ());
+				connection.SetAttribute("port1ID", connectionData.port1.portID.ToString());
+				connection.SetAttribute("port2ID", connectionData.port2.portID.ToString());
 				connections.AppendChild(connection);
 			}
 
@@ -121,34 +132,34 @@ namespace NodeEditorFramework.IO
 			// WRITE
 
 			Directory.CreateDirectory(Path.GetDirectoryName(path));
-			using (XmlTextWriter writer = new XmlTextWriter (path, Encoding.UTF8))
+			using (XmlTextWriter writer = new XmlTextWriter(path, Encoding.UTF8))
 			{
 				writer.Formatting = Formatting.Indented;
 				writer.Indentation = 1;
 				writer.IndentChar = '\t';
-				saveDoc.Save (writer);
+				saveDoc.Save(writer);
 			}
 		}
 
-		public override CanvasData ImportData (params object[] args)
+		public override CanvasData ImportData(params object[] args)
 		{
-			if (args == null || args.Length != 1 || args[0].GetType () != typeof(string))
-				throw new ArgumentException ("Location Arguments");
+			if (args == null || args.Length != 1 || args[0].GetType() != typeof(string))
+				throw new ArgumentException("Location Arguments");
 			string path = (string)args[0];
 
-			using (FileStream fs = new FileStream (path, FileMode.Open))
+			using (FileStream fs = new FileStream(path, FileMode.Open))
 			{
-				XmlDocument data = new XmlDocument ();
-				data.Load (fs);
+				XmlDocument data = new XmlDocument();
+				data.Load(fs);
 
 				// CANVAS
 
 				string canvasName = Path.GetFileNameWithoutExtension(path);
-				XmlElement xmlCanvas = (XmlElement)data.SelectSingleNode ("//NodeCanvas");
-				Type canvasType = NodeCanvasManager.GetCanvasTypeData (xmlCanvas.GetAttribute ("type")).CanvasType;
+				XmlElement xmlCanvas = (XmlElement)data.SelectSingleNode("//NodeCanvas");
+				Type canvasType = NodeCanvasManager.GetCanvasTypeData(xmlCanvas.GetAttribute("type")).CanvasType;
 				if (canvasType == null)
-					throw new XmlException ("Could not find NodeCanvas of type '" + xmlCanvas.GetAttribute ("type") + "'!");
-				CanvasData canvasData = new CanvasData (canvasType, canvasName);
+					throw new XmlException("Could not find NodeCanvas of type '" + xmlCanvas.GetAttribute("type") + "'!");
+				CanvasData canvasData = new CanvasData(canvasType, canvasName);
 				Dictionary<int, PortData> ports = new Dictionary<int, PortData>();
 
 				// OBJECTS
@@ -169,38 +180,71 @@ namespace NodeEditorFramework.IO
 				IEnumerable<XmlElement> xmlNodes = xmlCanvas.SelectNodes("Nodes/Node").OfType<XmlElement>();
 				foreach (XmlElement xmlNode in xmlNodes)
 				{
-					string name = xmlNode.GetAttribute ("name");
+					string name = xmlNode.GetAttribute("name");
 					int nodeID = GetIntegerAttribute(xmlNode, "ID");
 					string typeID = xmlNode.GetAttribute("type");
 					Vector2 nodePos = GetVectorAttribute(xmlNode, "pos");
 					// Record
 					NodeData node = new NodeData(name, typeID, nodeID, nodePos);
 					canvasData.nodes.Add(nodeID, node);
-					// Validate and record ports
+
+					// NODE PORTS
+
 					IEnumerable<XmlElement> xmlConnectionPorts = xmlNode.SelectNodes("Port").OfType<XmlElement>();
 					foreach (XmlElement xmlPort in xmlConnectionPorts)
 					{
 						int portID = GetIntegerAttribute(xmlPort, "ID");
-						string varName = xmlPort.GetAttribute("varName");
-						PortData port = new PortData(node, varName, portID);
-						node.connectionPorts.Add(port);
-						ports.Add(portID, port);
+						string portName = xmlPort.GetAttribute("name");
+						if (string.IsNullOrEmpty(portName)) // Fallback to old save
+							portName = xmlPort.GetAttribute("varName");
+						bool dynamic = GetBooleanAttribute(xmlPort, "dynamic", false);
+						PortData portData;
+						if (!dynamic) // Record static port
+							portData = new PortData(node, portName, portID);
+						else
+						{ // Deserialize dynamic port
+							string typeName = xmlPort.GetAttribute("type");
+							Type portType = Type.GetType(typeName, true);
+							if (portType != typeof(ConnectionPort) && !portType.IsSubclassOf(typeof(ConnectionPort)))
+								continue; // Invalid type stored
+							ConnectionPort port = (ConnectionPort)ScriptableObject.CreateInstance(portType);
+							port.name = portName;
+							foreach (XmlElement portVar in xmlPort.ChildNodes.OfType<XmlElement>())
+								DeserializeFieldFromXML(portVar, port);
+							portData = new PortData(node, port, portID);
+						}
+						node.connectionPorts.Add(portData);
+						ports.Add(portID, portData);
 					}
-					// Read in variable data
+
+					// NODE VARIABLES
+					
+					foreach (XmlElement variable in xmlNode.ChildNodes.OfType<XmlElement>())
+					{ // Deserialize all value-type variables
+						if (variable.Name != "Variable" && variable.Name != "Port")
+						{
+							string varName = variable.GetAttribute("name");
+							object varValue = DeserializeFieldFromXML(variable, node.type);
+							VariableData varData = new VariableData(varName);
+							varData.value = varValue;
+							node.variables.Add(varData);
+						}
+					}
+
 					IEnumerable<XmlElement> xmlVariables = xmlNode.SelectNodes("Variable").OfType<XmlElement>();
 					foreach (XmlElement xmlVariable in xmlVariables)
-					{
+					{ // Deserialize all reference-type variables (and also value type variables in old save files)
 						string varName = xmlVariable.GetAttribute("name");
 						VariableData varData = new VariableData(varName);
 						if (xmlVariable.HasAttribute("refID"))
-						{ // Read from objects
+						{ // Read reference-type variables from objects
 							int refID = GetIntegerAttribute(xmlVariable, "refID");
 							ObjectData objData;
 							if (canvasData.objects.TryGetValue(refID, out objData))
 								varData.refObject = objData;
 						}
 						else
-						{ // Read directly
+						{ // Read value-type variable (old save file only) TODO: Remove
 							string typeName = xmlVariable.GetAttribute("type");
 							Type type = Type.GetType(typeName, true);
 							varData.value = DeserializeObjectFromXML(xmlVariable, type);
@@ -258,22 +302,75 @@ namespace NodeEditorFramework.IO
 
 		#region Utility
 
-		private void SerializeObjectToXML(XmlElement parent, object obj)
+		private XmlElement SerializeFieldToXML(XmlElement parent, object obj, string fieldName)
+		{
+			Type type = obj.GetType();
+			FieldInfo field = type.GetField(fieldName);
+			if (field == null)
+			{
+				Debug.LogWarning("Failed to find field " + fieldName + " on type " + type.Name);
+				return null;
+			}
+			object fieldValue = field.GetValue(obj);
+			XmlElement serializedValue = SerializeObjectToXML(parent, fieldValue);
+			serializedValue.SetAttribute("name", fieldName);
+			return serializedValue;
+		}
+
+		private object DeserializeFieldFromXML(XmlElement xmlElement, object obj)
+		{
+			Type type = obj.GetType();
+			return DeserializeFieldFromXML(xmlElement, type, obj);
+		}
+
+		private object DeserializeFieldFromXML(XmlElement xmlElement, Type type, object obj = null)
+		{
+			string fieldName = xmlElement.GetAttribute("name");
+			FieldInfo field = type.GetField(fieldName);
+			if (field == null)
+			{
+				Debug.LogWarning("Failed to find field " + fieldName + " on type " + type.Name);
+				return null;
+			}
+			object fieldValue = DeserializeObjectFromXML(xmlElement, field.FieldType, false);
+			if (obj != null)
+				field.SetValue(obj, fieldValue);
+			return fieldValue;
+		}
+
+		private XmlElement SerializeObjectToXML(XmlElement parent, object obj)
 		{
 			XmlSerializer serializer = new XmlSerializer(obj.GetType());
 			XPathNavigator navigator = parent.CreateNavigator();
 			using (XmlWriter writer = navigator.AppendChild())
 				serializer.Serialize(writer, obj);
+			return (XmlElement)parent.LastChild;
 		}
 
-		private object DeserializeObjectFromXML(XmlElement parent, Type type)
+		private object DeserializeObjectFromXML(XmlElement xmlElement, Type type, bool isParent = true)
 		{
-			if (!parent.HasChildNodes)
+			if (isParent && !xmlElement.HasChildNodes)
 				return null;
 			XmlSerializer serializer = new XmlSerializer(type);
-			XPathNavigator navigator = parent.FirstChild.CreateNavigator();
+			XPathNavigator navigator = (isParent ? xmlElement.FirstChild : xmlElement).CreateNavigator();
 			using (XmlReader reader = navigator.ReadSubtree())
 				return serializer.Deserialize(reader);
+		}
+
+		public delegate bool TryParseHandler<T>(string value, out T result);
+		private T GetAttribute<T>(XmlElement element, string attribute, TryParseHandler<T> handler, T defaultValue)
+		{
+			T result;
+			if (handler(element.GetAttribute(attribute), out result))
+				return result;
+			return defaultValue;
+		}
+		private T GetAttribute<T>(XmlElement element, string attribute, TryParseHandler<T> handler)
+		{
+			T result;
+			if (!handler(element.GetAttribute(attribute), out result))
+				throw new XmlException("Invalid " + typeof(T).Name + " " + attribute + " for element " + element.Name + "!");
+			return result;
 		}
 
 		private int GetIntegerAttribute(XmlElement element, string attribute, bool throwIfInvalid = true)
@@ -289,6 +386,14 @@ namespace NodeEditorFramework.IO
 			float result = 0;
 			if (!float.TryParse(element.GetAttribute(attribute), out result) && throwIfInvalid)
 				throw new XmlException("Invalid Float " + attribute + " for element " + element.Name + "!");
+			return result;
+		}
+
+		private bool GetBooleanAttribute(XmlElement element, string attribute, bool throwIfInvalid = true)
+		{
+			bool result = false;
+			if (!bool.TryParse(element.GetAttribute(attribute), out result) && throwIfInvalid)
+				throw new XmlException("Invalid Bool " + attribute + " for element " + element.Name + "!");
 			return result;
 		}
 
@@ -319,7 +424,7 @@ namespace NodeEditorFramework.IO
 		private Rect GetRectAttribute(XmlElement element, string attribute, bool throwIfInvalid = false)
 		{
 			string[] vecString = element.GetAttribute(attribute).Split(',');
-			Rect rect = new Rect (0, 0, 100, 100);
+			Rect rect = new Rect(0, 0, 100, 100);
 			float x, y, w, h;
 			if (vecString.Length == 4 && float.TryParse(vecString[0], out x) && float.TryParse(vecString[1], out y) && float.TryParse(vecString[2], out w) && float.TryParse(vecString[3], out h))
 				rect = new Rect(x, y, w, h);

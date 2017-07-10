@@ -127,6 +127,7 @@ namespace NodeEditorFramework.IO
 		public int nodeID;
 		public string typeID;
 		public Vector2 nodePos;
+		public Type type;
 		
 		public List<PortData> connectionPorts = new List<PortData>();
 		public List<VariableData> variables = new List<VariableData>();
@@ -138,6 +139,7 @@ namespace NodeEditorFramework.IO
 			typeID = node.GetID;
 			nodeID = node.GetHashCode();
 			nodePos = node.rect.position;
+			type = n.GetType();
 		}
 
 		public NodeData(string Name, string TypeID, int NodeID, Vector2 Pos)
@@ -146,6 +148,7 @@ namespace NodeEditorFramework.IO
 			typeID = TypeID;
 			nodeID = NodeID;
 			nodePos = Pos;
+			type = NodeTypes.getNodeData(typeID).type;
 		}
 	}
 
@@ -155,24 +158,52 @@ namespace NodeEditorFramework.IO
 
 		public int portID;
 		public NodeData body;
-		public string varName;
+		public string name;
+
+		public bool dynamic = false;
+		public Type dynaType;
 
 		public List<PortData> connections = new List<PortData>();
+
+		// STATIC
 
 		public PortData(NodeData Body, ConnectionPort Port, string VarName)
 		{
 			port = Port;
 			portID = port.GetHashCode();
 			body = Body;
-			varName = VarName;
+			name = VarName;
 		}
 
 		public PortData(NodeData Body, string VarName, int PortID)
 		{
 			portID = PortID;
 			body = Body;
-			varName = VarName;
+			name = VarName;
 		}
+
+		// DYNAMIC
+
+		public PortData(NodeData Body, ConnectionPort DynamicPort)
+		{
+			dynamic = true;
+			port = DynamicPort;
+			portID = port.GetHashCode();
+			body = Body;
+			name = DynamicPort.name;
+			dynaType = DynamicPort.GetType();
+		}
+
+		public PortData(NodeData Body, ConnectionPort DynamicPort, int PortID)
+		{
+			dynamic = true;
+			port = DynamicPort;
+			portID = PortID;
+			body = Body;
+			name = DynamicPort.name;
+			dynaType = DynamicPort.GetType();
+		}
+
 	}
 
 	public class ConnectionData
