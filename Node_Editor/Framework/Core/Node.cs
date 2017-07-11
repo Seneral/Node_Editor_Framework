@@ -576,6 +576,7 @@ namespace NodeEditorFramework
 
 		public void DeleteConnectionPort(ConnectionPort dynamicPort)
 		{
+			dynamicPort.ClearConnections ();
 			dynamicConnectionPorts.Remove(dynamicPort);
 			DestroyImmediate(dynamicPort);
 			ConnectionPortManager.UpdateRepresentativePortLists(this);
@@ -583,9 +584,8 @@ namespace NodeEditorFramework
 
 		public void DeleteConnectionPort(int dynamicPortIndex)
 		{
-			DestroyImmediate(dynamicConnectionPorts[dynamicPortIndex]);
-			dynamicConnectionPorts.RemoveAt(dynamicPortIndex);
-			ConnectionPortManager.UpdateRepresentativePortLists(this);
+			if (dynamicPortIndex >= 0 && dynamicPortIndex < dynamicConnectionPorts.Count)
+				DeleteConnectionPort(dynamicConnectionPorts[dynamicPortIndex]);
 		}
 
 		#endregion
