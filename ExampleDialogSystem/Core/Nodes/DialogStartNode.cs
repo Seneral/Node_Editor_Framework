@@ -3,48 +3,45 @@ using NodeEditorFramework;
 using UnityEditor;
 using UnityEngine;
 
+/// <summary>
+/// A node to start a dialog, note that the ID must be entered and be unique
+/// </summary>
 [Node(false, "Dialog/Dialog Start Node", new Type[] { typeof(DialogNodeCanvas) })]
 public class DialogStartNode : BaseDialogNode
 {
+	public override string Title {get { return "Dialog Start Node"; } }
 	public override Vector2 MinSize { get { return new Vector2(350, 60); } }
-	public override bool Resizable { get { return true; } }
+	public override bool AutoLayout { get { return true; } }
 
 	private const string Id = "dialogStartNode";
 	public override string GetID { get { return Id; } }
 	public override Type GetObjectType { get { return typeof (DialogStartNode); } }
 
+	[ValueConnectionKnob("To Next", Direction.Out, "DialogForward", NodeSide.Right, 30)]
+	public ValueConnectionKnob toNextOUT;
+	[ConnectionKnob("From Next", Direction.In, "DialogBack", NodeSide.Right, 50)]
+	public ConnectionKnob fromNextIN;
+
 	private Vector2 scroll;
 	public int DialogID;
 
-	public override Node Create(Vector2 pos)
+	protected override void OnCreate ()
 	{
-		DialogStartNode node = CreateInstance<DialogStartNode>();
-
-		//node.rect = new Rect(pos.x, pos.y, 300, 250);
-		node.rect.position = pos;
-		node.name = "Dialog Start Node";
-
-		node.CreateOutput("Next Node", "DialogForward", NodeSide.Right, 30);
-		node.CreateInput("Return Here", "DialogBack", NodeSide.Right, 50);
-
-		node.CharacterName = "Character name";
-		node.DialogLine = "Insert dialog text here";
-		node.CharacterPotrait = null;
-
-		return node;
+		base.OnCreate ();
+		CharacterName = "Character name";
+		DialogLine = "Insert dialog text here";
+		CharacterPotrait = null;
 	}
 
-	protected internal override void NodeGUI()
+	public override void NodeGUI()
 	{
-		EditorGUILayout.BeginVertical("Box", GUILayout.ExpandHeight(true));
-
 		EditorGUILayout.BeginVertical("Box");
 		GUILayout.BeginHorizontal();
 		CharacterPotrait = (Sprite)EditorGUILayout.ObjectField(CharacterPotrait, typeof(Sprite), false, GUILayout.Width(65f), GUILayout.Height(65f));
 		CharacterName = EditorGUILayout.TextField("", CharacterName);
 		GUILayout.EndHorizontal();
 
-		GUILayout.EndVertical();
+		EditorGUILayout.EndVertical();
 
 		EditorGUIUtility.labelWidth = 90;
 		DialogID = EditorGUILayout.IntField("DialogID", DialogID, GUILayout.ExpandWidth(true));
@@ -67,18 +64,17 @@ public class DialogStartNode : BaseDialogNode
 				AudioUtils.PlayClip(SoundDialog);
 		}
 		GUILayout.EndHorizontal();
-
-		EditorGUILayout.EndVertical();
 	}
 
 	public override BaseDialogNode Input(int inputValue)
 	{
 		switch (inputValue)
 		{
-			case (int)EDialogInputValue.Next:
-				if (Outputs[0].GetNodeAcrossConnection() != default(Node))
-					return Outputs[0].GetNodeAcrossConnection() as BaseDialogNode;
-				break;
+		case (int)EDialogInputValue.Next:
+			if (IsNextAvailable ())
+				return getTargetNode (toNextOUT);
+			
+			break;
 		}
 		return null;
 	}
@@ -90,6 +86,6 @@ public class DialogStartNode : BaseDialogNode
 
 	public override bool IsNextAvailable()
 	{
-		return Outputs[0].GetNodeAcrossConnection() != default(Node);
+		return IsAvailable (toNextOUT);
 	}
 }

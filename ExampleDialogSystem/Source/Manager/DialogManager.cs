@@ -41,8 +41,9 @@ public class DialogManager : MonoBehaviour
 
 	public void ShowDialogWithId(int dialogIdToLoad, bool goBackToBeginning)
 	{
-		if (_messageBoxes.ContainsKey(dialogIdToLoad))
+		if (_messageBoxes.ContainsKey (dialogIdToLoad)) {
 			return;
+		}
 
 		DialogNodeCanvas nodeCanvas;
 		if (_dialogIdTracker.TryGetValue(dialogIdToLoad, out nodeCanvas))
@@ -50,7 +51,7 @@ public class DialogManager : MonoBehaviour
 			nodeCanvas.ActivateDialog(dialogIdToLoad, goBackToBeginning);
 		}
 		else
-			Debug.LogError("Not found Dialog with ID : " + dialogIdToLoad);
+			Debug.LogError("ShowDialogWithId Not found Dialog with ID : " + dialogIdToLoad);
 
 		MessageBoxHud messageBox = GameObject.Instantiate(_messageBoxPrefab).GetComponent<MessageBoxHud>();		
 		messageBox.Construct(dialogIdToLoad, this);
@@ -67,7 +68,7 @@ public class DialogManager : MonoBehaviour
 			return nodeCanvas.GetDialog(dialogIdToLoad);
 		}
 		else
-			Debug.LogError("Not found Dialog with ID : " + dialogIdToLoad);
+			Debug.LogError("getNodeForId Not found Dialog with ID : " + dialogIdToLoad);
 		return null;
 	}
 
@@ -79,7 +80,7 @@ public class DialogManager : MonoBehaviour
 			nodeCanvas.InputToDialog(dialogIdToLoad, inputValue);
 		}
 		else
-			Debug.LogError("Not found Dialog with ID : " + dialogIdToLoad);
+			Debug.LogError("GiveInputToDialog Not found Dialog with ID : " + dialogIdToLoad);
 	}
 
 	public void OkayPressed(int dialogId)

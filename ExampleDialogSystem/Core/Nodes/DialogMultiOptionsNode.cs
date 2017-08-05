@@ -5,15 +5,29 @@ using NodeEditorFramework;
 using UnityEditor;
 using UnityEngine;
 
+/// <summary>
+/// One entry and multiple exits, one for each possible answer
+/// </summary>
 [Node(false, "Dialog/Dialog With Options Node", new Type[]{typeof(DialogNodeCanvas)})]
 public class DialogMultiOptionsNode : BaseDialogNode
 {
+	public override string Title { get { return "Dialog with Options Node"; } }
 	public override Vector2 MinSize { get { return new Vector2(400, 60); } }
-	public override bool Resizable { get { return true; } }
+	public override bool AutoLayout { get { return true; } }
 
 	private const string Id = "multiOptionDialogNode";
 	public override string GetID { get { return Id; } }
 	public override Type GetObjectType { get { return typeof(DialogMultiOptionsNode); } }
+
+	//previous node connections
+	[ValueConnectionKnob("From Previous", Direction.In, "DialogForward", NodeSide.Left, 30)]
+	public ValueConnectionKnob frinPreviousIN;
+	[ConnectionKnob("To Previous", Direction.Out, "DialogBack", NodeSide.Left, 50)]
+	public ConnectionKnob toPreviousOUT;
+
+	///Next node 
+	[ConnectionKnob("From Next",Direction.In, "DialogBack", NodeSide.Right, 50)]
+	public ConnectionKnob fromNextIN;
 
 	private const int StartValue = 276;
 	private const int SizeValue = 24;
@@ -22,36 +36,24 @@ public class DialogMultiOptionsNode : BaseDialogNode
 	List<DataHolderForOption> _options;
 	private Vector2 scroll;
 
-	public override Node Create(Vector2 pos)
+	private ValueConnectionKnobAttribute dynaCreationAttribute 
+	    = new ValueConnectionKnobAttribute(
+		   "Next Node", Direction.Out, "DialogForward", NodeSide.Right);
+	
+
+	protected override void OnCreate ()
 	{
-		DialogMultiOptionsNode node = CreateInstance<DialogMultiOptionsNode>();
+		CharacterName = "Character Name";
+		DialogLine = "Dialog Line Here";
+		CharacterPotrait = null;
 
-		//node.rect = new Rect(pos.x, pos.y, 300, 275);
-		node.rect.position = pos;
-		node.name = "Dialog with Options Node";
+		_options = new List<DataHolderForOption>();
 
-		//Previous Node Connections
-		node.CreateInput("Previous Node", "DialogForward", NodeSide.Left, 30);
-		node.CreateOutput("Back Node", "DialogBack", NodeSide.Left, 50);
-
-		////Next Node to go to
-		//node.CreateOutput("Next Node", "DialogForward", NodeSide.Right, 30);
-
-		node.CharacterName = "Character Name";
-		node.DialogLine = "Dialog Line Here";
-		node.CharacterPotrait = null;
-
-		node._options = new List<DataHolderForOption>();
-
-		node.AddNewOption();
-		
-		return node;
+		AddNewOption();
 	}
 
-	protected internal override void NodeGUI()
+	public override void NodeGUI()
 	{
-		EditorGUILayout.BeginVertical("Box", GUILayout.ExpandHeight(true));
-
 		EditorGUILayout.BeginVertical("Box");
 		GUILayout.BeginHorizontal();
 		CharacterPotrait = (Sprite)EditorGUILayout.ObjectField(CharacterPotrait, typeof(Sprite), false, GUILayout.Width(65f), GUILayout.Height(65f));
@@ -105,7 +107,6 @@ public class DialogMultiOptionsNode : BaseDialogNode
 		GUILayout.EndVertical();
 	#endregion
 
-		EditorGUILayout.EndVertical();
 	}
 	
 	private void RemoveLastOption()
@@ -114,8 +115,7 @@ public class DialogMultiOptionsNode : BaseDialogNode
 		{
 			DataHolderForOption option = _options.Last();
 			_options.Remove(option);
-			Outputs[option.NodeOutputIndex].Delete();
-			rect = new Rect(rect.x, rect.y, rect.width, rect.height - SizeValue);
+			DeleteConnectionPort(dynamicConnectionPorts.Count-1);
 		}
 	}
 
@@ -127,14 +127,14 @@ public class DialogMultiOptionsNode : BaseDialogNode
 			DataHolderForOption option = _options[i];
 			GUILayout.BeginVertical();
 			GUILayout.BeginHorizontal();
-			EditorGUILayout.LabelField(option.NodeOutputIndex + ".", GUILayout.MaxWidth(15));
+			EditorGUILayout.LabelField(i + ".", GUILayout.MaxWidth(15));
 			option.OptionDisplay = EditorGUILayout.TextArea(option.OptionDisplay, GUILayout.MinWidth(80));
-			OutputKnob (_options[i].NodeOutputIndex);
+			((ValueConnectionKnob)dynamicConnectionPorts[i]).SetPosition();
 			if (GUILayout.Button("‒", GUILayout.Width(20)))
 			{
 				_options.RemoveAt(i);
-				Outputs[option.NodeOutputIndex].Delete();
-				rect = new Rect(rect.x, rect.y, rect.width, rect.height - SizeValue);
+				DeleteConnectionPort (i);
+				i--;
 			}
 
 			GUILayout.EndHorizontal();
@@ -147,43 +147,44 @@ public class DialogMultiOptionsNode : BaseDialogNode
 	private void AddNewOption()
 	{
 		DataHolderForOption option = new DataHolderForOption {OptionDisplay = "Write Here"};
-		CreateOutput("Next Node", "DialogForward", NodeSide.Right,
-			StartValue + _options.Count * SizeValue);
-		option.NodeOutputIndex = Outputs.Count - 1;		
-		rect = new Rect(rect.x, rect.y, rect.width, rect.height + SizeValue);
+		CreateValueConnectionKnob(dynaCreationAttribute);
 		_options.Add(option);
 	}
 
 	//For Resolving the Type Mismatch Issue
 	private void IssueEditorCallBacks()
 	{
-		DataHolderForOption option = _options.Last();
-		NodeEditorCallbacks.IssueOnAddNodeKnob(Outputs[option.NodeOutputIndex]);
+		NodeEditorCallbacks.IssueOnAddConnectionPort (dynamicConnectionPorts[_options.Count - 1]);
 	}
 
 	public override BaseDialogNode Input(int inputValue)
 	{
 		switch (inputValue)
 		{
-			case (int)EDialogInputValue.Next:
-				if (Outputs[1].GetNodeAcrossConnection() != default(Node))
-					return Outputs[1].GetNodeAcrossConnection() as BaseDialogNode;
-				break;
-			case (int)EDialogInputValue.Back:
-				if(Outputs[0].GetNodeAcrossConnection() != default(Node))
-					return Outputs[0].GetNodeAcrossConnection() as BaseDialogNode;
-				break;
-			default:
-				if(Outputs[_options[inputValue].NodeOutputIndex].GetNodeAcrossConnection() != default(Node))
-					return Outputs[_options[inputValue].NodeOutputIndex].GetNodeAcrossConnection() as BaseDialogNode;
-				break;
+		case (int)EDialogInputValue.Next:
+			break;
+
+		case (int)EDialogInputValue.Back:
+			if (IsAvailable(toPreviousOUT))
+				return getTargetNode(toPreviousOUT);
+			break;
+
+		default:
+				//if(Outputs[_options[inputValue].dynamicConnectionPortsIndex].GetNodeAcrossConnection() != default(Node))
+				//	return Outputs[_options[inputValue].dynamicConnectionPortsIndex].GetNodeAcrossConnection() as BaseDialogNode;
+			//I think we -2 for next and back, but not really sure yet
+			//TODO is this right?
+			Debug.Log("checking dynamic connection port " + inputValue);
+			if (IsAvailable (dynamicConnectionPorts [inputValue]))
+				return getTargetNode (dynamicConnectionPorts [inputValue]);
+			break;
 		}
 		return null;
 	}
 
 	public override bool IsBackAvailable()
 	{
-		return Outputs[0].GetNodeAcrossConnection() != default(Node);
+		return IsAvailable (toPreviousOUT);
 	}
 
 	public override bool IsNextAvailable()
@@ -195,7 +196,7 @@ public class DialogMultiOptionsNode : BaseDialogNode
 	class DataHolderForOption
 	{
 		public string OptionDisplay;
-		public int NodeOutputIndex;				
+		//public int dynamicConnectionPortsIndex;				
 	}
 
 	public List<string> GetAllOptions()
