@@ -153,12 +153,35 @@ namespace NodeEditorFramework
 	[AttributeUsage(AttributeTargets.Field)]
 	public class ValueConnectionKnobAttribute : ConnectionKnobAttribute
 	{
+		public Type ValueType;
+
 		public override Type ConnectionType { get { return typeof(ValueConnectionKnob); } }
 
-		public ValueConnectionKnobAttribute(string name, Direction direction, string type) : base (name, direction, type) { }
-		public ValueConnectionKnobAttribute(string name, Direction direction, string type, ConnectionCount maxCount) : base (name, direction, type, maxCount) { }
-		public ValueConnectionKnobAttribute(string name, Direction direction, string type, NodeSide nodeSide, float nodeSidePos = 0) : base (name, direction, type, nodeSide, nodeSidePos) { }
-		public ValueConnectionKnobAttribute(string name, Direction direction, string type, ConnectionCount maxCount, NodeSide nodeSide, float nodeSidePos = 0) : base (name, direction, type, maxCount, nodeSide, nodeSidePos) { }
+		public ValueConnectionKnobAttribute(string name, Direction direction, string type) 
+			: base(name, direction, type) { }
+		public ValueConnectionKnobAttribute(string name, Direction direction, string type, ConnectionCount maxCount) 
+			: base(name, direction, type, maxCount) { }
+		public ValueConnectionKnobAttribute(string name, Direction direction, string type, NodeSide nodeSide, float nodeSidePos = 0) 
+			: base(name, direction, type, nodeSide, nodeSidePos) { }
+		public ValueConnectionKnobAttribute(string name, Direction direction, string type, ConnectionCount maxCount, NodeSide nodeSide, float nodeSidePos = 0) 
+			: base(name, direction, type, maxCount, nodeSide, nodeSidePos) { }
+
+		// Directly typed
+		public ValueConnectionKnobAttribute(string name, Direction direction, Type type) 
+			: base(name, direction) { Setup(type); }
+		public ValueConnectionKnobAttribute(string name, Direction direction, Type type, ConnectionCount maxCount) 
+			: base(name, direction, maxCount) { Setup(type); }
+		public ValueConnectionKnobAttribute(string name, Direction direction, Type type, NodeSide nodeSide, float nodeSidePos = 0) 
+			: base(name, direction, nodeSide, nodeSidePos) { Setup(type); }
+		public ValueConnectionKnobAttribute(string name, Direction direction, Type type, ConnectionCount maxCount, NodeSide nodeSide, float nodeSidePos = 0) 
+			: base(name, direction, maxCount, nodeSide, nodeSidePos) { Setup(type); }
+
+		protected void Setup(Type type)
+		{
+			StyleID = type.FullName;
+			ValueType = type;
+			ConnectionPortStyles.GetValueConnectionType(type);
+		}
 
 		public override bool IsCompatibleWith (ConnectionPort port) 
 		{
@@ -203,9 +226,9 @@ namespace NodeEditorFramework
 
 		public ValueConnectionType () : base () { }
 
-		public ValueConnectionType (Type valueType) : base (valueType.AssemblyQualifiedName)
+		public ValueConnectionType (Type valueType) : base (valueType.FullName)
 		{
-			identifier = valueType.Name;
+			identifier = valueType.FullName;
 			type = valueType;
 		}
 

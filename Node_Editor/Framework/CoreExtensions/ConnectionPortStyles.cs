@@ -66,9 +66,12 @@ namespace NodeEditorFramework
 				{ // A ValueConnectionType is searched, try by type name
 					Type type = Type.GetType (styleName);
 					if (type == null) // No type matching the name found either
-						throw new ArgumentException ("No ValueConnectionType could be found or created with name '" + styleName + "'!");
+					{
+						Debug.LogError ("No ValueConnectionType could be found or created with name '" + styleName + "'!");
+						return null;
+					}
 					else // Matching type found, search or create type data based on type
-						portStyle = GetValueConnectionType (type);
+						portStyle = GetValueConnectionType(type);
 				}
 				else
 				{
@@ -95,8 +98,8 @@ namespace NodeEditorFramework
 			if (valueType == null) // ValueConnectionType with type does not exist, create it
 			{
 				valueType = new ValueConnectionType (type);
-				connectionPortStyles.Add (type.Name, valueType);
-				connectionValueTypes.Add (type.Name, valueType);
+				connectionPortStyles.Add (type.FullName, valueType);
+				connectionValueTypes.Add (type.FullName, valueType);
 			}
 			return valueType;
 		}

@@ -113,7 +113,7 @@ namespace NodeEditorFramework
 		{
 //			knobTexture = RTEditorGUI.ColorToTex (1, Color.red);
 //			knobTexture = ResourceManager.GetTintedTexture (direction == Direction.Out? "Textures/Out_Knob.png" : "Textures/In_Knob.png", color);
-			knobTexture = direction == Direction.Out? ConnectionStyle.OutKnobTex : ConnectionStyle.InKnobTex;
+			knobTexture = ConnectionStyle == null? Texture2D.whiteTexture : (direction == Direction.Out? ConnectionStyle.OutKnobTex : ConnectionStyle.InKnobTex);
 		}
 
 		#endregion
