@@ -18,6 +18,7 @@ public class TestScripts : MonoBehaviour
         //Load
         if (Input.GetKeyDown(KeyCode.L))
         {
+			Debug.Log ("TestScript Update about to load dialog " + DialogIdToLoad);
             _dialogManager.ShowDialogWithId(DialogIdToLoad, true);
         }
 

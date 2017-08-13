@@ -9,47 +9,41 @@ public class DialogNodeCanvas : NodeCanvas
 	public override string canvasName { get { return "Dialog"; } }
 	public string Name = "Dialog";
 
-	[SerializeField]
-	private List<DialogStartNode> _lstDialogStartNodes = new List<DialogStartNode>();
-
 	private Dictionary<int, BaseDialogNode> _lstActiveDialogs = new Dictionary<int, BaseDialogNode>();
+
+	public DialogStartNode getDialogStartNode(int dialogID) {
+		return (DialogStartNode)this.nodes.FirstOrDefault (x => x is DialogStartNode
+			                                               && ((DialogStartNode)x).DialogID == dialogID);
+	}
 
 	public bool HasDialogWithId(int dialogIdToLoad)
 	{
-		DialogStartNode node = _lstDialogStartNodes.FirstOrDefault(x => x.DialogID == dialogIdToLoad);
-		return node != default(DialogStartNode);
-	}
-
-	public override void OnBeforeSavingCanvas()
-	{
-		this._lstDialogStartNodes.Clear();
-		foreach (Node node in this.nodes)
-		{
-			if (node is DialogStartNode)
-			{
-				_lstDialogStartNodes.Add(node as DialogStartNode);
-			}
-		}
+		DialogStartNode node = getDialogStartNode(dialogIdToLoad);
+		return node != default(Node) && node != default(DialogStartNode);
 	}
 
 	public IEnumerable<int> GetAllDialogId()
 	{
-		return _lstDialogStartNodes.Select(startNode => startNode.DialogID).ToList();
+		foreach (Node node in this.nodes) {
+			if (node is DialogStartNode) {
+				yield return ((DialogStartNode)node).DialogID;
+			}
+		}
 	}
-
+		
 	public void ActivateDialog(int dialogIdToLoad, bool goBackToBeginning)
 	{
 		BaseDialogNode node;
 		if (!_lstActiveDialogs.TryGetValue(dialogIdToLoad, out node))
 		{
-			node = _lstDialogStartNodes.First(x => x.DialogID == dialogIdToLoad);
+			node = getDialogStartNode (dialogIdToLoad);
 			_lstActiveDialogs.Add(dialogIdToLoad, node);
 		}
 		else
 		{
 			if (goBackToBeginning && !(node is DialogStartNode))
 			{
-				_lstActiveDialogs[dialogIdToLoad] = _lstDialogStartNodes.First(x => x.DialogID == dialogIdToLoad);
+				_lstActiveDialogs [dialogIdToLoad] = getDialogStartNode (dialogIdToLoad);
 			}
 		}
 	}

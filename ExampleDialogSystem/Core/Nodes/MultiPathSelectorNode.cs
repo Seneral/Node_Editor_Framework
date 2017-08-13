@@ -8,12 +8,21 @@ using UnityEngine;
 [Node(false, "Dialog/MultiPath Node", new Type[] { typeof(DialogNodeCanvas) })]
 public class MultiPathSelectorNode : BaseDialogNode
 {
+	public override string Title { get { return "Multi Path Node"; } }
 	public override Vector2 MinSize { get { return new Vector2(400, 80); } }
-	public override bool Resizable { get { return true; } }
+	public override bool AutoLayout { get { return true; } }
 
 	private const string Id = "multiPathNode";
 	public override string GetID { get { return Id; } }
 	public override Type GetObjectType { get { return typeof(MultiPathSelectorNode); } }
+
+	//Previous Node Connections
+	[ValueConnectionKnob("From Previous", Direction.In, "DialogForward", NodeSide.Left, 30)]
+	public ValueConnectionKnob fromPreviousIN;
+
+	private ValueConnectionKnobAttribute dynaCreationAttribute 
+	= new ValueConnectionKnobAttribute(
+		"To Next", Direction.Out, "DialogForward", NodeSide.Right);
 
 	public DialogBlackboard.EDialogMultiChoiceVariables ValueToTest;
 
@@ -23,29 +32,19 @@ public class MultiPathSelectorNode : BaseDialogNode
 	private const int StartValue = 54;
 	private const int SizeValue = 24;
 
-	public override Node Create(Vector2 pos)
+	protected override void OnCreate ()
 	{
-		MultiPathSelectorNode node = CreateInstance<MultiPathSelectorNode>();
+		base.OnCreate ();
+		CharacterName = "Character";
+		DialogLine = "Insert dialog text here";
+		CharacterPotrait = null;
+		ValueToTest = DialogBlackboard.EDialogMultiChoiceVariables.Random;
+		_options = new List<DataHolderForOption>();
 
-		//node.rect = new Rect(pos.x, pos.y, 300, 100);
-		node.name = "Multi Path Node";
-		node.rect.position = pos;
-
-		//Previous Node Connections
-		node.CreateInput("Previous Node", "DialogForward", NodeSide.Left, 30);		
-
-		node.CharacterName = "Character";
-		node.DialogLine = "Insert dialog text here";
-		node.CharacterPotrait = null;
-		node.ValueToTest = DialogBlackboard.EDialogMultiChoiceVariables.Random;
-		node._options = new List<DataHolderForOption>();
-
-		node.AddNewOption();
-
-		return node;
+		AddNewOption();
 	}
 
-	protected internal override void NodeGUI()
+	public override void NodeGUI()
 	{
 		GUILayout.BeginHorizontal();
 		ValueToTest =
@@ -87,20 +86,21 @@ public class MultiPathSelectorNode : BaseDialogNode
 		{
 			DataHolderForOption option = _options.Last();
 			_options.Remove(option);
-			Outputs[option.NodeOutputIndex].Delete();
-			rect = new Rect(rect.x, rect.y, rect.width, rect.height - SizeValue);
+			DeleteConnectionPort(dynamicConnectionPorts.Count-1);
 			SetNewMaxAndMin();
 		}
 	}
 
 	private void DrawOptions()
 	{
+		int i = 0;
 		foreach (DataHolderForOption option in _options)
 		{
 			GUILayout.BeginHorizontal();
 			GUILayout.BeginVertical();
 			GUILayout.Label("Value : Greater or Equal to " + Math.Round(option.MinValue, 2) + " and Less than " +
 							Math.Round(option.MaxValue, 2));
+			((ConnectionKnob)dynamicConnectionPorts[i++]).SetPosition();
 			GUILayout.Space(6);
 			GUILayout.EndVertical();
 			GUILayout.EndHorizontal();
@@ -110,9 +110,9 @@ public class MultiPathSelectorNode : BaseDialogNode
 	private void AddNewOption()
 	{
 		DataHolderForOption option = new DataHolderForOption();
-		CreateOutput("Next Node", "DialogForward", NodeSide.Right, StartValue + _options.Count * SizeValue);
-		option.NodeOutputIndex = Outputs.Count - 1;
-		rect = new Rect(rect.x, rect.y, rect.width, rect.height + SizeValue);
+		CreateValueConnectionKnob(dynaCreationAttribute);
+
+		option.NodeOutputIndex = dynamicConnectionPorts.Count - 1;
 		_options.Add(option);
 		SetNewMaxAndMin();
 	}
@@ -133,8 +133,7 @@ public class MultiPathSelectorNode : BaseDialogNode
 	//For Resolving the Type Mismatch Issue
 	private void IssueEditorCallBacks()
 	{
-		DataHolderForOption option = _options.Last();
-		NodeEditorCallbacks.IssueOnAddNodeKnob(Outputs[option.NodeOutputIndex]);
+		NodeEditorCallbacks.IssueOnAddConnectionPort (dynamicConnectionPorts[_options.Count - 1]);
 	}
 
 	public override BaseDialogNode Input(int inputValue)
@@ -145,8 +144,8 @@ public class MultiPathSelectorNode : BaseDialogNode
 
 		int nodeIndex = GetNodeIndexFor(value);
 
-		if (Outputs[nodeIndex].GetNodeAcrossConnection() != default(Node))
-			return Outputs[nodeIndex].GetNodeAcrossConnection() as BaseDialogNode;
+		if (IsAvailable (dynamicConnectionPorts [nodeIndex]))
+			return getTargetNode (dynamicConnectionPorts [nodeIndex]);
 
 		return null;
 	}
