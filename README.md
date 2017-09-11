@@ -38,7 +38,7 @@ There are several great examples depending on how you are planning to use the fr
 Get the latest development version with the best features in the [develop](https://github.com/Seneral/Node_Editor_Framework/tree/develop) branch!
 
 ### Documentation and Support
-The documentation can be found in the 'Docs' folder as raw markdown files to use with mkdocs and the compiled html version is online [here](http://seneral.github.io/Node_Editor/). Please post on the [project thread](http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738) or contact [Seneral](http://forum.unity3d.com/members/seneral.638015/) for any type of question regarding the framework, examples or documentation.
+The documentation can be found in the 'Docs' folder as raw markdown files to use with mkdocs and the compiled html version is online [here](http://seneral.github.io/Node_Editor_Framework/). Please post on the [project thread](http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738) or contact [Seneral](http://forum.unity3d.com/members/seneral.638015/) for any type of question regarding the framework, examples or documentation.
 
 ### Contributing
 If you want to contribute to this framework or have improved this framework internally to suit your needs better, please consider creating a Pull Request with your changes when they could help the framework become better. The [issues section](https://github.com/Seneral/Node_Editor_Framework/issues) serves as a feature discussion forum and I encourage you to check it out to get an idea of the future plans for the framework. You can also PM the main developer [Seneral](http://forum.unity3d.com/members/seneral.638015/) directly if you wish so.
