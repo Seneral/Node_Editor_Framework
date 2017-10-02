@@ -3,22 +3,24 @@ using System;
 using System.Collections;
 using NodeEditorFramework;
 
-public class Texture2DType : IConnectionTypeDeclaration 
+
+
+public class Texture2DType : ValueConnectionType //IConnectionTypeDeclaration 
 {
-	public string Identifier { get { return "Texture2D"; } }
-	public Type Type { get { return typeof(Texture2D); } }
-	public Color Color { get { return Color.magenta; } }
-	public string InKnobTex { get { return "Textures/In_Knob.png"; } }
-	public string OutKnobTex { get { return "Textures/Out_Knob.png"; } }
+	public override string Identifier { get { return "Texture2D"; } }
+	public override Type Type { get { return typeof(Texture2D); } }
+	public override Color Color { get { return Color.magenta; } }
+	//public override string InKnobTex { get { return "Textures/In_Knob.png"; } }
+	//public override string OutKnobTex { get { return "Textures/Out_Knob.png"; } }
 }
 
-public class ChannelType : IConnectionTypeDeclaration 
+public class ChannelType : ValueConnectionType //IConnectionTypeDeclaration 
 {
-	public string Identifier { get { return "Channel"; } }
-	public Type Type { get { return typeof(Channel); } }
-	public Color Color { get { return Color.yellow; } }
-	public string InKnobTex { get { return "Textures/In_Knob.png"; } }
-	public string OutKnobTex { get { return "Textures/Out_Knob.png"; } }
+	public override string Identifier { get { return "Channel"; } }
+	public override Type Type { get { return typeof(Channel); } }
+	public override Color Color { get { return Color.yellow; } }
+	//public override string InKnobTex { get { return "Textures/In_Knob.png"; } }
+	//public override string OutKnobTex { get { return "Textures/Out_Knob.png"; } }
 }
 
 public class Channel 

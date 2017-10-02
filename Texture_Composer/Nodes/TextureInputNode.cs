@@ -9,23 +9,19 @@ public class TextureInputNode : Node
 	public const string ID = "texInNode";
 	public override string GetID { get { return ID; } }
 
+	public override string Title { get { return "Texture Input"; } }
+	public override Vector2 DefaultSize { get { return new Vector2 (100, 120); } }
+
+	[ValueConnectionKnob("Texture", Direction.Out, "Texture2D")]
+	public ValueConnectionKnob outputKnob;
+
 	public Texture2D tex;
-	
-	public override Node Create (Vector2 pos) 
-	{
-		TextureInputNode node = ScriptableObject.CreateInstance <TextureInputNode> ();
 
-		node.name = "Texture Input";
-		node.rect = new Rect (pos.x, pos.y, 100, 120);
-		
-		node.CreateOutput ("Texture", "Texture2D");
 
-		return node;
-	}
-	
-	protected override void NodeGUI () 
+	public override void NodeGUI () 
 	{
-		Outputs [0].DisplayLayout (new GUIContent ("Texture", "The input texture"));
+		outputKnob.DisplayLayout (new GUIContent ("Texture", "The input texture"));
+		outputKnob.SetPosition ();
 
 		tex = RTEditorGUI.ObjectField<Texture2D> (tex, false) as Texture2D;
 
@@ -37,7 +33,7 @@ public class TextureInputNode : Node
 	
 	public override bool Calculate () 
 	{
-		Outputs [0].SetValue<Texture2D> (tex);
+		outputKnob.SetValue<Texture2D> (tex);
 		return true;
 	}
 }

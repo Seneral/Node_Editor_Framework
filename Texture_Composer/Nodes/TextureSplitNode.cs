@@ -7,35 +7,40 @@ public class TextureSplitNode : Node
 {
 	public const string ID = "texSplitNode";
 	public override string GetID { get { return ID; } }
-	
-	public override Node Create (Vector2 pos) 
-	{
-		TextureSplitNode node = ScriptableObject.CreateInstance <TextureSplitNode> ();
 
-		node.name = "Texture Split";
-		node.rect = new Rect (pos.x, pos.y, 150, 100);
+	public override string Title { get { return "Texture Split"; } }
+	public override Vector2 DefaultSize { get { return new Vector2 (150, 100); } }
 
-		node.CreateInput ("Texture", "Texture2D");
+	[ValueConnectionKnob("Texture", Direction.In, "Texture2D")]
+	public ValueConnectionKnob inputKnob;
 
-		node.CreateOutput ("Channel R", "Channel");
-		node.CreateOutput ("Channel G", "Channel");
-		node.CreateOutput ("Channel B", "Channel");
-		node.CreateOutput ("Channel A", "Channel");
+	[ValueConnectionKnob("Channel R", Direction.Out, "Channel")]
+	public ValueConnectionKnob output1Knob;
+	[ValueConnectionKnob("Channel G", Direction.Out, "Channel")]
+	public ValueConnectionKnob output2Knob;
+	[ValueConnectionKnob("Channel B", Direction.Out, "Channel")]
+	public ValueConnectionKnob output3Knob;
+	[ValueConnectionKnob("Channel A", Direction.Out, "Channel")]
+	public ValueConnectionKnob output4Knob;
 
-		return node;
-	}
-	
-	protected override void NodeGUI () 
+
+	public override void NodeGUI () 
 	{
 		GUILayout.BeginHorizontal ();
 
-		Inputs [0].DisplayLayout (new GUIContent ("Texture", "The texture to split into channels"));
+		inputKnob.DisplayLayout (new GUIContent ("Texture", "The texture to split into channels"));
+		inputKnob.SetPosition ();
 
 		GUILayout.BeginVertical ();
-		Outputs [0].DisplayLayout (new GUIContent ("Channel R", "The R channel of the splitted texture"));
-		Outputs [1].DisplayLayout (new GUIContent ("Channel G", "The G channel of the splitted texture"));
-		Outputs [2].DisplayLayout (new GUIContent ("Channel B", "The B channel of the splitted texture"));
-		Outputs [3].DisplayLayout (new GUIContent ("Channel A", "The A channel of the splitted texture"));
+
+		output1Knob.DisplayLayout (new GUIContent ("Channel R", "The R channel of the splitted texture"));
+		output1Knob.SetPosition ();
+		output2Knob.DisplayLayout (new GUIContent ("Channel G", "The G channel of the splitted texture"));
+		output2Knob.SetPosition ();
+		output3Knob.DisplayLayout (new GUIContent ("Channel B", "The B channel of the splitted texture"));
+		output3Knob.SetPosition ();
+		output4Knob.DisplayLayout (new GUIContent ("Channel A", "The A channel of the splitted texture"));
+		output4Knob.SetPosition ();
 		GUILayout.EndVertical ();
 
 		GUILayout.EndHorizontal ();
@@ -46,15 +51,14 @@ public class TextureSplitNode : Node
 	
 	public override bool Calculate () 
 	{
-		if (Inputs [0].connection == null || Inputs [0].connection.IsValueNull) 
-		{
-			Outputs [0].ResetValue ();
-			Outputs [1].ResetValue ();
-			Outputs [2].ResetValue ();
-			Outputs [3].ResetValue ();
-			return true;
+		if(!inputKnob.connected () || inputKnob.IsValueNull){
+			output1Knob.ResetValue ();
+			output2Knob.ResetValue ();
+			output3Knob.ResetValue ();
+			output4Knob.ResetValue ();
 		}
-		Texture2D tex = Inputs [0].connection.GetValue<Texture2D> ();
+
+		Texture2D tex = inputKnob.GetValue<Texture2D> (); //Inputs [0].connection.GetValue<Texture2D> ();
 
 		if (tex == null)
 			return false;
@@ -76,10 +80,10 @@ public class TextureSplitNode : Node
 			}
 		}
 
-		Outputs [0].SetValue<Channel> (new Channel (tex.name + "_R", channelR));
-		Outputs [1].SetValue<Channel> (new Channel (tex.name + "_G", channelG));
-		Outputs [2].SetValue<Channel> (new Channel (tex.name + "_B", channelB));
-		Outputs [3].SetValue<Channel> (new Channel (tex.name + "_A", channelA));
+		output1Knob.SetValue<Channel> (new Channel (tex.name + "_R", channelR));
+		output2Knob.SetValue<Channel> (new Channel (tex.name + "_G", channelG));
+		output3Knob.SetValue<Channel> (new Channel (tex.name + "_B", channelB));
+		output4Knob.SetValue<Channel> (new Channel (tex.name + "_A", channelA));
 
 		return true;
 	}

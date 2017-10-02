@@ -8,25 +8,21 @@ public class TextureOutputNode : Node
 	public const string ID = "texOutNode";
 	public override string GetID { get { return ID; } }
 
+	public override string Title { get { return "Texture Output"; } }
+	public override Vector2 DefaultSize { get { return new Vector2 (150, 200); } }
+
+	[ValueConnectionKnob("Texture", Direction.In, "Texture2D")]
+	public ValueConnectionKnob inputKnob;
+
 	public Texture2D tex;
-	
-	public override Node Create (Vector2 pos) 
+
+
+	public override void NodeGUI () 
 	{
-		TextureOutputNode node = ScriptableObject.CreateInstance <TextureOutputNode> ();
+		//rect.height = tex == null? 50 : 200;	// How do I change the nodes height????
 
-		node.name = "Texture Output";
-		node.rect = new Rect (pos.x, pos.y, 150, 50);
-		
-		node.CreateInput ("Texture", "Texture2D");
-
-		return node;
-	}
-
-	protected override void NodeGUI () 
-	{
-		rect.height = tex == null? 50 : 200;
-
-		Inputs [0].DisplayLayout (new GUIContent ("Texture", "The texture to output."));
+		inputKnob.DisplayLayout (new GUIContent ("Texture", "The texture to output."));
+		inputKnob.SetPosition ();
 
 		if (tex != null) 
 		{
@@ -39,10 +35,10 @@ public class TextureOutputNode : Node
 	
 	public override bool Calculate () 
 	{
-		if (Inputs [0].connection == null || Inputs [0].connection.IsValueNull)
+		if(!inputKnob.connected () || inputKnob.IsValueNull)
 			tex = null;
 		else
-			tex = Inputs [0].connection.GetValue<Texture2D> ();
+			tex = inputKnob.GetValue<Texture2D> ();
 		return true;
 	}
 }

@@ -8,25 +8,22 @@ public class TextureInfoNode : Node
 	public const string ID = "texInfoNode";
 	public override string GetID { get { return ID; } }
 
+	public override string Title { get { return "Texture Info"; } }
+	public override Vector2 DefaultSize { get { return new Vector2 (150, 200); } }
+
+	[ValueConnectionKnob("Texture", Direction.In, "Texture2D")]
+	public ValueConnectionKnob inputKnob;
+
 	public Texture2D tex;
-	
-	public override Node Create (Vector2 pos) 
+
+
+
+	public override void NodeGUI () 
 	{
-		TextureInfoNode node = ScriptableObject.CreateInstance <TextureInfoNode> ();
+		//rect.height = tex == null? 50 : 200; 	// Is there a way to change the node Rect ??
 
-		node.name = "Texture Info";
-		node.rect = new Rect (pos.x, pos.y, 150, 50);
-
-		node.CreateInput ("Texture", "Texture2D");
-
-		return node;
-	}
-	
-	protected override void NodeGUI () 
-	{
-		rect.height = tex == null? 50 : 200;
-
-		Inputs [0].DisplayLayout (new GUIContent ("Texture" + (tex != null? " :" : ""), "The texture to display information about."));
+		inputKnob.DisplayLayout (new GUIContent ("Texture" + (tex != null? " :" : ""), "The texture to display information about."));
+		inputKnob.SetPosition ();
 
 		if (tex != null) 
 		{
@@ -41,10 +38,10 @@ public class TextureInfoNode : Node
 	
 	public override bool Calculate () 
 	{
-		if (Inputs [0].connection == null || Inputs [0].connection.IsValueNull)
+		if(!inputKnob.connected () || inputKnob.IsValueNull)
 			tex = null;
 		else
-			tex = Inputs [0].connection.GetValue<Texture2D> ();
+			tex = inputKnob.GetValue<Texture2D> ();
 		return true;
 	}
 }
