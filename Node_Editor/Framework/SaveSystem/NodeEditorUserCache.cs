@@ -276,7 +276,7 @@ namespace NodeEditorFramework
 #else
 			if (nodeCanvas.livesInScene)
 			{
-				if (NodeEditorSaveManager.FindOrCreateSceneSave ("lastSession").savedNodeCanvas == null)
+				if (!NodeEditorSaveManager.HasSceneSave ("lastSession"))
 					SaveCache ();
 			}
 			else if (UnityEditor.AssetDatabase.LoadAssetAtPath<NodeCanvas> (lastSessionPath) == null)

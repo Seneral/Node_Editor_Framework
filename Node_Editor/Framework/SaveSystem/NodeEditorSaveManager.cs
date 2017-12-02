@@ -7,6 +7,11 @@ using System.Collections.Generic;
 using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
+
+#if UNITY_5_3_OR_NEWER
+using UnityEngine.SceneManagement;
+#endif
+
 namespace NodeEditorFramework 
 {
 	/// <summary>
@@ -19,30 +24,21 @@ namespace NodeEditorFramework
 		private static GameObject sceneSaveHolder;
 		private const string sceneSaveHolderName = "NodeEditor_SceneSaveHolder";
 
-		/// <summary>
-		/// Fetches the sceneSaveHolder of the current scene or creates it
-		/// </summary>
-		private static void FetchSceneSaveHolder () 
-		{
-			if (sceneSaveHolder == null)
-			{
-				// TODO: Might need to check here if the object is in the active scene / the system works with multiple scenes
-				sceneSaveHolder = GameObject.Find (sceneSaveHolderName);
-				if (sceneSaveHolder == null)
-					sceneSaveHolder = new GameObject (sceneSaveHolderName);
-				sceneSaveHolder.hideFlags = HideFlags.None;//HideFlags.HideInHierarchy | HideFlags.HideInInspector;
-			}
-		}
-
 		#region Utility
 
 		/// <summary>
-		/// Gets all existing stored saves in the current scene and returns their names
+		/// Gets all existing stored saves in the current scenes and returns their names
 		/// </summary>
-		public static string[] GetSceneSaves ()
+		public static string[] GetSceneSaves()
 		{
-			FetchSceneSaveHolder ();
-			return sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().Select (((NodeCanvasSceneSave save) => save.saveName)).Where ((string saveName) => saveName.ToLower () != "lastsession").ToArray ();
+			return Object.FindObjectsOfType<NodeCanvasSceneSave>()
+				.Where((NodeCanvasSceneSave save) => save.savedNodeCanvas != null && save.saveName.ToLower() != "lastsession")
+#if UNITY_5_3_OR_NEWER
+				.Select((NodeCanvasSceneSave save) => SceneManager.sceneCount > 1 ? (save.gameObject.scene.name + "::" + save.saveName) : save.saveName)
+#else
+				.Select((NodeCanvasSceneSave save) => save.saveName)
+#endif
+				.ToArray();
 		}
 
 		/// <summary>
@@ -50,47 +46,8 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static bool HasSceneSave (string saveName)
 		{
-			FetchSceneSaveHolder ();
-			return sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().ToList ().Exists ((NodeCanvasSceneSave save) => 
-				save.saveName.ToLower () == saveName.ToLower () || (save.savedNodeCanvas != null && save.savedNodeCanvas.name.ToLower () == saveName.ToLower ()));
-		}
-
-		/// <summary>
-		/// Returns the scene save with the specified name in the current scene
-		/// </summary>
-		internal static NodeCanvasSceneSave FindSceneSave (string saveName)
-		{
-			FetchSceneSaveHolder ();
-			NodeCanvasSceneSave sceneSave = sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().ToList ().Find ((NodeCanvasSceneSave save) => 
-				save.saveName.ToLower () == saveName.ToLower () || (save.savedNodeCanvas != null && save.savedNodeCanvas.name.ToLower () == saveName.ToLower ()));
-			if (sceneSave != null)
-				sceneSave.saveName = saveName;
-			return sceneSave;
-		}
-
-		/// <summary>
-		/// Returns the scene save with the specified name in the current scene and creates it when it does not exist
-		/// </summary>
-		internal static NodeCanvasSceneSave FindOrCreateSceneSave (string saveName)
-		{
-			FetchSceneSaveHolder ();
-			NodeCanvasSceneSave sceneSave = sceneSaveHolder.GetComponents<NodeCanvasSceneSave> ().ToList ().Find ((NodeCanvasSceneSave save) => 
-				save.saveName.ToLower () == saveName.ToLower () || (save.savedNodeCanvas != null && save.savedNodeCanvas.name.ToLower () == saveName.ToLower ()));
-			if (sceneSave == null)
-				sceneSave = sceneSaveHolder.AddComponent<NodeCanvasSceneSave> ();
-			sceneSave.saveName = saveName;
-			return sceneSave;
-		}
-
-		/// <summary>
-		/// Creates a scene save with the specified name in the current scene
-		/// </summary>
-		internal static NodeCanvasSceneSave CreateSceneSave (string saveName)
-		{
-			FetchSceneSaveHolder ();
-			NodeCanvasSceneSave sceneSave = sceneSaveHolder.AddComponent<NodeCanvasSceneSave> ();
-			sceneSave.saveName = saveName;
-			return sceneSave;
+			NodeCanvasSceneSave save = FindSceneSave(saveName);
+			return save != null && save.savedNodeCanvas != null;
 		}
 
 		/// <summary>
@@ -100,7 +57,6 @@ namespace NodeEditorFramework
 		{
 			if (string.IsNullOrEmpty (saveName))
 				return;
-			FetchSceneSaveHolder ();
 			NodeCanvasSceneSave sceneSave = FindSceneSave (saveName);
 			if (sceneSave != null)
 			{
@@ -110,6 +66,82 @@ namespace NodeEditorFramework
 				Object.Destroy (sceneSave);
 			#endif
 			}
+		}
+
+		/// <summary>
+		/// Returns the scene save with the specified name in the current scene
+		/// </summary>
+		private static NodeCanvasSceneSave FindSceneSave(string saveName, bool forceCreation = false)
+		{
+			bool sceneSpecified = false;
+			string scene = null;
+#if UNITY_5_3_OR_NEWER
+			sceneSpecified = saveName.Contains("::");
+			if (sceneSpecified)
+			{
+				string[] sp = saveName.Split(new string[] { "::" }, System.StringSplitOptions.None);
+				scene = sp[0];
+				saveName = sp[1];
+			}
+#endif
+
+			NodeCanvasSceneSave sceneSave = Object.FindObjectsOfType<NodeCanvasSceneSave>()
+#if UNITY_5_3_OR_NEWER // Filter by scene
+				.Where((NodeCanvasSceneSave save) => !sceneSpecified || save.savedNodeCanvas == null || save.gameObject.scene.name == scene)
+#endif
+				.FirstOrDefault((NodeCanvasSceneSave save) =>
+				   save.saveName.ToLower() == saveName.ToLower() ||
+				   (save.savedNodeCanvas != null && save.savedNodeCanvas.name.ToLower() == saveName.ToLower()));
+			if (sceneSave == null && forceCreation)
+				sceneSave = CreateSceneSave(saveName, scene);
+			return sceneSave;
+		}
+
+		/// <summary>
+		/// Creates a scene save with the specified name in the current scene
+		/// </summary>
+		private static NodeCanvasSceneSave CreateSceneSave(string saveName, string sceneName = null)
+		{
+			GameObject holder = GetSceneSaveHolder(sceneName);
+			NodeCanvasSceneSave sceneSave = holder.AddComponent<NodeCanvasSceneSave>();
+			sceneSave.saveName = saveName;
+			return sceneSave;
+		}
+
+		/// <summary>
+		/// Gets the current sceneSaveHolder or creates it, optionally in the specified scene
+		/// </summary>
+		private static GameObject GetSceneSaveHolder(string sceneName = null)
+		{
+#if UNITY_5_3_OR_NEWER // Reset sceneSaveHolder if it's in the wrong scene
+			bool sceneSpecified = !string.IsNullOrEmpty(sceneName);
+			if (sceneSpecified && sceneSaveHolder != null && sceneSaveHolder.scene.name != sceneName)
+				sceneSaveHolder = null;
+#endif
+
+			if (sceneSaveHolder == null)
+			{ // Fetch scene save holder from scene
+				sceneSaveHolder = Object.FindObjectsOfType<NodeCanvasSceneSave>()
+					.Select(s => s.gameObject).Distinct()
+					.OrderBy(g => g.name == sceneSaveHolderName ? 1 : 2)
+#if UNITY_5_3_OR_NEWER
+					.Where(g => !sceneSpecified || g.scene.name == sceneName)
+#endif
+					.FirstOrDefault();
+			}
+
+			if (sceneSaveHolder == null)
+			{ // Create new scene save holder in scene
+#if UNITY_5_3_OR_NEWER // Make sure it is created in the desired scene
+				if (sceneSpecified && SceneManager.sceneCount > 1)
+					SceneManager.SetActiveScene(SceneManager.GetSceneByName(sceneName));
+#endif
+				sceneSaveHolder = new GameObject(sceneSaveHolderName);
+			}
+
+			if (sceneSaveHolder != null)
+				sceneSaveHolder.hideFlags = HideFlags.None;//HideFlags.HideInHierarchy | HideFlags.HideInInspector;
+			return sceneSaveHolder;
 		}
 
 		#endregion
@@ -149,31 +181,23 @@ namespace NodeEditorFramework
 
 			// Get the saveHolder and store the canvas
 			NodeCanvas savedCanvas = processedCanvas;
-			NodeCanvasSceneSave sceneSave;
-		#if UNITY_EDITOR
-			if ((sceneSave = FindSceneSave (saveName)) != null && safeOverwrite)
-			{ // OVERWRITE
-				OverwriteCanvas (ref sceneSave.savedNodeCanvas, savedCanvas);
-			}
-			else
-			{
-				if (sceneSave == null) 
-					sceneSave = CreateSceneSave (saveName);
-				sceneSave.savedNodeCanvas = savedCanvas;
-			}
+			NodeCanvasSceneSave sceneSave = FindSceneSave(saveName, true);
+
+#if UNITY_EDITOR
+			if (sceneSave.savedNodeCanvas != null && safeOverwrite && sceneSave.savedNodeCanvas.GetType() == savedCanvas.GetType()) // OVERWRITE
+				OverwriteCanvas(ref sceneSave.savedNodeCanvas, savedCanvas);
+
 			if (!Application.isPlaying)
-			{
-				UnityEditor.EditorUtility.SetDirty (sceneSaveHolder);
+			{ // Set Dirty
+				UnityEditor.EditorUtility.SetDirty (sceneSave.gameObject);
 			#if UNITY_5_3_OR_NEWER
-				UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty (UnityEngine.SceneManagement.SceneManager.GetActiveScene ());
+				UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty (sceneSave.gameObject.scene);
 			#else
 				UnityEditor.EditorApplication.MarkSceneDirty ();
 			#endif
 			}
-		#else
-			sceneSave = FindOrCreateSceneSave (saveName);
+#endif
 			sceneSave.savedNodeCanvas = savedCanvas;
-		#endif
 
 			NodeEditorCallbacks.IssueOnSaveCanvas (savedCanvas);
 		}
