@@ -65,8 +65,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		public static void UpdatePortLists (Node node) 
 		{
-			foreach (ConnectionPortDeclaration portDecl in GetPortDeclarationEnumerator (node, true))
-			{ /* Triggering is enough to update the list */ }
+			// Triggering is enough to update the list
+			IEnumerator enumerator = GetPortDeclarationEnumerator(node, true).GetEnumerator();
+			while (enumerator.MoveNext()) { }
 		}
 
 		/// <summary>

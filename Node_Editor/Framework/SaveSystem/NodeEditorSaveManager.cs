@@ -73,10 +73,9 @@ namespace NodeEditorFramework
 		/// </summary>
 		private static NodeCanvasSceneSave FindSceneSave(string saveName, bool forceCreation = false)
 		{
-			bool sceneSpecified = false;
 			string scene = null;
 #if UNITY_5_3_OR_NEWER
-			sceneSpecified = saveName.Contains("::");
+			bool sceneSpecified = saveName.Contains("::");
 			if (sceneSpecified)
 			{
 				string[] sp = saveName.Split(new string[] { "::" }, System.StringSplitOptions.None);

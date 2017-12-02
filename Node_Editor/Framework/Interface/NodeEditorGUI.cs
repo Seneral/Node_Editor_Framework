@@ -216,5 +216,48 @@ namespace NodeEditorFramework
 		}
 
 		#endregion
+
+		/// <summary>
+		/// Unified method to generate a random HSV color value across versions
+		/// </summary>
+		public static Color RandomColorHSV(int seed, float hueMin, float hueMax, float saturationMin, float saturationMax, float valueMin, float valueMax)
+		{
+			// Set seed
+#if UNITY_5_4_OR_NEWER
+			UnityEngine.Random.InitState (seed);
+#else
+			UnityEngine.Random.seed = seed;
+#endif
+			// Consistent random H,S,V values
+			float hue = UnityEngine.Random.Range(hueMin, hueMax);
+			float saturation = UnityEngine.Random.Range(saturationMin, saturationMax);
+			float value = UnityEngine.Random.Range(valueMin, valueMax);
+
+			// Convert HSV to RGB
+#if UNITY_5_3_OR_NEWER
+			return UnityEngine.Color.HSVToRGB (hue, saturation, value, false);
+#else
+			int hi = Mathf.FloorToInt(hue / 60) % 6;
+			float frac = hue / 60 - Mathf.Floor(hue / 60);
+
+			float v = value;
+			float p = value * (1 - saturation);
+			float q = value * (1 - frac * saturation);
+			float t = value * (1 - (1 - frac) * saturation);
+
+			if (hi == 0)
+				return new Color(v, t, p);
+			else if (hi == 1)
+				return new Color(q, v, p);
+			else if (hi == 2)
+				return new Color(p, v, t);
+			else if (hi == 3)
+				return new Color(p, q, v);
+			else if (hi == 4)
+				return new Color(t, p, v);
+			else
+				return new Color(v, p, q);
+#endif
+		}
 	}
 }

@@ -224,7 +224,7 @@ namespace NodeEditorFramework.IO
 						if (variable.Name != "Variable" && variable.Name != "Port")
 						{
 							string varName = variable.GetAttribute("name");
-							object varValue = DeserializeFieldFromXML(variable, node.type);
+							object varValue = DeserializeFieldFromXML(variable, node.type, null);
 							VariableData varData = new VariableData(varName);
 							varData.value = varValue;
 							node.variables.Add(varData);
