@@ -224,12 +224,17 @@ namespace NodeEditorFramework
 					inputInfo.inputEvent.Use ();
 				}
 				else if (state.focusedConnectionKnob.maxConnectionCount == ConnectionCount.Single)
-				{ // Knob with single connection clicked -> Loose and edit connection from it
-					if (state.focusedConnectionKnob.connected ())
-					{
+				{ // Knob with single connection clicked
+					if (state.focusedConnectionKnob.connected())
+					{ // Loose and edit existing connection from it
 						state.connectKnob = state.focusedConnectionKnob.connection(0);
-						state.focusedConnectionKnob.RemoveConnection (state.connectKnob);
-						inputInfo.inputEvent.Use ();
+						state.focusedConnectionKnob.RemoveConnection(state.connectKnob);
+						inputInfo.inputEvent.Use();
+					}
+					else
+					{ // Not connected, draw a new connection from it
+						state.connectKnob = state.focusedConnectionKnob;
+						inputInfo.inputEvent.Use();
 					}
 				}
 			}
