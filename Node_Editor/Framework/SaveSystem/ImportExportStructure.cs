@@ -34,6 +34,8 @@ namespace NodeEditorFramework.IO
 
 		public ObjectData ReferenceObject(object obj)
 		{
+			if (obj == null)
+				return null;
 			foreach (ObjectData data in objects.Values)
 			{
 				if (data.data == obj)
@@ -248,7 +250,12 @@ namespace NodeEditorFramework.IO
 
 		public ObjectData(object obj)
 		{
+			if (obj == null)
+				throw new ArgumentNullException("obj");
 			refID = obj.GetHashCode();
+			// Some types like MonoScript implement no proper GetHashCode function
+			if (Mathf.Abs (refID) < 10) 
+				refID = (int)UnityEngine.Random.value * int.MaxValue;
 			type = obj.GetType();
 			data = obj;
 		}
