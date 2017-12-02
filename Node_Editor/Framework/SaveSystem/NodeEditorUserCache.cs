@@ -214,7 +214,7 @@ namespace NodeEditorFramework
 		#endif
 
 			nodeCanvas.editorStates = new NodeEditorState[] { editorState };
-			if (nodeCanvas.livesInScene)
+			if (nodeCanvas.livesInScene || nodeCanvas.allowSceneSaveOnly)
 				NodeEditorSaveManager.SaveSceneNodeCanvas ("lastSession", ref nodeCanvas, cacheWorkingCopy);
 			else
 				NodeEditorSaveManager.SaveNodeCanvas (lastSessionPath, ref nodeCanvas, cacheWorkingCopy, true);

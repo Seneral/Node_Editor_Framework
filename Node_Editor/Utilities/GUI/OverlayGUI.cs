@@ -429,17 +429,27 @@ namespace NodeEditorFramework.Utilities
 #endif
 				popup.AddItem (content, on, func, userData);
 		}
-		
-		public void AddItem (GUIContent content, bool on, MenuFunction func)
+
+		public void AddItem(GUIContent content, bool on, MenuFunction func)
 		{
 #if UNITY_EDITOR
 			if (editorMenu != null)
 				editorMenu.AddItem(content, on, func);
 			else
 #endif
-			popup.AddItem (content, on, func);
+				popup.AddItem(content, on, func);
 		}
-		
+
+		public void AddDisabledItem(GUIContent content)
+		{
+#if UNITY_EDITOR
+			if (editorMenu != null)
+				editorMenu.AddDisabledItem(content);
+			else
+#endif
+				popup.AddItem(content, false, null);
+		}
+
 		public void AddSeparator (string path)
 		{
 #if UNITY_EDITOR

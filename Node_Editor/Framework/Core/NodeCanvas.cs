@@ -12,6 +12,8 @@ namespace NodeEditorFramework
 	{
 		public virtual string canvasName { get { return "DEFAULT"; } }
 
+		public virtual bool allowSceneSaveOnly { get { return false; } }
+
 		public NodeCanvasTraversal Traversal;
 
 		public NodeEditorState[] editorStates = new NodeEditorState[0];

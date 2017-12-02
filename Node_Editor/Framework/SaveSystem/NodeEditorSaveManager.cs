@@ -247,7 +247,8 @@ namespace NodeEditorFramework
 			if (string.IsNullOrEmpty (path)) throw new System.ArgumentNullException ("Cannot save NodeCanvas: No path specified!");
 			if (nodeCanvas == null) throw new System.ArgumentNullException ("Cannot save NodeCanvas: The specified NodeCanvas that should be saved to path '" + path + "' is null!");
 			if (nodeCanvas.GetType () == typeof(NodeCanvas)) throw new System.ArgumentException ("Cannot save NodeCanvas: The NodeCanvas has no explicit type! Please convert it to a valid sub-type of NodeCanvas!");
-			
+			if (nodeCanvas.allowSceneSaveOnly) throw new System.InvalidOperationException("Cannot save NodeCanvas: NodeCanvas is marked to contain scene data and cannot be saved as an asset!");
+
 			nodeCanvas.Validate();
 
 			if (nodeCanvas.livesInScene)
