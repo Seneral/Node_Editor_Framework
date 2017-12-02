@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System;
 using System.Linq;
+using System.IO;
+using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
 namespace NodeEditorFramework.Utilities 
@@ -11,11 +13,16 @@ namespace NodeEditorFramework.Utilities
 	/// </summary>
 	public static class ResourceManager 
 	{
-
 		private static string _ResourcePath = "";
 		public static void SetDefaultResourcePath (string defaultResourcePath) 
 		{
-			_ResourcePath = defaultResourcePath;
+			_ResourcePath = UnifyPathSeparators (defaultResourcePath);
+		}
+
+		private static Regex pathSeparators = new Regex("[\\\\|/]+");
+		public static string UnifyPathSeparators(string path)
+		{
+			return pathSeparators.Replace(path, "" + Path.DirectorySeparatorChar);
 		}
 
 		#region Common Resource Loading
@@ -25,16 +32,17 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static string PreparePath (string path) 
 		{
-			path = path.Replace (Application.dataPath, "Assets");
-		#if UNITY_EDITOR
-			if (!path.StartsWith ("Assets/"))
+			path = UnifyPathSeparators(path);
+			path = path.Replace (UnifyPathSeparators(Application.dataPath), "Assets");
+#if UNITY_EDITOR
+			if (!path.StartsWith ("Assets"))
 				path = _ResourcePath + path;
-			return path;
-		#else
+#else
 			if (path.Contains ("Resources"))
 				path = path.Substring (path.LastIndexOf ("Resources") + 10);
-			return path.Substring (0, path.LastIndexOf ('.'));
-		#endif
+			path = path.Substring (0, path.LastIndexOf ('.'));
+#endif
+			return path;
 		}
 
 		/// <summary>

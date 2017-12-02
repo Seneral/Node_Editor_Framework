@@ -51,7 +51,7 @@ namespace NodeEditorFramework
 			AALineTex = ResourceManager.LoadTexture ("Textures/AALine.png");
 			GUIBox = ResourceManager.LoadTexture ("Textures/NE_Box.png");
 			GUIButton = ResourceManager.LoadTexture ("Textures/NE_Button.png");
-			GUIBoxSelection = ResourceManager.LoadTexture("Textures/BoxSelection.png");
+			//GUIBoxSelection = ResourceManager.LoadTexture("Textures/BoxSelection.png");
 			GUIToolbar = ResourceManager.LoadTexture("Textures/NE_Toolbar.png");
 			GUIToolbarButton = ResourceManager.LoadTexture("Textures/NE_ToolbarButton.png");
 
