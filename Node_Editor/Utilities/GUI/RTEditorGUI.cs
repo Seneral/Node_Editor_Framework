@@ -456,6 +456,9 @@ namespace NodeEditorFramework.Utilities
 			// Get stored string for the text field if this one is recorded
 			string str = recorded? activeFloatFieldString : value.ToString ();
 
+			// Handle custom copy-paste
+			str = HandleCopyPaste(floatFieldID) ?? str;
+
 			string strValue = GUI.TextField (pos, str);
 			if (recorded)
 				activeFloatFieldString = strValue;
@@ -528,6 +531,36 @@ namespace NodeEditorFramework.Utilities
 				Debug.LogError ("Could not parse " + str);
 			return value;
 		}
+
+		/// <summary>
+		/// Add copy-paste functionality to any text field
+		/// Returns changed text or NULL.
+		/// Usage: text = HandleCopyPaste (controlID) ?? text;
+		/// </summary>
+		public static string HandleCopyPaste(int controlID)
+		{
+			if (controlID == GUIUtility.keyboardControl)
+			{
+				if (Event.current.type == EventType.KeyUp && (Event.current.modifiers == EventModifiers.Control || Event.current.modifiers == EventModifiers.Command))
+				{
+					if (Event.current.keyCode == KeyCode.C)
+					{
+						Event.current.Use();
+						TextEditor editor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
+						editor.Copy();
+					}
+					else if (Event.current.keyCode == KeyCode.V)
+					{
+						Event.current.Use();
+						TextEditor editor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
+						editor.Paste();
+						return editor.text;
+					}
+				}
+			}
+			return null;
+		}
+
 
 		#endregion
 
