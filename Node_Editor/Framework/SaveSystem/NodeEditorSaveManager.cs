@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 using NodeEditorFramework.Utilities;
 
-#if UNITY_5_3_OR_NEWER
+#if UNITY_5_3_OR_NEWER || UNITY_5_3
 using UnityEngine.SceneManagement;
 #endif
 
@@ -29,7 +29,7 @@ namespace NodeEditorFramework
 		{
 			return Object.FindObjectsOfType<NodeCanvasSceneSave>()
 				.Where((NodeCanvasSceneSave save) => save.savedNodeCanvas != null && save.saveName.ToLower() != "lastsession")
-#if UNITY_5_3_OR_NEWER
+#if UNITY_5_3_OR_NEWER || UNITY_5_3
 				.Select((NodeCanvasSceneSave save) => SceneManager.sceneCount > 1 ? (save.gameObject.scene.name + "::" + save.saveName) : save.saveName)
 #else
 				.Select((NodeCanvasSceneSave save) => save.saveName)
@@ -70,7 +70,7 @@ namespace NodeEditorFramework
 		private static NodeCanvasSceneSave FindSceneSave(string saveName, bool forceCreation = false)
 		{
 			string scene = null;
-#if UNITY_5_3_OR_NEWER
+#if UNITY_5_3_OR_NEWER || UNITY_5_3
 			bool sceneSpecified = saveName.Contains("::");
 			if (sceneSpecified)
 			{
@@ -81,7 +81,7 @@ namespace NodeEditorFramework
 #endif
 
 			NodeCanvasSceneSave sceneSave = Object.FindObjectsOfType<NodeCanvasSceneSave>()
-#if UNITY_5_3_OR_NEWER // Filter by scene
+#if UNITY_5_3_OR_NEWER || UNITY_5_3 // Filter by scene
 				.Where((NodeCanvasSceneSave save) => !sceneSpecified || save.savedNodeCanvas == null || save.gameObject.scene.name == scene)
 #endif
 				.FirstOrDefault((NodeCanvasSceneSave save) =>
@@ -108,7 +108,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		private static GameObject GetSceneSaveHolder(string sceneName = null)
 		{
-#if UNITY_5_3_OR_NEWER // Reset sceneSaveHolder if it's in the wrong scene
+#if UNITY_5_3_OR_NEWER || UNITY_5_3 // Reset sceneSaveHolder if it's in the wrong scene
 			bool sceneSpecified = !string.IsNullOrEmpty(sceneName);
 			if (sceneSpecified && sceneSaveHolder != null && sceneSaveHolder.scene.name != sceneName)
 				sceneSaveHolder = null;
@@ -119,7 +119,7 @@ namespace NodeEditorFramework
 				sceneSaveHolder = Object.FindObjectsOfType<NodeCanvasSceneSave>()
 					.Select(s => s.gameObject).Distinct()
 					.OrderBy(g => g.name == sceneSaveHolderName ? 1 : 2)
-#if UNITY_5_3_OR_NEWER
+#if UNITY_5_3_OR_NEWER || UNITY_5_3
 					.Where(g => !sceneSpecified || g.scene.name == sceneName)
 #endif
 					.FirstOrDefault();
@@ -127,7 +127,7 @@ namespace NodeEditorFramework
 
 			if (sceneSaveHolder == null)
 			{ // Create new scene save holder in scene
-#if UNITY_5_3_OR_NEWER // Make sure it is created in the desired scene
+#if UNITY_5_3_OR_NEWER || UNITY_5_3 // Make sure it is created in the desired scene
 				if (sceneSpecified && SceneManager.sceneCount > 1)
 					SceneManager.SetActiveScene(SceneManager.GetSceneByName(sceneName));
 #endif
@@ -185,9 +185,9 @@ namespace NodeEditorFramework
 			if (!Application.isPlaying)
 			{ // Set Dirty
 				UnityEditor.EditorUtility.SetDirty (sceneSave.gameObject);
-			#if UNITY_5_3_OR_NEWER
+#if UNITY_5_3_OR_NEWER || UNITY_5_3
 				UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty (sceneSave.gameObject.scene);
-			#else
+#else
 				UnityEditor.EditorApplication.MarkSceneDirty ();
 			#endif
 			}

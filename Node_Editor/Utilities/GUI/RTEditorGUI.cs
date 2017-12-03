@@ -567,7 +567,11 @@ namespace NodeEditorFramework.Utilities
 						Event.current.Use();
 						TextEditor editor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
 						editor.Paste();
+#if UNITY_5_3_OR_NEWER || UNITY_5_3
 						return editor.text;
+#else
+						return editor.content.text;
+#endif
 					}
 					else if (Event.current.keyCode == KeyCode.A)
 					{
