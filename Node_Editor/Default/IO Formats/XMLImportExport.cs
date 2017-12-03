@@ -313,8 +313,12 @@ namespace NodeEditorFramework.IO
 			}
 			object fieldValue = field.GetValue(obj);
 			XmlElement serializedValue = SerializeObjectToXML(parent, fieldValue);
-			serializedValue.SetAttribute("name", fieldName);
-			return serializedValue;
+			if (serializedValue != null)
+			{
+				serializedValue.SetAttribute("name", fieldName);
+				return serializedValue;
+			}
+			return null;
 		}
 
 		private object DeserializeFieldFromXML(XmlElement xmlElement, object obj)
@@ -340,11 +344,22 @@ namespace NodeEditorFramework.IO
 
 		private XmlElement SerializeObjectToXML(XmlElement parent, object obj)
 		{
-			XmlSerializer serializer = new XmlSerializer(obj.GetType());
-			XPathNavigator navigator = parent.CreateNavigator();
-			using (XmlWriter writer = navigator.AppendChild())
-				serializer.Serialize(writer, obj);
-			return (XmlElement)parent.LastChild;
+			// TODO: Need to handle asset references
+			// Because of runtime compability, always try to embed objects
+			// If that fails, try to find references to assets (e.g. for textures)
+			try
+			{ // Try to embed object
+				XmlSerializer serializer = new XmlSerializer(obj.GetType());
+				XPathNavigator navigator = parent.CreateNavigator();
+				using (XmlWriter writer = navigator.AppendChild())
+					serializer.Serialize(writer, obj);
+				return (XmlElement)parent.LastChild;
+			}
+			catch (Exception)
+			{
+				Debug.Log("Could not serialize " + obj.ToString());
+				return null;
+			}
 		}
 
 		private object DeserializeObjectFromXML(XmlElement xmlElement, Type type, bool isParent = true)
