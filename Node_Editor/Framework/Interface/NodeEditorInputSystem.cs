@@ -255,7 +255,7 @@ namespace NodeEditorFramework
 #if UNITY_EDITOR
 			if (state.selectedNode != null)
 				UnityEditor.Selection.activeObject = state.selectedNode;
-			else
+			else if (UnityEditor.Selection.activeObject is Node)
 				UnityEditor.Selection.activeObject = state.canvas;
 #endif
 		}

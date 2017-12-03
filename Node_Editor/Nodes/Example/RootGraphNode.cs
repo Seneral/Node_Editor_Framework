@@ -22,7 +22,7 @@ namespace NodeEditorFramework.Standard
 
 		public override void NodeGUI () 
 		{
-			name = GUILayout.TextField (name);
+			name = RTEditorGUI.TextField (name);
 
 			foreach (ConnectionKnob knob in connectionKnobs) 
 				knob.DisplayLayout ();

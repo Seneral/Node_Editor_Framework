@@ -241,18 +241,31 @@ namespace NodeEditorFramework.Utilities
 		#region Extra
 
 		/// <summary>
-		/// Text Field with label for ingame purposes. Behaves like UnityEditor.EditorGUILayout.TextField
+		/// Text Field with label for ingame purposes with copy-paste functionality. Should behave like UnityEditor.EditorGUILayout.TextField
+		/// </summary>
+		public static string TextField(string text, params GUILayoutOption[] options)
+		{
+			return TextField(GUIContent.none, text, null, options);
+		}
+
+		/// <summary>
+		/// Text Field with label for ingame purposes with copy-paste functionality. Should behave like UnityEditor.EditorGUILayout.TextField
 		/// </summary>
 		public static string TextField (GUIContent label, string text, GUIStyle style = null, params GUILayoutOption[] options)
 		{
-			#if UNITY_EDITOR
+			/*#if UNITY_EDITOR
 			if (!Application.isPlaying)
-				return UnityEditor.EditorGUILayout.TextField (label, text);
-			#endif
+				return UnityEditor.EditorGUILayout.TextField (label, text, options);
+			#endif*/
+
 			if (style == null) style = GUI.skin.textField;
 			if (text == null) text = "";
+
 			Rect totalPos = GetFieldRect (label, style, options);
 			Rect fieldPos = PrefixLabel (totalPos, 0.5f, label, GUI.skin.label);
+
+			// Handle custom copy-paste
+			text = HandleCopyPaste(GUIUtility.GetControlID("TextField".GetHashCode(), FocusType.Keyboard, fieldPos) + 1) ?? text;
 			text = GUI.TextField (fieldPos, text);
 			return text;
 		}

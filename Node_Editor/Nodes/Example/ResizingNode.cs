@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework.Standard
 {
@@ -32,7 +33,7 @@ namespace NodeEditorFramework.Standard
 
 			// Display text field and add button
 			GUILayout.BeginHorizontal();
-			newLabel = GUILayout.TextField(newLabel);
+			newLabel = RTEditorGUI.TextField(GUIContent.none, newLabel);
 			if (GUILayout.Button("Add", GUILayout.ExpandWidth(false)))
 			{
 				labels.Add(newLabel);
