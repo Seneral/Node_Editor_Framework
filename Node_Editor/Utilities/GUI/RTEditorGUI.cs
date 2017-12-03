@@ -556,6 +556,12 @@ namespace NodeEditorFramework.Utilities
 						editor.Paste();
 						return editor.text;
 					}
+					else if (Event.current.keyCode == KeyCode.A)
+					{
+						Event.current.Use();
+						TextEditor editor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), GUIUtility.keyboardControl);
+						editor.SelectAll();
+					}
 				}
 			}
 			return null;
