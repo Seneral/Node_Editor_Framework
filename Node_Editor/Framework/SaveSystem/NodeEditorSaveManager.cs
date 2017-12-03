@@ -1,12 +1,8 @@
 ﻿using UnityEngine;
-using System.Reflection;
-using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 
-using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
-
 
 #if UNITY_5_3_OR_NEWER
 using UnityEngine.SceneManagement;

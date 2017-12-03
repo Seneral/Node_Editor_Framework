@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections;
-using UnityEngine;
-
-using NodeEditorFramework;
+﻿using UnityEngine;
 
 namespace NodeEditorFramework.Standard
 {

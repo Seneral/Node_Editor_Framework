@@ -3,8 +3,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 
-using NodeEditorFramework.Utilities;
-
 namespace NodeEditorFramework
 {
 	public abstract partial class Node : ScriptableObject

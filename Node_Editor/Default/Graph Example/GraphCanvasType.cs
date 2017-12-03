@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
-using NodeEditorFramework;
 
 namespace NodeEditorFramework.Standard
 {

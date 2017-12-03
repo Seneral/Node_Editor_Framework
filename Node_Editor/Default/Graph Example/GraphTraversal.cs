@@ -1,9 +1,4 @@
-﻿using System;
-using NodeEditorFramework;
-using UnityEngine;
-using System.Collections.Generic;
-
-namespace NodeEditorFramework.Standard
+﻿namespace NodeEditorFramework.Standard
 {
 	public class GraphTraversal : NodeCanvasTraversal
 	{

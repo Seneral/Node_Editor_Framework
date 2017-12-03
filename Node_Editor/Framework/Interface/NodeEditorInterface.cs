@@ -1,8 +1,6 @@
 ﻿using System;
-
 using UnityEngine;
 
-using NodeEditorFramework;
 using NodeEditorFramework.IO;
 
 using GenericMenu = NodeEditorFramework.Utilities.GenericMenu;

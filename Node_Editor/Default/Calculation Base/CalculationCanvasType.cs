@@ -1,8 +1,4 @@
-﻿using UnityEngine;
-using System.Collections;
-using NodeEditorFramework;
-
-namespace NodeEditorFramework.Standard
+﻿namespace NodeEditorFramework.Standard
 {
 	[NodeCanvasType("Calculation")]
 	public class CalculationCanvasType : NodeCanvas

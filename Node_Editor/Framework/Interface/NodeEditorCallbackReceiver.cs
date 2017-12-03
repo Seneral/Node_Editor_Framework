@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 
-using NodeEditorFramework;
-
 namespace NodeEditorFramework 
 {
 	public abstract partial class NodeEditorCallbackReceiver : MonoBehaviour

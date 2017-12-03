@@ -1,6 +1,4 @@
-﻿//#define NODE_EDITOR_LINE_CONNECTION
-
-using UnityEngine;
+﻿using UnityEngine;
 using System;
 using System.Collections.Generic;
 

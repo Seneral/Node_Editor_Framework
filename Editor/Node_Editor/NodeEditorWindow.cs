@@ -1,14 +1,8 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
+using System.IO;
 
 using NodeEditorFramework.Utilities;
-using NodeEditorFramework.IO;
-
-using GenericMenu = NodeEditorFramework.Utilities.GenericMenu;
 
 namespace NodeEditorFramework.Standard
 {
@@ -25,6 +19,7 @@ namespace NodeEditorFramework.Standard
 
 		// GUI
 		private Rect canvasWindowRect { get { return new Rect(0, editorInterface.toolbarHeight, position.width, position.height - editorInterface.toolbarHeight); } }
+
 
 		#region General 
 

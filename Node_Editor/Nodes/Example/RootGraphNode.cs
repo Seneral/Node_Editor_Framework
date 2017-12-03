@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework.Standard
@@ -26,12 +25,6 @@ namespace NodeEditorFramework.Standard
 
 			foreach (ConnectionKnob knob in connectionKnobs) 
 				knob.DisplayLayout ();
-			// OR
-			/*
-			flowChild1.DisplayLayout ();
-			flowChild2.DisplayLayout ();
-			flowChild3.DisplayLayout ();
-			*/
 		}
 	}
 }

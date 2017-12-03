@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using System;
-using NodeEditorFramework;
 
 namespace NodeEditorFramework.Standard
 {

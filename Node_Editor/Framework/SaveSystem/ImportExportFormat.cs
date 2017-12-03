@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using UnityEngine;
-using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework.IO

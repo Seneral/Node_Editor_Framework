@@ -1,8 +1,7 @@
 ﻿using UnityEngine;
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using NodeEditorFramework;
+
 using NodeEditorFramework.Utilities;
 
 namespace NodeEditorFramework 

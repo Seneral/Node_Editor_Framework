@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using NodeEditorFramework;
-
 namespace NodeEditorFramework.Standard
 {
 	/// <summary>
