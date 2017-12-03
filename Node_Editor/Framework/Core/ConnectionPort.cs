@@ -180,14 +180,14 @@ namespace NodeEditorFramework
 
 			if (maxConnectionCount == ConnectionCount.Single && connections.Count > 0)
 			{ // Respect maximum connection count on this port
-				connections[0].connections.Remove (this);
+				RemoveConnection(connections[0], silent);
 				connections.Clear ();
 			}
 			connections.Add(port);
 
 			if (port.maxConnectionCount == ConnectionCount.Single && port.connections.Count > 0)
 			{ // Respect maximum connection count on the other port
-				port.connections[0].connections.Remove (port);
+				port.RemoveConnection(port.connections[0], silent);
 				port.connections.Clear ();
 			}
 			port.connections.Add (this);
