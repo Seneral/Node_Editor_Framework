@@ -139,7 +139,7 @@ namespace NodeEditorFramework
 			NodeEditorState state = inputInfo.editorState;
 			if (state.dragNode) 
 			{ // If conditions apply, drag the selected node, else disable dragging
-				if (state.selectedNode != null && GUIUtility.hotControl == 0 && inputInfo.editorState.dragUserID == "node")
+				if (state.selectedNode != null && inputInfo.editorState.dragUserID == "node")
 				{ // Apply new position for the dragged node
 					state.UpdateDrag ("node", inputInfo.inputPos);
 					state.selectedNode.position = state.dragObjectPos;
@@ -286,22 +286,28 @@ namespace NodeEditorFramework
 
 		#region Node Snap
 
-		[HotkeyAttribute (KeyCode.LeftControl, EventType.KeyDown, 60)] // 60 ensures it is checked after the dragging was performed before
-		[HotkeyAttribute (KeyCode.LeftControl, EventType.KeyUp, 60)]
+		[EventHandlerAttribute(EventType.MouseUp, 60)]
+		[EventHandlerAttribute(EventType.MouseDown, 60)]
+		[EventHandlerAttribute(EventType.MouseDrag, 60)]
+		[HotkeyAttribute(KeyCode.LeftControl, EventType.KeyDown , 60)]
 		private static void HandleNodeSnap (NodeEditorInputInfo inputInfo) 
 		{
-			NodeEditorState state = inputInfo.editorState;
-			if (state.selectedNode != null)
-			{ // Snap selected Node's position and the drag to multiples of 10
-				state.selectedNode.position.x = Mathf.Round (state.selectedNode.rect.x/10) * 10;
-				state.selectedNode.position.y = Mathf.Round (state.selectedNode.rect.y/10) * 10;
-			}
-			if (state.activeGroup != null)
+			if (inputInfo.inputEvent.modifiers == EventModifiers.Control || inputInfo.inputEvent.keyCode == KeyCode.LeftControl)
 			{
-				state.activeGroup.rect.x = Mathf.Round (state.activeGroup.rect.x/10) * 10;
-				state.activeGroup.rect.y = Mathf.Round (state.activeGroup.rect.y/10) * 10;
+				NodeEditorState state = inputInfo.editorState;
+				if (state.selectedNode != null)
+				{ // Snap selected Node's position to multiples of 10
+					state.selectedNode.position.x = Mathf.Round(state.selectedNode.rect.x / 10) * 10;
+					state.selectedNode.position.y = Mathf.Round(state.selectedNode.rect.y / 10) * 10;
+					NodeEditor.RepaintClients();
+				}
+				if (state.activeGroup != null)
+				{ // Snap active Group's position to multiples of 10
+					state.activeGroup.rect.x = Mathf.Round(state.activeGroup.rect.x / 10) * 10;
+					state.activeGroup.rect.y = Mathf.Round(state.activeGroup.rect.y / 10) * 10;
+					NodeEditor.RepaintClients();
+				}
 			}
-			NodeEditor.RepaintClients ();
 		}
 
 		#endregion
