@@ -1,44 +1,61 @@
 ﻿using UnityEngine;
-using System.Collections;
-using NodeEditorFramework;
+using System.IO;
+using NodeEditorFramework.Utilities;
 
-[Node (false, "Texture/Texture Output")]
-public class TextureOutputNode : Node 
+namespace NodeEditorFramework.TextureComposer
 {
-	public const string ID = "texOutNode";
-	public override string GetID { get { return ID; } }
-
-	public override string Title { get { return "Texture Output"; } }
-	public override Vector2 DefaultSize { get { return new Vector2 (150, 200); } }
-
-	[ValueConnectionKnob("Texture", Direction.In, "Texture2D")]
-	public ValueConnectionKnob inputKnob;
-
-	public Texture2D tex;
-
-
-	public override void NodeGUI () 
+	[Node(false, "Texture/Output")]
+	public class TextureOutputNode : Node
 	{
-		//rect.height = tex == null? 50 : 200;	// How do I change the nodes height????
+		public const string ID = "texOutNode";
+		public override string GetID { get { return ID; } }
 
-		inputKnob.DisplayLayout (new GUIContent ("Texture", "The texture to output."));
-		inputKnob.SetPosition ();
+		public override string Title { get { return "Texture Output"; } }
+		public override Vector2 DefaultSize { get { return new Vector2(150, 50); } }
+		public override bool AutoLayout { get { return true; } }
 
-		if (tex != null) 
+		[ValueConnectionKnob("Texture", Direction.In, "Texture")]
+		public ValueConnectionKnob inputKnob;
+
+		[System.NonSerialized]
+		public Texture2D tex;
+
+		public string savePath = null;
+
+		public override void NodeGUI()
 		{
-			GUILayout.Box (tex, GUIStyle.none, new GUILayoutOption[] { GUILayout.Width (64), GUILayout.Height (64) });
+			inputKnob.DisplayLayout();
+
+			if (tex != null)
+				RTTextureViz.DrawTexture(tex, 64);
+
+			GUILayout.BeginHorizontal();
+			RTEditorGUI.TextField(savePath);
+#if UNITY_EDITOR
+			if (GUILayout.Button("#", GUILayout.ExpandWidth (false)))
+			{
+				savePath = UnityEditor.EditorUtility.SaveFilePanel("Save Texture Path", Application.dataPath, "OutputTex", "png");
+			}
+#endif
+			GUILayout.EndHorizontal();
+
+			if (GUI.changed)
+				NodeEditor.curNodeCanvas.OnNodeChange(this);
 		}
 
-		if (GUI.changed)
-			NodeEditor.curNodeCanvas.OnNodeChange (this);
-	}
-	
-	public override bool Calculate () 
-	{
-		if(!inputKnob.connected () || inputKnob.IsValueNull)
-			tex = null;
-		else
-			tex = inputKnob.GetValue<Texture2D> ();
-		return true;
+		public override bool Calculate()
+		{
+			tex = inputKnob.connected() ? inputKnob.GetValue<Texture2D>() : null;
+			if (!string.IsNullOrEmpty(savePath))
+			{
+				Directory.CreateDirectory(Path.GetDirectoryName(savePath));
+				Debug.Log("Saving to '" + savePath + "'!");
+				File.WriteAllBytes(savePath, tex.EncodeToPNG());
+#if UNITY_EDITOR
+				UnityEditor.AssetDatabase.Refresh();
+#endif
+			}
+			return true;
+		}
 	}
 }
