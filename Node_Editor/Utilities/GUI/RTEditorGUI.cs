@@ -696,35 +696,6 @@ namespace NodeEditorFramework.Utilities
 
 		#endregion
 
-		#region Extended GUI Texture Drawing
-
-		private static Material texVizMat;
-
-		public static void DrawTexture (Texture texture, int texSize, GUIStyle style, params GUILayoutOption[] options) 
-		{
-			DrawTexture (texture, texSize, style, 1, 2, 3, 4, options);
-		}
-
-		public static void DrawTexture (Texture texture, int texSize, GUIStyle style, int shuffleRed, int shuffleGreen, int shuffleBlue, int shuffleAlpha, params GUILayoutOption[] options) 
-		{
-			if (texVizMat == null)
-				texVizMat = new Material (Shader.Find ("Hidden/GUITextureClip_ChannelControl"));
-			texVizMat.SetInt ("shuffleRed", shuffleRed);
-			texVizMat.SetInt ("shuffleGreen", shuffleGreen);
-			texVizMat.SetInt ("shuffleBlue", shuffleBlue);
-			texVizMat.SetInt ("shuffleAlpha", shuffleAlpha);
-
-			if (options == null || options.Length == 0)
-				options = new GUILayoutOption[] { GUILayout.ExpandWidth (false) };
-			Rect rect = style == null? GUILayoutUtility.GetRect (texSize, texSize, options) : GUILayoutUtility.GetRect (texSize, texSize, style, options);
-			if (Event.current.type == EventType.Repaint)
-				Graphics.DrawTexture (rect, texture, texVizMat);
-		}
-
-		#endregion
-
-
-
 		#region Low-Level Drawing
 
 		private static Material lineMaterial;
@@ -733,9 +704,14 @@ namespace NodeEditorFramework.Utilities
 		private static void SetupLineMat (Texture tex, Color col) 
 		{
 			if (lineMaterial == null)
-				lineMaterial = new Material (Shader.Find ("Hidden/LineShader"));
+			{
+				Shader lineShader = Shader.Find("Hidden/LineShader");
+				if (lineShader == null)
+					throw new NotImplementedException("Missing line shader implementation!");
+				lineMaterial = new Material(lineShader);
+			}
 			if (tex == null)
-				tex = lineTexture != null? lineTexture : lineTexture = NodeEditorFramework.Utilities.ResourceManager.LoadTexture ("Textures/AALine.png");
+				tex = lineTexture != null? lineTexture : lineTexture = ResourceManager.LoadTexture ("Textures/AALine.png");
 			lineMaterial.SetTexture ("_LineTexture", tex);
 			lineMaterial.SetColor ("_LineColor", col);
 			lineMaterial.SetPass (0);

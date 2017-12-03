@@ -181,7 +181,7 @@ namespace NodeEditorFramework
 				int nameStart = path.LastIndexOf ('/')+1;
 				newName = path.Substring (nameStart, path.Length-nameStart-6);
 			}
-			if (newName.ToLower () != "lastsession")
+			if (!newName.ToLower ().Contains ("lastsession"))
 			{
 				savePath = path;
 				saveName = newName;
