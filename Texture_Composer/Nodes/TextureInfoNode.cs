@@ -1,50 +1,40 @@
 ﻿using UnityEngine;
-using System.Collections;
-using NodeEditorFramework;
 
-[Node (false, "Texture/Texture Info")]
-public class TextureInfoNode : Node 
+namespace NodeEditorFramework.TextureComposer
 {
-	public const string ID = "texInfoNode";
-	public override string GetID { get { return ID; } }
-
-	public Texture2D tex;
-	
-	public override Node Create (Vector2 pos) 
+	[Node(false, "Texture/Info")]
+	public class TextureInfoNode : Node
 	{
-		TextureInfoNode node = ScriptableObject.CreateInstance <TextureInfoNode> ();
+		public const string ID = "texInfoNode";
+		public override string GetID { get { return ID; } }
 
-		node.name = "Texture Info";
-		node.rect = new Rect (pos.x, pos.y, 150, 50);
+		public override string Title { get { return "Texture Info"; } }
+		public override Vector2 MinSize { get { return new Vector2(150, 50); } }
+		public override bool AutoLayout { get { return true; } }
 
-		node.CreateInput ("Texture", "Texture2D");
+		[ValueConnectionKnob("Texture", Direction.In, "Texture")]
+		public ValueConnectionKnob inputKnob;
 
-		return node;
-	}
-	
-	protected override void NodeGUI () 
-	{
-		rect.height = tex == null? 50 : 200;
+		[System.NonSerialized]
+		public Texture2D tex;
 
-		Inputs [0].DisplayLayout (new GUIContent ("Texture" + (tex != null? " :" : ""), "The texture to display information about."));
-
-		if (tex != null) 
+		public override void NodeGUI()
 		{
-			GUILayout.Box (tex, GUIStyle.none, new GUILayoutOption[] { GUILayout.Width (64), GUILayout.Height (64) });
-			GUILayout.Label ("Name: " + tex.name);
-			GUILayout.Label ("Width: " + tex.width + "; Height: " + tex.height);
-			GUILayout.Label ("Format: " + tex.format);
-			GUILayout.Label ("Filter Mode: " + tex.filterMode);
-			GUILayout.Label ("Wrap Mode: " + tex.wrapMode);
+			inputKnob.DisplayLayout(new GUIContent("Texture" + (tex != null ? ":" : " (null)"), "The texture to display information about."));
+			if (tex != null)
+			{
+				RTTextureViz.DrawTexture(tex, 64);
+				GUILayout.Label("'" + tex.name + "'");
+				GUILayout.Label("Size: " + tex.width + "x" + tex.height + "");
+				GUILayout.Label("Format: " + tex.format);
+			}
+		}
+
+		public override bool Calculate()
+		{
+			tex = inputKnob.connected() ? inputKnob.GetValue<Texture2D>() : null;
+			return true;
 		}
 	}
-	
-	public override bool Calculate () 
-	{
-		if (Inputs [0].connection == null || Inputs [0].connection.IsValueNull)
-			tex = null;
-		else
-			tex = Inputs [0].connection.GetValue<Texture2D> ();
-		return true;
-	}
+
 }

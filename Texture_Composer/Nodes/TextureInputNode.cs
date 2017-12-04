@@ -1,43 +1,47 @@
 ﻿using UnityEngine;
-using System.Collections;
-using NodeEditorFramework;
 using NodeEditorFramework.Utilities;
 
-[Node (false, "Texture/Texture Input")]
-public class TextureInputNode : Node 
+namespace NodeEditorFramework.TextureComposer
 {
-	public const string ID = "texInNode";
-	public override string GetID { get { return ID; } }
-
-	public Texture2D tex;
-	
-	public override Node Create (Vector2 pos) 
+	[Node(false, "Texture/Input")]
+	public class TextureInputNode : Node
 	{
-		TextureInputNode node = ScriptableObject.CreateInstance <TextureInputNode> ();
+		public const string ID = "texInNode";
+		public override string GetID { get { return ID; } }
 
-		node.name = "Texture Input";
-		node.rect = new Rect (pos.x, pos.y, 100, 120);
-		
-		node.CreateOutput ("Texture", "Texture2D");
+		public override string Title { get { return "Texture Input"; } }
+		public override Vector2 DefaultSize { get { return new Vector2(100, 100); } }
 
-		return node;
-	}
-	
-	protected override void NodeGUI () 
-	{
-		Outputs [0].DisplayLayout (new GUIContent ("Texture", "The input texture"));
+		[ValueConnectionKnob("Texture", Direction.Out, "Texture")]
+		public ValueConnectionKnob outputKnob;
 
-		tex = RTEditorGUI.ObjectField<Texture2D> (tex, false) as Texture2D;
+		public Texture2D tex;
 
-		// TODO: Check if texture is readable
+		public override void NodeGUI()
+		{
+			outputKnob.DisplayLayout();
 
-		if (GUI.changed)
-			NodeEditor.curNodeCanvas.OnNodeChange (this);
-	}
-	
-	public override bool Calculate () 
-	{
-		Outputs [0].SetValue<Texture2D> (tex);
-		return true;
+			Texture2D newTex = RTEditorGUI.ObjectField(tex, false);
+
+			if (GUI.changed)
+			{ // Texture has been changed
+				try
+				{ // Check for readability and update tex
+					newTex.GetPixel(0, 0);
+					tex = newTex;
+				}
+				catch (UnityException)
+				{ // Texture is not readable
+					Debug.LogError("Texture is not readable!");
+				}
+				NodeEditor.curNodeCanvas.OnNodeChange(this);
+			}
+		}
+
+		public override bool Calculate()
+		{
+			outputKnob.SetValue(tex);
+			return true;
+		}
 	}
 }
