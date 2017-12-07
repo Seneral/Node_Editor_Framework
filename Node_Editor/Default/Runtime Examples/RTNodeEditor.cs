@@ -10,6 +10,7 @@ namespace NodeEditorFramework.Standard
 	{
 		// Startup-canvas, cache and interface
 		public NodeCanvas canvas;
+		public string loadSceneName;
 		private NodeEditorUserCache canvasCache;
 		private NodeEditorInterface editorInterface;
 
@@ -45,7 +46,10 @@ namespace NodeEditorFramework.Standard
 			if (canvasCache == null)
 			{ // Create cache and load startup-canvas
 				canvasCache = new NodeEditorUserCache();
-				canvasCache.SetCanvas(NodeEditorSaveManager.CreateWorkingCopy(canvas));
+				if (canvas != null)
+					canvasCache.SetCanvas(NodeEditorSaveManager.CreateWorkingCopy(canvas));
+				else if (!string.IsNullOrEmpty (loadSceneName))
+					canvasCache.LoadSceneNodeCanvas(loadSceneName);
 			}
 			canvasCache.AssureCanvas();
 			if (editorInterface == null)
@@ -57,7 +61,6 @@ namespace NodeEditorFramework.Standard
 
 		private void OnGUI ()
 		{
-
 			// Initiation
 			NodeEditor.checkInit(true);
 			if (NodeEditor.InitiationError)
