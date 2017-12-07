@@ -98,6 +98,8 @@ namespace NodeEditorFramework
 			EditorLoadingControl.beforeEnteringPlayMode += SaveCache;
 			EditorLoadingControl.beforeLeavingPlayMode -= SaveCache;
 			EditorLoadingControl.beforeLeavingPlayMode += SaveCache;
+			EditorLoadingControl.justEnteredPlayMode -= LoadCache;
+			EditorLoadingControl.justEnteredPlayMode += LoadCache;
 #endif
 		}
 
@@ -111,6 +113,7 @@ namespace NodeEditorFramework
 			UnityEditor.EditorApplication.update -= CheckCacheUpdate;
 			EditorLoadingControl.beforeEnteringPlayMode -= SaveCache;
 			EditorLoadingControl.beforeLeavingPlayMode -= SaveCache;
+			EditorLoadingControl.justEnteredPlayMode -= LoadCache;
 #endif
 		}
 
@@ -170,7 +173,7 @@ namespace NodeEditorFramework
 		/// Loads the canvas from the cache save file
 		/// Called whenever a reload was made
 		/// </summary>
-		private void LoadCache ()
+		public void LoadCache ()
 		{
 #if CACHE
 			if (!useCache)
