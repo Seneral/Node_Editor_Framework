@@ -68,6 +68,8 @@ namespace NodeEditorFramework.Standard
 			EditorLoadingControl.justLeftPlayMode += NormalReInit;
 			EditorLoadingControl.justOpenedNewScene -= NormalReInit;
 			EditorLoadingControl.justOpenedNewScene += NormalReInit;
+			EditorLoadingControl.justEnteredPlayMode -= ReloadCanvasCache;
+			EditorLoadingControl.justEnteredPlayMode += ReloadCanvasCache;
 			SceneView.onSceneGUIDelegate -= OnSceneGUI;
 			SceneView.onSceneGUIDelegate += OnSceneGUI;
 		}
@@ -78,10 +80,16 @@ namespace NodeEditorFramework.Standard
 			NodeEditor.ClientRepaints -= Repaint;
 			EditorLoadingControl.justLeftPlayMode -= NormalReInit;
 			EditorLoadingControl.justOpenedNewScene -= NormalReInit;
+			EditorLoadingControl.justEnteredPlayMode -= ReloadCanvasCache;
 			SceneView.onSceneGUIDelegate -= OnSceneGUI;
 
 			// Clear Cache
 			canvasCache.ClearCacheEvents();
+		}
+
+		private void ReloadCanvasCache()
+		{
+			canvasCache.LoadCache();
 		}
 
 		private void OnLostFocus () 
