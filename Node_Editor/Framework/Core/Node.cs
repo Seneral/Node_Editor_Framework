@@ -376,7 +376,7 @@ namespace NodeEditorFramework
 		public bool isInput()
 		{
 			for (int i = 0; i < inputPorts.Count; i++)
-				if (!inputPorts[i].connected())
+				if (inputPorts[i].connected())
 					return false;
 			return true;
 		}
@@ -387,7 +387,7 @@ namespace NodeEditorFramework
 		public bool isOutput()
 		{
 			for (int i = 0; i < outputPorts.Count; i++)
-				if (!outputPorts[i].connected())
+				if (outputPorts[i].connected())
 					return false;
 			return true;
 		}
