@@ -273,19 +273,11 @@ namespace NodeEditorFramework
 			NodeCanvas prevSave;
 			if (safeOverwrite && (prevSave = ResourceManager.LoadResource<NodeCanvas> (path)) != null && prevSave.GetType () == canvasSave.GetType ())
 			{ // OVERWRITE: Delete contents of old save
-				for (int nodeCnt = 0; nodeCnt < prevSave.nodes.Count; nodeCnt++) 
-				{
-					Node node = prevSave.nodes[nodeCnt];
-					// Make sure all node ports are included in the representative connectionPorts list
-					ConnectionPortManager.UpdatePortLists(node);
-					for (int k = 0; k < node.connectionPorts.Count; k++)
-						Object.DestroyImmediate(node.connectionPorts[k], true);
-					Object.DestroyImmediate (node, true);
-				}
-				for (int i = 0; i < prevSave.editorStates.Length; i++)
-				{
-					if (prevSave.editorStates[i] != null)
-						Object.DestroyImmediate (prevSave.editorStates[i], true);
+				Object[] subAssets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(path);
+				for (int i = 0; i < subAssets.Length; i++)
+				{ // Delete all subassets except the main canvas to preserve references
+					if (subAssets[i] != prevSave)
+						Object.DestroyImmediate(subAssets[i], true);
 				}
 				// Overwrite main canvas
 				OverwriteCanvas (ref prevSave, processedCanvas);
@@ -293,7 +285,8 @@ namespace NodeEditorFramework
 			}
 			else
 			{ // Write main canvas
-				UnityEditor.AssetDatabase.CreateAsset (processedCanvas, path);
+				UnityEditor.AssetDatabase.DeleteAsset(path);
+				UnityEditor.AssetDatabase.CreateAsset(processedCanvas, path);
 			}
 
 			// Write editorStates
