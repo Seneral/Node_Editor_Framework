@@ -101,14 +101,14 @@ namespace NodeEditorFramework
 			GUILayout.BeginHorizontal ();
 			GUILayout.BeginVertical ();
 
-			foreach (ConnectionKnob input in inputKnobs)
-				input.DisplayLayout ();
+			for (int i = 0; i < inputKnobs.Count; i++)
+				inputKnobs[i].DisplayLayout ();
 
 			GUILayout.EndVertical ();
 			GUILayout.BeginVertical ();
 
-			foreach (ConnectionKnob output in outputKnobs)
-				output.DisplayLayout ();
+			for (int i = 0; i < outputKnobs.Count; i++)
+				outputKnobs[i].DisplayLayout();
 
 			GUILayout.EndVertical ();
 			GUILayout.EndHorizontal ();
@@ -207,9 +207,9 @@ namespace NodeEditorFramework
 
 			if (connectingPort != null)
 			{ // Handle auto-connection and link the output to the first compatible input
-				foreach (ConnectionPort port in node.connectionPorts)
+				for (int i = 0; i < node.connectionPorts.Count; i++)
 				{
-					if (port.TryApplyConnection (connectingPort, silent))
+					if (node.connectionPorts[i].TryApplyConnection (connectingPort, silent))
 						break;
 				}
 			}
@@ -359,11 +359,11 @@ namespace NodeEditorFramework
 			focusedKnob = null;
 			if (rect.Contains(position))
 				return true;
-			foreach (ConnectionKnob knob in connectionKnobs)
+			for (int i = 0; i < connectionKnobs.Count; i++)
 			{ // Check if any nodeKnob is focused instead
-				if (knob.GetCanvasSpaceKnob().Contains(position))
+				if (connectionKnobs[i].GetCanvasSpaceKnob().Contains(position))
 				{
-					focusedKnob = knob;
+					focusedKnob = connectionKnobs[i];
 					return true;
 				}
 			}
@@ -376,7 +376,7 @@ namespace NodeEditorFramework
 		public bool isInput()
 		{
 			for (int i = 0; i < inputPorts.Count; i++)
-				if (inputPorts[i].connected())
+				if (!inputPorts[i].connected())
 					return false;
 			return true;
 		}
@@ -387,7 +387,7 @@ namespace NodeEditorFramework
 		public bool isOutput()
 		{
 			for (int i = 0; i < outputPorts.Count; i++)
-				if (outputPorts[i].connected())
+				if (!outputPorts[i].connected())
 					return false;
 			return true;
 		}
@@ -397,11 +397,12 @@ namespace NodeEditorFramework
 		/// </summary>
 		public bool descendantsCalculated () 
 		{
-			foreach (ConnectionPort inputPort in inputPorts)
+			for (int i = 0; i < inputPorts.Count; i++)
 			{
-				foreach (ConnectionPort connectionPort in inputPort.connections)
+				ConnectionPort port = inputPorts[i];
+				for (int t = 0; t < port.connections.Count; t++)
 				{
-					if (!connectionPort.body.calculated)
+					if (!port.connections[t].body.calculated)
 						return false;
 				}
 			}
@@ -416,13 +417,15 @@ namespace NodeEditorFramework
 			if (otherNode == null || otherNode == this)
 				return false;
 			if (BeginRecursiveSearchLoop ()) return false;
-			foreach (ConnectionPort inputPort in inputPorts)
+			for (int i = 0; i < inputPorts.Count; i++)
 			{
-				foreach (ConnectionPort connectionPort in inputPort.connections)
+				ConnectionPort port = inputPorts[i];
+				for (int t = 0; t < port.connections.Count; t++)
 				{
-					if (connectionPort.body != startRecursiveSearchNode && (connectionPort.body == otherNode || connectionPort.body.isChildOf (otherNode)))
+					ConnectionPort conPort = port.connections[t];
+					if (conPort.body != startRecursiveSearchNode && (conPort.body == otherNode || conPort.body.isChildOf(otherNode)))
 					{
-						StopRecursiveSearchLoop ();
+						StopRecursiveSearchLoop();
 						return true;
 					}
 				}
@@ -437,13 +440,14 @@ namespace NodeEditorFramework
 		internal bool isInLoop ()
 		{
 			if (BeginRecursiveSearchLoop ()) return this == startRecursiveSearchNode;
-			foreach (ConnectionPort inputPort in inputPorts)
+			for (int i = 0; i < inputPorts.Count; i++)
 			{
-				foreach (ConnectionPort connectionPort in inputPort.connections)
+				ConnectionPort port = inputPorts[i];
+				for (int t = 0; t < port.connections.Count; t++)
 				{
-					if (connectionPort.body.isInLoop ()) 
+					if (port.connections[t].body.isInLoop())
 					{
-						StopRecursiveSearchLoop ();
+						StopRecursiveSearchLoop();
 						return true;
 					}
 				}
@@ -464,13 +468,14 @@ namespace NodeEditorFramework
 			if (otherNode == null)
 				return false;
 			if (BeginRecursiveSearchLoop ()) return false;
-			foreach (ConnectionPort inputPort in inputPorts)
+			for (int i = 0; i < inputPorts.Count; i++)
 			{
-				foreach (ConnectionPort connectionPort in inputPort.connections)
+				ConnectionPort port = inputPorts[i];
+				for (int t = 0; t < port.connections.Count; t++)
 				{
-					if (connectionPort.body.allowsLoopRecursion (otherNode)) 
+					if (port.connections[t].body.allowsLoopRecursion(otherNode))
 					{
-						StopRecursiveSearchLoop ();
+						StopRecursiveSearchLoop();
 						return true;
 					}
 				}
@@ -487,17 +492,17 @@ namespace NodeEditorFramework
 		{
 			calculated = false;
 			if (BeginRecursiveSearchLoop ()) return;
-			foreach (ConnectionPort outputPort in outputPorts)
+			for (int i = 0; i < outputPorts.Count; i++)
 			{
-				ValueConnectionKnob outputValueKnob = outputPort as ValueConnectionKnob;
-				if (outputValueKnob != null)
-					outputValueKnob.ResetValue ();
-				foreach (ConnectionPort connectionPort in outputPort.connections)
+				ConnectionPort port = outputPorts[i];
+				if (port is ValueConnectionKnob)
+					(port as ValueConnectionKnob).ResetValue ();
+				for (int t = 0; t < port.connections.Count; t++)
 				{
-					ValueConnectionKnob connectionValueKnob = connectionPort as ValueConnectionKnob;
-					if (connectionValueKnob != null)
-						connectionValueKnob.ResetValue ();
-					connectionPort.body.ClearCalculation ();
+					ConnectionPort conPort = port.connections[t];
+					if (conPort is ValueConnectionKnob)
+						(conPort as ValueConnectionKnob).ResetValue ();
+					conPort.body.ClearCalculation ();
 				}
 			}
 			EndRecursiveSearchLoop ();

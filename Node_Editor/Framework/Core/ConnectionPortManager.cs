@@ -91,8 +91,9 @@ namespace NodeEditorFramework
 			ConnectionPortDeclaration[] portDecls;
 			if (nodePortDeclarations.TryGetValue (node.GetID, out portDecls))
 			{
-				foreach (ConnectionPortDeclaration portDecl in portDecls)
+				for (int i = 0; i < portDecls.Length; i++)
 				{ // Iterate over each connection port and yield it's declaration
+					ConnectionPortDeclaration portDecl = portDecls[i];
 					yield return portDecl;
 					ConnectionPort port = (ConnectionPort)portDecl.portField.GetValue (node);
 					if (port != null)

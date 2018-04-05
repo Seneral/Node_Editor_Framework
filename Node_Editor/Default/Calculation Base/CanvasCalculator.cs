@@ -16,8 +16,9 @@ namespace NodeEditorFramework.Standard
 		public override void TraverseAll () 
 		{
 			workList = new List<Node> ();
-			foreach (Node node in nodeCanvas.nodes) 
+			for (int i = 0; i < nodeCanvas.nodes.Count; i++) 
 			{
+				Node node = nodeCanvas.nodes[i];
 				if (node.isInput ())
 				{ // Add all Inputs
 					node.ClearCalculation ();
@@ -81,9 +82,12 @@ namespace NodeEditorFramework.Standard
 				workList.Remove (node);
 				if (node.ContinueCalculation)
 				{ // Continue with children
-					foreach (ConnectionPort outputPort in node.outputPorts)
-						foreach (ConnectionPort connectionPort in outputPort.connections)
-							ContinueCalculation (connectionPort.body);
+					for (int i = 0; i < node.outputPorts.Count; i++)
+					{
+						ConnectionPort outPort = node.outputPorts[i];
+						for (int t = 0; t < outPort.connections.Count; t++)
+							ContinueCalculation(outPort.connections[t].body);
+					}
 				}
 				return true;
 			}

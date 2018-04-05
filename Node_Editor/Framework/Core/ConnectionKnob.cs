@@ -196,10 +196,11 @@ namespace NodeEditorFramework
 				return;
 			Vector2 startPos = GetGUIKnob ().center;
 			Vector2 startDir = GetDirection();
-			foreach (ConnectionKnob connectionKnob in connections)
+			for (int i = 0; i < connections.Count; i++)
 			{
-				Vector2 endPos = connectionKnob.GetGUIKnob().center;
-				Vector2 endDir = connectionKnob.GetDirection();
+				ConnectionKnob conKnob = connections[i];
+				Vector2 endPos = conKnob.GetGUIKnob().center;
+				Vector2 endDir = conKnob.GetDirection();
 				NodeEditorGUI.DrawConnection(startPos, startDir, endPos, endDir, color);
 			}
 		}

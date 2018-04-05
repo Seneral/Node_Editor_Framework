@@ -85,10 +85,9 @@ namespace NodeEditorFramework
 			if (Event.current.type != EventType.Repaint)
 				return;
 			Vector2 startPos = body.rect.center;
-			foreach (ConnectionPort connectionPort in connections)
+			for (int i = 0; i < connections.Count; i++)
 			{
-				Debug.Log ("Drawing connection from " + name + " to " + connectionPort.name);
-				Vector2 endPos = connectionPort.body.rect.center;
+				Vector2 endPos = connections[i].body.rect.center;
 				NodeEditorGUI.DrawConnection (startPos, endPos, ConnectionDrawMethod.StraightLine, color);
 			}
 		}
