@@ -45,13 +45,20 @@ namespace NodeEditorFramework.Utilities
 
 		public static void Init () 
 		{
+			// As we can call Begin/Ends inside another, we need to save their states hierarchial in Lists (not Stack, as we need to iterate over them!):
+			currentRectStack = new List<Rect> ();
+			rectStackGroups = new List<List<Rect>> ();
+			GUIMatrices = new List<Matrix4x4> ();
+			adjustedGUILayout = new List<bool> ();
+
 			// Fetch rect acessors using Reflection
 			Assembly UnityEngine = Assembly.GetAssembly (typeof (UnityEngine.GUI));
 			Type GUIClipType = UnityEngine.GetType ("UnityEngine.GUIClip", true);
 
-			PropertyInfo topmostRect = GUIClipType.GetProperty ("topmostRect", BindingFlags.Static | BindingFlags.Public);
-			MethodInfo GetTopRect = GUIClipType.GetMethod ("GetTopRect", BindingFlags.Static | BindingFlags.NonPublic);
-			MethodInfo ClipRect = GUIClipType.GetMethod ("Clip", BindingFlags.Static | BindingFlags.Public, Type.DefaultBinder, new Type[] { typeof(Rect) }, new ParameterModifier[] {});
+			PropertyInfo topmostRect = GUIClipType.GetProperty ("topmostRect", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+			MethodInfo GetTopmostRect = topmostRect != null? (topmostRect.GetGetMethod(false) ?? topmostRect.GetGetMethod(true)) : null;
+			MethodInfo GetTopRect = GUIClipType.GetMethod ("GetTopRect", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+			MethodInfo ClipRect = GUIClipType.GetMethod ("Clip", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, Type.DefaultBinder, new Type[] { typeof(Rect) }, new ParameterModifier[] {});
 
 			if (GUIClipType == null || topmostRect == null || GetTopRect == null || ClipRect == null) 
 			{
@@ -64,7 +71,7 @@ namespace NodeEditorFramework.Utilities
 
 			// Create simple acessor delegates
 			GetTopRectDelegate = (Func<Rect>)Delegate.CreateDelegate (typeof(Func<Rect>), GetTopRect);
-			topmostRectDelegate = (Func<Rect>)Delegate.CreateDelegate (typeof(Func<Rect>), topmostRect.GetGetMethod ());
+			topmostRectDelegate = (Func<Rect>)Delegate.CreateDelegate (typeof(Func<Rect>), GetTopmostRect);
 
 			if (GetTopRectDelegate == null || topmostRectDelegate == null)
 			{
@@ -74,12 +81,6 @@ namespace NodeEditorFramework.Utilities
 				initiated = true;
 				return;
 			}
-
-			// As we can call Begin/Ends inside another, we need to save their states hierarchial in Lists (not Stack, as we need to iterate over them!):
-			currentRectStack = new List<Rect> ();
-			rectStackGroups = new List<List<Rect>> ();
-			GUIMatrices = new List<Matrix4x4> ();
-			adjustedGUILayout = new List<bool> ();
 
 			// Sometimes, strange errors pop up (related to Mac?), which we try to catch and enable a compability Mode no supporting zooming in groups
 			/*try
