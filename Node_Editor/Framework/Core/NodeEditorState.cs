@@ -31,7 +31,8 @@ namespace NodeEditorFramework
 
 		// Temporary variables
 		public Vector2 zoomPos { get { return canvasRect.size/2; } } // zoom center in canvas space
-		[NonSerialized] public Rect canvasRect; // canvas Rect
+		public Rect canvasViewport { get { return new Rect(-panOffset - zoomPos * zoom, canvasRect.size * zoom); } } // canvas viewport in canvas space (same as nodes)
+		[NonSerialized] public Rect canvasRect; // canvas rect in GUI space
 		[NonSerialized] public Vector2 zoomPanAdjust; // calculated value to offset elements with when zooming
 		[NonSerialized] public List<Rect> ignoreInput = new List<Rect> (); // Rects inside the canvas to ignore input in (nested canvases, fE)
 

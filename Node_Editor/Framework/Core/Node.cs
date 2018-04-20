@@ -11,6 +11,7 @@ namespace NodeEditorFramework
 		private Vector2 autoSize;
 		public Vector2 size { get { return AutoLayout? autoSize : DefaultSize; } }
 		public Rect rect { get { return new Rect (position, size); } }
+		public Rect fullAABBRect { get { return new Rect(position.x - 20, position.y - 20, size.x + 40, size.y + 40); } }
 
 		// Dynamic connection ports
 		public List<ConnectionPort> dynamicConnectionPorts = new List<ConnectionPort>();
@@ -32,6 +33,7 @@ namespace NodeEditorFramework
 		internal Vector2 contentOffset = Vector2.zero;
 		internal Vector2 nodeGUIHeight;
 		internal bool ignoreGUIKnobPlacement;
+		internal bool isClipped;
 
 		// Style
 		public Color backgroundColor = Color.white;

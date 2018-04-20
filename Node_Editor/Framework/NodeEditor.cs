@@ -227,7 +227,13 @@ namespace NodeEditorFramework
 
 			// Draw the groups below everything else
 			for (int groupCnt = 0; groupCnt < curNodeCanvas.groups.Count; groupCnt++)
-				curNodeCanvas.groups [groupCnt].DrawGroup ();
+			{
+				NodeGroup group = curNodeCanvas.groups[groupCnt];
+				if (Event.current.type == EventType.Layout)
+					group.isClipped = !curEditorState.canvasViewport.Overlaps(group.fullAABBRect);
+				if (!group.isClipped)
+					group.DrawGroup();
+			}
 			
 			// Push the active node to the top of the draw order.
 			if (Event.current.type == EventType.Layout && curEditorState.selectedNode != null)
@@ -244,9 +250,14 @@ namespace NodeEditorFramework
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++)
 			{
 				Node node = curNodeCanvas.nodes [nodeCnt];
-				node.DrawNode ();
-				if (Event.current.type == EventType.Repaint)
-					node.DrawKnobs ();
+				if (Event.current.type == EventType.Layout)
+					node.isClipped = !curEditorState.canvasViewport.Overlaps(curNodeCanvas.nodes[nodeCnt].fullAABBRect);
+				if (!node.isClipped)
+				{
+					node.DrawNode();
+					if (Event.current.type == EventType.Repaint)
+						node.DrawKnobs();
+				}
 			}
 
 			// ---- END SCALE ----

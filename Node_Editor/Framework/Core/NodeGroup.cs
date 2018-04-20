@@ -32,6 +32,7 @@ namespace NodeEditorFramework
 		private Color _color = Color.blue;
 
 		private bool edit;
+		internal bool isClipped;
 
 		// Resizing and dragging state for active node group
 		private static BorderSelection resizeDir;
@@ -47,6 +48,7 @@ namespace NodeEditorFramework
 		// Accessors
 		private Rect headerRect { get { return new Rect (rect.x, rect.y - (headerFree? headerHeight : 0), rect.width, headerHeight); } }
 		private Rect bodyRect { get { return new Rect (rect.x, rect.y + (headerFree? 0 : headerHeight), rect.width, rect.height - (headerFree? 0 : headerHeight)); } }
+		internal Rect fullAABBRect { get { return new Rect(rect.x, rect.y - (headerFree ? headerHeight : 0), rect.width, rect.height + (headerFree ? headerHeight : 0)); } }
 
 		/// <summary>
 		/// Silently creates a NodeGroup
