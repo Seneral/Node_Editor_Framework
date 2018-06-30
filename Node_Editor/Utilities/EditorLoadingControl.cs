@@ -41,8 +41,13 @@ namespace NodeEditorFramework.Utilities
 #endif
 			EditorApplication.update -= Update;
 			EditorApplication.update += Update;
+#if UNITY_2018_1_OR_NEWER
+			EditorApplication.hierarchyChanged -= OnHierarchyChange;
+			EditorApplication.hierarchyChanged += OnHierarchyChange;
+#else
 			EditorApplication.hierarchyWindowChanged -= OnHierarchyChange;
 			EditorApplication.hierarchyWindowChanged += OnHierarchyChange;
+#endif
 		}
 
 		private static void OnHierarchyChange () 
