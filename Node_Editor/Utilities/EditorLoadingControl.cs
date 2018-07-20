@@ -32,12 +32,22 @@ namespace NodeEditorFramework.Utilities
 
 		static EditorLoadingControl () 
 		{
+#if UNITY_2017_2_OR_NEWER
+			EditorApplication.playModeStateChanged -= PlayModeStateChanged;
+			EditorApplication.playModeStateChanged += PlayModeStateChanged;
+#else
 			EditorApplication.playmodeStateChanged -= PlaymodeStateChanged;
 			EditorApplication.playmodeStateChanged += PlaymodeStateChanged;
+#endif
 			EditorApplication.update -= Update;
 			EditorApplication.update += Update;
+#if UNITY_2018_1_OR_NEWER
+			EditorApplication.hierarchyChanged -= OnHierarchyChange;
+			EditorApplication.hierarchyChanged += OnHierarchyChange;
+#else
 			EditorApplication.hierarchyWindowChanged -= OnHierarchyChange;
 			EditorApplication.hierarchyWindowChanged += OnHierarchyChange;
+#endif
 		}
 
 		private static void OnHierarchyChange () 
@@ -65,6 +75,11 @@ namespace NodeEditorFramework.Utilities
 					lateEnteredPlayMode.Invoke ();
 			}
 			serializationTest = true;
+		}
+
+		private static void PlayModeStateChanged(PlayModeStateChange stateChange)
+		{
+			PlaymodeStateChanged();
 		}
 
 		private static void PlaymodeStateChanged () 
