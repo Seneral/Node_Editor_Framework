@@ -395,9 +395,9 @@ namespace NodeEditorFramework
 		}
 
 		/// <summary>
-		/// Returns whether every direct descendant has been calculated
+		/// Returns whether every direct ancestor has been calculated
 		/// </summary>
-		public bool descendantsCalculated () 
+		public bool ancestorsCalculated () 
 		{
 			for (int i = 0; i < inputPorts.Count; i++)
 			{
