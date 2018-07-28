@@ -76,7 +76,7 @@ namespace NodeEditorFramework.Standard
 				workList.Remove (node);
 				return true;
 			}
-			if (node.descendantsCalculated () && node.Calculate ())
+			if (node.ancestorsCalculated () && node.Calculate ())
 			{ // Calculation was successful
 				node.calculated = true;
 				workList.Remove (node);
