@@ -32,12 +32,12 @@ namespace NodeEditorFramework.Utilities
 
 		static EditorLoadingControl () 
 		{
-			EditorApplication.playmodeStateChanged -= PlaymodeStateChanged;
-			EditorApplication.playmodeStateChanged += PlaymodeStateChanged;
+			EditorApplication.playModeStateChanged -= PlaymodeStateChanged;
+			EditorApplication.playModeStateChanged += PlaymodeStateChanged;
 			EditorApplication.update -= Update;
 			EditorApplication.update += Update;
-			EditorApplication.hierarchyWindowChanged -= OnHierarchyChange;
-			EditorApplication.hierarchyWindowChanged += OnHierarchyChange;
+			EditorApplication.hierarchyChanged -= OnHierarchyChange;
+			EditorApplication.hierarchyChanged += OnHierarchyChange;
 		}
 
 		private static void OnHierarchyChange () 
@@ -67,7 +67,7 @@ namespace NodeEditorFramework.Utilities
 			serializationTest = true;
 		}
 
-		private static void PlaymodeStateChanged () 
+		private static void PlaymodeStateChanged (PlayModeStateChange change) 
 		{
 			//Debug.Log ("Playmode State Change! isPlaying: " + Application.isPlaying + "; Serialized: " + serializationTest);
 			if (!Application.isPlaying)
