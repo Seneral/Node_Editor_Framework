@@ -8,9 +8,9 @@
   <img alt="Node Editor Image" src="http://i.imgur.com/HcXhhGf.png" width="80%"/>
   <br><br>
   <b>
-    <a href="http://www.levingaeher.com/NodeEditor/Examples.html">WebGL Demo</a> - 
+    <a href="https://nodeeditor.seneral.dev/Examples.html">WebGL Demo</a> - 
     <a href="http://forum.unity3d.com/threads/simple-node-editor.189230/#post-2134738">Forum Thread</a> -
-    <a href="http://www.levingaeher.com/NodeEditor/index.html">Documentation</a>
+    <a href="https://nodeeditor.seneral.dev/index.html">Documentation</a>
   </b>
 </p>
 
