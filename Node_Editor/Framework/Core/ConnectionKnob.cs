@@ -22,7 +22,7 @@ namespace NodeEditorFramework
 
 		// Knob GUI
 		protected Texture2D knobTexture;
-		private float knobAspect { get { return knobTexture != null? knobTexture.width/knobTexture.height : 1; } }
+		private float knobAspect { get { return knobTexture != null? ((float)knobTexture.width)/knobTexture.height : 1; } }
 		private GUIStyle labelStyle { get { return side == NodeSide.Right? NodeEditorGUI.nodeLabelRight : NodeEditorGUI.nodeLabelLeft; } }
 
 		// Knob Position
@@ -135,8 +135,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		public Rect GetCanvasSpaceKnob () 
 		{
-			Vector2 knobSize = new Vector2 (NodeEditorGUI.knobSize * knobAspect,
-											NodeEditorGUI.knobSize / knobAspect);
+			Vector2 knobSize = new Vector2 (NodeEditorGUI.knobSize * knobAspect, NodeEditorGUI.knobSize);
 			Vector2 knobCenter = GetKnobCenter (knobSize);
 			return new Rect (knobCenter.x - knobSize.x/2, knobCenter.y - knobSize.y/2, knobSize.x, knobSize.y);
 		}
