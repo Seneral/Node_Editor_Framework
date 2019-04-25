@@ -213,9 +213,18 @@ namespace NodeEditorFramework.Standard
 		private void SaveCanvasAs()
 		{
 			string panelPath = NodeEditor.editorPath + "Resources/Saves/";
+			string panelFileName = "Node Canvas";
 			if (canvasCache.nodeCanvas != null && !string.IsNullOrEmpty(canvasCache.nodeCanvas.savePath))
+			{
 				panelPath = canvasCache.nodeCanvas.savePath;
-			string path = UnityEditor.EditorUtility.SaveFilePanelInProject("Save Node Canvas", "Node Canvas", "asset", "", panelPath);
+				string savedFileName = System.IO.Path.GetFileNameWithoutExtension(panelPath);
+				if (!string.IsNullOrEmpty(savedFileName))
+				{
+					panelPath = panelPath.Substring(0, panelPath.LastIndexOf(savedFileName));
+					panelFileName = savedFileName;
+				}
+			}
+			string path = UnityEditor.EditorUtility.SaveFilePanelInProject("Save Node Canvas", panelFileName, "asset", "", panelPath);
 			if (!string.IsNullOrEmpty(path))
 				canvasCache.SaveNodeCanvas(path);
 		}
