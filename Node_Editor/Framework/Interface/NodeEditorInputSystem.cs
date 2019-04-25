@@ -122,8 +122,6 @@ namespace NodeEditorFramework
 					(late? eventHandler.Key.priority >= 100 : eventHandler.Key.priority < 100))
 				{ // Event is happening and specified priority is ok with the late-state
 					eventHandler.Value.DynamicInvoke (parameter);
-					if (inputInfo.inputEvent.type == EventType.Used)
-						return;
 				}
 			}
 		}
@@ -142,7 +140,7 @@ namespace NodeEditorFramework
 				{
 					hotKey.Value.DynamicInvoke (parameter);
 					if (inputInfo.inputEvent.type == EventType.Used)
-						return;
+						return; // Prevent multiple hotkeys to trigger at once
 				}
 			}
 		}
