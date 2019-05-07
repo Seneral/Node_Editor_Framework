@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +13,8 @@ namespace NodeEditorFramework
 		public virtual string canvasName { get { return "DEFAULT"; } }
 
 		public virtual bool allowSceneSaveOnly { get { return false; } }
+
+		public virtual bool allowRecursion { get { return false; } }
 
 		public NodeCanvasTraversal Traversal;
 
@@ -130,6 +132,7 @@ namespace NodeEditorFramework
 			foreach (Node node in nodes)
 			{
 				ConnectionPortManager.UpdateConnectionPorts(node);
+				node.canvas = this;
 				foreach (ConnectionPort port in node.connectionPorts)
 					port.Validate(node);
 			}

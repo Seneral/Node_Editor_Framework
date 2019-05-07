@@ -11,7 +11,6 @@ namespace NodeEditorFramework.Standard
 		public override string Title { get { return "AllAround Node"; } }
 		public override Vector2 DefaultSize { get { return new Vector2 (60, 60); } }
 
-		public override bool AllowRecursion { get { return true; } }
 		public override bool ContinueCalculation { get { return true; } }
 
 		[ValueConnectionKnob("Input Top", Direction.In, "Float", NodeSide.Top, 20)]

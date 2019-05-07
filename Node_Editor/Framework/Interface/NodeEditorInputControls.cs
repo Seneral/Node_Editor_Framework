@@ -31,8 +31,7 @@ namespace NodeEditorFramework
 			if (callback == null)
 				throw new UnityException ("Callback Object passed by context is not of type NodeEditorInputInfo!");
 
-			callback.SetAsCurrentEnvironment ();
-			Node.Create (callback.message, NodeEditor.ScreenToCanvasSpace (callback.inputPos), callback.editorState.connectKnob);
+			Node.Create (callback.message, NodeEditor.ScreenToCanvasSpace (callback.inputPos), callback.editorState.canvas, callback.editorState.connectKnob);
 			callback.editorState.connectKnob = null;
 			NodeEditor.RepaintClients ();
 		}
@@ -44,7 +43,6 @@ namespace NodeEditorFramework
 		[ContextEntryAttribute (ContextType.Node, "Delete Node")]
 		private static void DeleteNode (NodeEditorInputInfo inputInfo) 
 		{
-			inputInfo.SetAsCurrentEnvironment ();
 			if (inputInfo.editorState.focusedNode != null) 
 			{
 				inputInfo.editorState.focusedNode.Delete ();
@@ -55,11 +53,10 @@ namespace NodeEditorFramework
 		[ContextEntryAttribute (ContextType.Node, "Duplicate Node")]
 		private static void DuplicateNode (NodeEditorInputInfo inputInfo) 
 		{
-			inputInfo.SetAsCurrentEnvironment ();
 			NodeEditorState state = inputInfo.editorState;
-			if (state.focusedNode != null && NodeEditor.curNodeCanvas.CanAddNode (state.focusedNode.GetID)) 
+			if (state.focusedNode != null && state.canvas.CanAddNode (state.focusedNode.GetID)) 
 			{ // Create new node of same type
-				Node duplicatedNode = Node.Create (state.focusedNode.GetID, NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos), state.connectKnob);
+				Node duplicatedNode = Node.Create (state.focusedNode.GetID, NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos), state.canvas, state.connectKnob);
 				state.selectedNode = state.focusedNode = duplicatedNode;
 				state.connectKnob = null;
 				inputInfo.inputEvent.Use ();
@@ -73,7 +70,6 @@ namespace NodeEditorFramework
 				return;
 			if (inputInfo.editorState.focusedNode != null)
 			{
-				inputInfo.SetAsCurrentEnvironment();
 				inputInfo.editorState.focusedNode.Delete();
 				inputInfo.inputEvent.Use();
 			}

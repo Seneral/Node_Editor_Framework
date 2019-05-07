@@ -71,8 +71,8 @@ namespace NodeEditorFramework.Standard
 		/// </summary>
 		private bool ContinueCalculation (Node node) 
 		{
-			if (node.calculated && !node.AllowRecursion)
-			{ // Already calulated
+			if (node.calculated)
+			{ // Already calculated
 				workList.Remove (node);
 				return true;
 			}

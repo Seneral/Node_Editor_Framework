@@ -153,18 +153,18 @@ namespace NodeEditorFramework
 			if (direction == Direction.Out && port.direction != Direction.In)
 				return false; // Cannot connect outputs with anything other than inputs
 			
-			if (direction == Direction.Out) // Let inputs handle checks for recursion
-				return port.CanApplyConnection (this);
-
-			if (port.body.isChildOf (body))
-			{ // Recursive
-				if (!port.body.allowsLoopRecursion (body))
-				{
-					// TODO: Generic Notification
+			if (!body.canvas.allowRecursion)
+			{ // Assure no loop would be created
+				bool loop;
+				if (direction == Direction.Out) loop = body.isChildOf (port.body);
+				else 							loop = port.body.isChildOf (body);
+				if (loop)
+				{ // Loop would be created, not allowed
 					Debug.LogWarning ("Cannot apply connection: Recursion detected!");
 					return false;
 				}
 			}
+
 			return true;
 		}
 
@@ -196,7 +196,7 @@ namespace NodeEditorFramework
 				port.body.OnAddConnection (port, this);
 				body.OnAddConnection (this, port);
 				NodeEditorCallbacks.IssueOnAddConnection (this, port);
-				NodeEditor.curNodeCanvas.OnNodeChange(direction == Direction.In? port.body : body);
+				body.canvas.OnNodeChange(direction == Direction.In? port.body : body);
 			}
 		}
 
@@ -224,7 +224,7 @@ namespace NodeEditorFramework
 			port.connections.Remove (this);
 			connections.Remove (port);
 
-			if (!silent) NodeEditor.curNodeCanvas.OnNodeChange (body);
+			if (!silent) body.canvas.OnNodeChange (body);
 		}
 
 		#endregion

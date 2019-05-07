@@ -6,7 +6,10 @@ using System.Collections.Generic;
 namespace NodeEditorFramework
 {
 	public abstract partial class Node : ScriptableObject
-	{
+	{// Host Canvas
+		public NodeCanvas canvas;
+
+		// Positioning
 		public Vector2 position;
 		private Vector2 autoSize;
 		public Vector2 size { get { return AutoLayout? autoSize : DefaultSize; } }
@@ -74,15 +77,14 @@ namespace NodeEditorFramework
 		public virtual Vector2 MinSize { get { return new Vector2(100, 50); } }
 
 		/// <summary>
-		/// Specifies if this node handles recursive node loops on the canvas.
-		/// A loop requires atleast a single node to handle recursion to be permitted.
-		/// </summary>
-		public virtual bool AllowRecursion { get { return false; } }
-
-		/// <summary>
 		/// Specifies if calculation should continue with the nodes connected to the outputs after the Calculation function returns success
 		/// </summary>
 		public virtual bool ContinueCalculation { get { return true; } }
+
+		/// <summary>
+		/// Specifies whether GUI requires to be updated even when the node is off-screen 
+		/// </summary>
+		public virtual bool ForceGUIDawOffScreen { get { return false; } }
 
 		#endregion
 
@@ -200,6 +202,7 @@ namespace NodeEditorFramework
 				return null;
 
 			// Init node state
+			node.canvas = hostCanvas;
 			node.name = node.Title;
 			node.autoSize = node.DefaultSize;
 			node.position = pos;
@@ -230,15 +233,15 @@ namespace NodeEditorFramework
 		}
 
 		/// <summary>
-		/// Deletes this Node from curNodeCanvas and the save file
+		/// Deletes this Node from it's host canvas and the save file
 		/// </summary>
 		public void Delete (bool silent = false) 
 		{
-			if (!NodeEditor.curNodeCanvas.nodes.Contains (this))
-				throw new UnityException ("The Node " + name + " does not exist on the Canvas " + NodeEditor.curNodeCanvas.name + "!");
+			if (!canvas.nodes.Contains (this))
+				throw new UnityException ("The Node " + name + " does not exist on the Canvas " + canvas.name + "!");
 			if (!silent)
 				NodeEditorCallbacks.IssueOnDeleteNode (this);
-			NodeEditor.curNodeCanvas.nodes.Remove (this);
+			canvas.nodes.Remove (this);
 			for (int i = 0; i < connectionPorts.Count; i++) 
 			{
 				connectionPorts[i].ClearConnections (silent);
@@ -246,7 +249,7 @@ namespace NodeEditorFramework
 			}
 			DestroyImmediate (this, true);
 			if (!silent)
-				NodeEditor.curNodeCanvas.Validate ();
+				canvas.Validate ();
 		}
 
 		#endregion
@@ -361,6 +364,9 @@ namespace NodeEditorFramework
 			focusedKnob = null;
 			if (rect.Contains(position))
 				return true;
+			Vector2 dist = position - rect.center;
+			if (Math.Abs(dist.x) > size.x || Math.Abs(dist.y) > size.y)
+				return false; // Quick check if pos is within double the size
 			for (int i = 0; i < connectionKnobs.Count; i++)
 			{ // Check if any nodeKnob is focused instead
 				if (connectionKnobs[i].GetCanvasSpaceKnob().Contains(position))
@@ -378,8 +384,10 @@ namespace NodeEditorFramework
 		public bool isInput()
 		{
 			for (int i = 0; i < inputPorts.Count; i++)
+			{
 				if (inputPorts[i].connected())
 					return false;
+			}
 			return true;
 		}
 
@@ -389,8 +397,10 @@ namespace NodeEditorFramework
 		public bool isOutput()
 		{
 			for (int i = 0; i < outputPorts.Count; i++)
+			{
 				if (outputPorts[i].connected())
 					return false;
+			}
 			return true;
 		}
 
@@ -424,8 +434,8 @@ namespace NodeEditorFramework
 				ConnectionPort port = inputPorts[i];
 				for (int t = 0; t < port.connections.Count; t++)
 				{
-					ConnectionPort conPort = port.connections[t];
-					if (conPort.body != startRecursiveSearchNode && (conPort.body == otherNode || conPort.body.isChildOf(otherNode)))
+					Node conBody = port.connections[t].body;
+					if (conBody == otherNode || conBody.isChildOf(otherNode))
 					{
 						StopRecursiveSearchLoop();
 						return true;
@@ -441,41 +451,14 @@ namespace NodeEditorFramework
 		/// </summary>
 		internal bool isInLoop ()
 		{
-			if (BeginRecursiveSearchLoop ()) return this == startRecursiveSearchNode;
-			for (int i = 0; i < inputPorts.Count; i++)
-			{
-				ConnectionPort port = inputPorts[i];
-				for (int t = 0; t < port.connections.Count; t++)
-				{
-					if (port.connections[t].body.isInLoop())
-					{
-						StopRecursiveSearchLoop();
-						return true;
-					}
-				}
-			}
-			EndRecursiveSearchLoop ();
-			return false;
-		}
-
-		/// <summary>
-		/// Recursively checks whether any node in the loop to be made allows recursion.
-		/// Other node is the node this node needs connect to in order to fill the loop (other node being the node coming AFTER this node).
-		/// That means isChildOf has to be confirmed before calling this!
-		/// </summary>
-		internal bool allowsLoopRecursion (Node otherNode)
-		{
-			if (AllowRecursion)
-				return true;
-			if (otherNode == null)
-				return false;
 			if (BeginRecursiveSearchLoop ()) return false;
 			for (int i = 0; i < inputPorts.Count; i++)
 			{
 				ConnectionPort port = inputPorts[i];
 				for (int t = 0; t < port.connections.Count; t++)
 				{
-					if (port.connections[t].body.allowsLoopRecursion(otherNode))
+					Node conBody = port.connections[t].body;
+					if (conBody == startRecursiveSearchNode || conBody.isInLoop())
 					{
 						StopRecursiveSearchLoop();
 						return true;
@@ -512,20 +495,22 @@ namespace NodeEditorFramework
 
 		#region Recursive Search Helpers
 
-		[NonSerialized] private List<Node> recursiveSearchSurpassed;
-		[NonSerialized] private Node startRecursiveSearchNode; // Temporary start node for recursive searches
+		[NonSerialized] private static List<Node> recursiveSearchSurpassed = new List<Node> ();
+		[NonSerialized] private static Node startRecursiveSearchNode; // Temporary start node for recursive searches
 
 		/// <summary>
 		/// Begins the recursive search loop and returns whether this node has already been searched
 		/// </summary>
 		internal bool BeginRecursiveSearchLoop ()
 		{
-			if (startRecursiveSearchNode == null || recursiveSearchSurpassed == null) 
+			if (startRecursiveSearchNode == null) 
 			{ // Start search
-				recursiveSearchSurpassed = new List<Node> ();
+				if (recursiveSearchSurpassed == null)
+					recursiveSearchSurpassed = new List<Node> ();
+				recursiveSearchSurpassed.Capacity = canvas.nodes.Count;
 				startRecursiveSearchNode = this;
-			}
-
+			} 
+			// Check and mark node as searched
 			if (recursiveSearchSurpassed.Contains (this))
 				return true;
 			recursiveSearchSurpassed.Add (this);
@@ -539,7 +524,7 @@ namespace NodeEditorFramework
 		{
 			if (startRecursiveSearchNode == this) 
 			{ // End search
-				recursiveSearchSurpassed = null;
+				recursiveSearchSurpassed.Clear ();
 				startRecursiveSearchNode = null;
 			}
 		}
@@ -549,7 +534,7 @@ namespace NodeEditorFramework
 		/// </summary>
 		internal void StopRecursiveSearchLoop () 
 		{
-			recursiveSearchSurpassed = null;
+			recursiveSearchSurpassed.Clear ();
 			startRecursiveSearchNode = null;
 		}
 

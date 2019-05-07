@@ -77,10 +77,12 @@ namespace NodeEditorFramework.Utilities
 			serializationTest = true;
 		}
 
+#if UNITY_2017_2_OR_NEWER
 		private static void PlayModeStateChanged(PlayModeStateChange stateChange)
 		{
 			PlaymodeStateChanged();
 		}
+#endif
 
 		private static void PlaymodeStateChanged () 
 		{

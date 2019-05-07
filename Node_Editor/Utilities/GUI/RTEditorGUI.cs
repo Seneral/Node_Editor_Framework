@@ -729,6 +729,13 @@ namespace NodeEditorFramework.Utilities
 			if (Event.current.type != EventType.Repaint)
 				return;
 
+			Rect clippingRect = GUIScaleUtility.getTopRect;
+			clippingRect.x = clippingRect.y = 0;
+			Rect bounds = new Rect(Mathf.Min(startPos.x, endPos.x), Mathf.Min(startPos.y, endPos.y), 
+								Mathf.Abs(startPos.x - endPos.x), Mathf.Abs(startPos.y - endPos.y));
+			if (!bounds.Overlaps(clippingRect))
+				return;
+
 			// Own Bezier Formula
 			// Slower than handles because of the horrendous amount of calls into the native api
 
@@ -745,6 +752,13 @@ namespace NodeEditorFramework.Utilities
 		public static void DrawBezier (Vector2 startPos, Vector2 endPos, Vector2 startTan, Vector2 endTan, Color col, Texture2D tex, int segmentCount, float width)
 		{
 			if (Event.current.type != EventType.Repaint && Event.current.type != EventType.KeyDown)
+				return;
+
+			Rect clippingRect = GUIScaleUtility.getTopRect;
+			clippingRect.x = clippingRect.y = 0;
+			Rect bounds = new Rect(Mathf.Min(startPos.x, endPos.x), Mathf.Min(startPos.y, endPos.y), 
+								Mathf.Abs(startPos.x - endPos.x), Mathf.Abs(startPos.y - endPos.y));
+			if (!bounds.Overlaps(clippingRect))
 				return;
 
 			// Own Bezier Formula
