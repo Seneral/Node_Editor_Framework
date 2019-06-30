@@ -72,6 +72,8 @@ namespace NodeEditorFramework.Standard
 			SceneView.onSceneGUIDelegate += OnSceneGUI;
 			Undo.undoRedoPerformed -= NodeEditor.RepaintClients;
 			Undo.undoRedoPerformed += NodeEditor.RepaintClients;
+			Undo.undoRedoPerformed -= UndoRedoRecalculate;
+			Undo.undoRedoPerformed += UndoRedoRecalculate;
 		}
 		
 		private void OnDestroy()
@@ -82,9 +84,15 @@ namespace NodeEditorFramework.Standard
 			EditorLoadingControl.justOpenedNewScene -= NormalReInit;
 			SceneView.onSceneGUIDelegate -= OnSceneGUI;
 			Undo.undoRedoPerformed -= NodeEditor.RepaintClients;
+			Undo.undoRedoPerformed -= UndoRedoRecalculate;
 
 			// Clear Cache
 			canvasCache.ClearCacheEvents();
+		}
+
+		private void UndoRedoRecalculate()
+		{
+			canvasCache.nodeCanvas.TraverseAll();
 		}
 
 		private void OnLostFocus () 
