@@ -236,7 +236,7 @@ namespace NodeEditorFramework
 			}
 			
 			// Push the active node to the top of the draw order.
-			if (Event.current.type == EventType.Layout && curEditorState.selectedNode != null)
+			if (Event.current.type == EventType.Layout && curEditorState.selectedNode != null && curNodeCanvas.nodes.Contains(curEditorState.selectedNode))
 			{
 				curNodeCanvas.nodes.Remove (curEditorState.selectedNode);
 				curNodeCanvas.nodes.Add (curEditorState.selectedNode);

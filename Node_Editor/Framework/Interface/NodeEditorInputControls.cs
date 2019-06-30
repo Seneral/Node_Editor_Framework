@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Collections.Generic;
 
@@ -57,7 +57,6 @@ namespace NodeEditorFramework
 			if (state.focusedNode != null && state.canvas.CanAddNode (state.focusedNode.GetID)) 
 			{ // Create new node of same type
 				Node duplicatedNode = Node.Create (state.focusedNode.GetID, NodeEditor.ScreenToCanvasSpace (inputInfo.inputPos), state.canvas, state.connectKnob);
-				state.selectedNode = state.focusedNode = duplicatedNode;
 				state.connectKnob = null;
 				inputInfo.inputEvent.Use ();
 			}

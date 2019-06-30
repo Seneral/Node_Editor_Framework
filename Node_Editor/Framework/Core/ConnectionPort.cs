@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -216,7 +216,8 @@ namespace NodeEditorFramework
 		{
 			if (port == null)
 			{
-				connections.RemoveAll (p => p != null);
+				Debug.LogWarning("Cannot delete null port!");
+				//connections.RemoveAll (p => p != null);
 				return;
 			}
 

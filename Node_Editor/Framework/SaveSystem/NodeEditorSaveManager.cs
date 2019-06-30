@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -252,7 +252,7 @@ namespace NodeEditorFramework
 				Debug.LogWarning ("Attempting to save scene canvas '" + nodeCanvas.name + "' to an asset, references to scene object may be broken!" + (!createWorkingCopy? " Forcing creation of working copy!" : ""));
 				createWorkingCopy = true;
 			}
-			if (UnityEditor.AssetDatabase.Contains (nodeCanvas) && UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas) != path) 
+			if (!createWorkingCopy && UnityEditor.AssetDatabase.Contains (nodeCanvas) && UnityEditor.AssetDatabase.GetAssetPath (nodeCanvas) != path) 
 			{ 
 				Debug.LogWarning ("Trying to create a duplicate save file for '" + nodeCanvas.name + "'! Forcing creation of working copy!");
 				nodeCanvas = CreateWorkingCopy(nodeCanvas);
@@ -270,8 +270,13 @@ namespace NodeEditorFramework
 
 			// Differenciate canvasSave as the canvas asset and nodeCanvas as the source incase an existing save has been overwritten
 			NodeCanvas canvasSave = processedCanvas;
-			NodeCanvas prevSave;
-			if (safeOverwrite && (prevSave = ResourceManager.LoadResource<NodeCanvas> (path)) != null && prevSave.GetType () == canvasSave.GetType ())
+			NodeCanvas prevSave = ResourceManager.LoadResource<NodeCanvas>(path);
+			if (canvasSave == prevSave)
+			{
+				Debug.LogWarning("Overwriting same canvas impossible, please use another path!");
+				return;
+			}
+			if (safeOverwrite && prevSave != null && prevSave.GetType () == canvasSave.GetType ())
 			{ // OVERWRITE: Delete contents of old save
 				Object[] subAssets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(path);
 				for (int i = 0; i < subAssets.Length; i++)
@@ -296,10 +301,12 @@ namespace NodeEditorFramework
 			{ // Write node and additional scriptable objects
 				AddSubAsset (node, canvasSave);
 				AddSubAssets (node.GetScriptableObjects (), node);
-				// Make sure all node ports are included in the representative connectionPorts list
-				ConnectionPortManager.UpdatePortLists(node);
-				foreach (ConnectionPort port in node.connectionPorts)
-					AddSubAsset (port, node);
+				// Add all ports
+				ConnectionPortManager.UpdatePortLists(node, false);
+				foreach (ConnectionPort port in node.staticConnectionPorts)
+					AddSubAsset(port, node);
+				foreach (ConnectionPort port in node.dynamicConnectionPorts)
+					AddSubAsset(port, node);
 			}
 
 			UnityEditor.AssetDatabase.SaveAssets ();
@@ -365,8 +372,13 @@ namespace NodeEditorFramework
 		{
 			if (subAsset != null && mainAsset != null)
 			{
-				UnityEditor.AssetDatabase.AddObjectToAsset (subAsset, mainAsset);
-				subAsset.hideFlags = HideFlags.HideInHierarchy;
+				if (UnityEditor.AssetDatabase.IsSubAsset(subAsset) || UnityEditor.AssetDatabase.IsMainAsset(subAsset))
+					Debug.LogWarning("Failed to create working copy of '" + subAsset.name + "', it's alread saved elsewhere!");
+				else
+				{ 
+					UnityEditor.AssetDatabase.AddObjectToAsset (subAsset, mainAsset);
+					subAsset.hideFlags = HideFlags.HideInHierarchy;
+				}
 			}
 		}
 
@@ -377,8 +389,13 @@ namespace NodeEditorFramework
 		{
 			if (subAsset != null && !string.IsNullOrEmpty (path))
 			{
-				UnityEditor.AssetDatabase.AddObjectToAsset (subAsset, path);
-				subAsset.hideFlags = HideFlags.HideInHierarchy;
+				if (UnityEditor.AssetDatabase.IsSubAsset(subAsset) || UnityEditor.AssetDatabase.IsMainAsset(subAsset))
+					Debug.LogWarning("Failed to create working copy of '" + subAsset.name + "', it's alread saved elsewhere!");
+				else
+				{
+					UnityEditor.AssetDatabase.AddObjectToAsset (subAsset, path);
+					subAsset.hideFlags = HideFlags.HideInHierarchy;
+				}
 			}
 		}
 
@@ -415,11 +432,12 @@ namespace NodeEditorFramework
 
 				// Clone Node and additional scriptableObjects
 				Node clonedNode = AddClonedSO (allSOs, clonedSOs, node);
-				AddClonedSOs (allSOs, clonedSOs, clonedNode.GetScriptableObjects ());
+				AddClonedSOs (allSOs, clonedSOs, node.GetScriptableObjects ());
 
 				// Update representative port list connectionPorts with all ports and clone them
-				ConnectionPortManager.UpdatePortLists(clonedNode);
-				AddClonedSOs(allSOs, clonedSOs, clonedNode.connectionPorts);
+				ConnectionPortManager.UpdatePortLists(node, false);
+				AddClonedSOs(allSOs, clonedSOs, node.staticConnectionPorts);
+				AddClonedSOs(allSOs, clonedSOs, node.dynamicConnectionPorts);
 			}
 
 			// Replace every reference to any of the initial SOs of the first list with the respective clones of the second list
@@ -435,7 +453,7 @@ namespace NodeEditorFramework
 				clonedNode.CopyScriptableObjects (copySOs);
 
 				// Replace ConnectionPorts
-				foreach (ConnectionPortDeclaration portDecl in ConnectionPortManager.GetPortDeclarationEnumerator(clonedNode, true))
+				foreach (ConnectionPortDeclaration portDecl in ConnectionPortManager.GetPortDeclarationEnumerator(clonedNode, false))
 				{ // Iterate over each static port declaration and replace it with it's connections
 					ConnectionPort port = (ConnectionPort)portDecl.portField.GetValue(clonedNode);
 					port = ReplaceSO(allSOs, clonedSOs, port);
@@ -506,10 +524,10 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Clones SOs and writes both the initial and cloned versions into the respective list
 		/// </summary>
-		private static void AddClonedSOs<T> (List<ScriptableObject> scriptableObjects, List<ScriptableObject> clonedScriptableObjects, IEnumerable<T> initialSOs) where T : ScriptableObject
+		private static void AddClonedSOs<T> (List<ScriptableObject> scriptableObjects, List<ScriptableObject> clonedScriptableObjects, ICollection<T> initialSOs) where T : ScriptableObject
 		{
 			// Filter out all new SOs to add
-			IEnumerable<T> newSOs = initialSOs.Where ((T so) => !scriptableObjects.Contains (so));
+			ICollection<T> newSOs = initialSOs.Where ((T so) => !scriptableObjects.Contains (so)).ToArray();
 			foreach (T SO in newSOs)
 			{ // Clone and record them
 				scriptableObjects.Add(SO);

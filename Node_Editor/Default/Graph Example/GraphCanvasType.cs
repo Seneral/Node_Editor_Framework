@@ -13,7 +13,7 @@ namespace NodeEditorFramework.Standard
 		protected override void OnCreate () 
 		{
 			Traversal = new GraphTraversal (this);
-			rootNode = Node.Create (rootNodeID, Vector2.zero, this) as RootGraphNode;
+			rootNode = Node.Create (rootNodeID, Vector2.zero, this, null, true) as RootGraphNode;
 		}
 
 		private void OnEnable () 
@@ -29,7 +29,7 @@ namespace NodeEditorFramework.Standard
 			if (Traversal == null)
 				Traversal = new GraphTraversal (this);
 			if (rootNode == null && (rootNode = nodes.Find ((Node n) => n.GetID == rootNodeID) as RootGraphNode) == null)
-				rootNode = Node.Create (rootNodeID, Vector2.zero, this) as RootGraphNode;
+				rootNode = Node.Create (rootNodeID, Vector2.zero, this, null, true) as RootGraphNode;
 		}
 
 		public override bool CanAddNode (string nodeID)
