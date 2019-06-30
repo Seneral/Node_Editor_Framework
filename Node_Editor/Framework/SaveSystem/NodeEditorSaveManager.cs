@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -431,7 +431,7 @@ namespace NodeEditorFramework
 				Node node = nodeCanvas.nodes[nodeCnt];
 
 				// Clone Node and additional scriptableObjects
-				Node clonedNode = AddClonedSO (allSOs, clonedSOs, node);
+				AddClonedSO (allSOs, clonedSOs, node);
 				AddClonedSOs (allSOs, clonedSOs, node.GetScriptableObjects ());
 
 				// Update representative port list connectionPorts with all ports and clone them
@@ -581,6 +581,32 @@ namespace NodeEditorFramework
 		#endregion
 
 		#region Utility
+
+#if UNITY_EDITOR
+		public static void ScriptableObjectReferenceDump(List<ScriptableObject> SOs, string path, bool deleteOthers)
+		{
+			ScriptableObject[] dumpSOs = ResourceManager.LoadResources<ScriptableObject>(path);
+			foreach (ScriptableObject so in dumpSOs)
+			{
+				if (SOs.Contains(so))
+					SOs.Remove(so);
+				else if (deleteOthers)
+					ScriptableObject.DestroyImmediate(so, true);
+			}
+			
+			if (SOs.Count <= 0) return;
+
+			if (!System.IO.File.Exists(path))
+			{
+				UnityEditor.AssetDatabase.CreateAsset(SOs[0], path);
+				SOs.RemoveAt(0);
+			}
+			foreach (ScriptableObject so in SOs)
+			{
+				AddSubAsset(so, path);
+			}
+		}
+#endif
 
 		/// <summary>
 		/// Returns the editorState with the specified name in canvas.

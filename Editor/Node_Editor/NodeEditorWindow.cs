@@ -70,6 +70,8 @@ namespace NodeEditorFramework.Standard
 			EditorLoadingControl.justOpenedNewScene += NormalReInit;
 			SceneView.onSceneGUIDelegate -= OnSceneGUI;
 			SceneView.onSceneGUIDelegate += OnSceneGUI;
+			Undo.undoRedoPerformed -= NodeEditor.RepaintClients;
+			Undo.undoRedoPerformed += NodeEditor.RepaintClients;
 		}
 		
 		private void OnDestroy()
@@ -79,6 +81,7 @@ namespace NodeEditorFramework.Standard
 			EditorLoadingControl.justLeftPlayMode -= NormalReInit;
 			EditorLoadingControl.justOpenedNewScene -= NormalReInit;
 			SceneView.onSceneGUIDelegate -= OnSceneGUI;
+			Undo.undoRedoPerformed -= NodeEditor.RepaintClients;
 
 			// Clear Cache
 			canvasCache.ClearCacheEvents();
@@ -87,7 +90,7 @@ namespace NodeEditorFramework.Standard
 		private void OnLostFocus () 
 		{ // Save any changes made while focussing this window
 			// Will also save before possible assembly reload, scene switch, etc. because these require focussing of a different window
-			canvasCache.SaveCache();
+			canvasCache.SaveCache(false);
 		}
 
 		private void OnFocus () 

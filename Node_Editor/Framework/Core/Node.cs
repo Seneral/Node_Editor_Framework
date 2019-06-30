@@ -209,12 +209,12 @@ namespace NodeEditorFramework
 			ConnectionPortManager.UpdateConnectionPorts (node);
 			if (init)
 				node.OnCreate();
-
+			
 			if (connectingPort != null)
 			{ // Handle auto-connection and link the output to the first compatible input
 				for (int i = 0; i < node.connectionPorts.Count; i++)
 				{
-					if (node.connectionPorts[i].TryApplyConnection (connectingPort, silent))
+					if (node.connectionPorts[i].TryApplyConnection (connectingPort, true))
 						break;
 				}
 			}
@@ -229,6 +229,26 @@ namespace NodeEditorFramework
 				NodeEditor.RepaintClients();
 			}
 
+#if UNITY_EDITOR
+			if (!silent)
+			{
+				List<ConnectionPort> connectedPorts = new List<ConnectionPort>();
+				foreach (ConnectionPort port in node.connectionPorts)
+				{ // 'Encode' connected ports in one list (double level cannot be serialized)
+					foreach (ConnectionPort conn in port.connections)
+						connectedPorts.Add(conn);
+					connectedPorts.Add(null);
+				}
+				Node createdNode = node;
+				UndoPro.UndoProManager.RecordOperation(
+					() => NodeEditorUndoActions.ReinstateNode(createdNode, connectedPorts),
+					() => NodeEditorUndoActions.RemoveNode(createdNode),
+					"Create Node");
+				// Make sure the new node is in the memory dump
+				NodeEditorUndoActions.CompleteSOMemoryDump(hostCanvas);
+			}
+#endif
+
 			return node;
 		}
 
@@ -241,13 +261,31 @@ namespace NodeEditorFramework
 				throw new UnityException ("The Node " + name + " does not exist on the Canvas " + canvas.name + "!");
 			if (!silent)
 				NodeEditorCallbacks.IssueOnDeleteNode (this);
-			canvas.nodes.Remove (this);
-			for (int i = 0; i < connectionPorts.Count; i++) 
+
+#if UNITY_EDITOR
+			if (!silent)
 			{
-				connectionPorts[i].ClearConnections (silent);
-				DestroyImmediate (connectionPorts[i], true);
+				List<ConnectionPort> connectedPorts = new List<ConnectionPort>();
+				foreach (ConnectionPort port in connectionPorts)
+				{ // 'Encode' connected ports in one list (double level cannot be serialized)
+					foreach (ConnectionPort conn in port.connections)
+						connectedPorts.Add(conn);
+					connectedPorts.Add(null);
+				}
+				Node deleteNode = this;
+				UndoPro.UndoProManager.RecordOperation(
+					() => NodeEditorUndoActions.RemoveNode(deleteNode),
+					() => NodeEditorUndoActions.ReinstateNode(deleteNode, connectedPorts),
+					"Delete Node");
+				// Make sure the deleted node is in the memory dump
+				NodeEditorUndoActions.CompleteSOMemoryDump(canvas);
 			}
-			DestroyImmediate (this, true);
+#endif
+
+			canvas.nodes.Remove(this);
+			for (int i = 0; i < connectionPorts.Count; i++) 
+				connectionPorts[i].ClearConnections(true);
+
 			if (!silent)
 				canvas.Validate ();
 		}
@@ -296,7 +334,14 @@ namespace NodeEditorFramework
 
 			// Call NodeGUI
 			GUI.changed = false;
-			NodeGUI ();
+
+#if UNITY_EDITOR // Record changes done in the GUI function
+			UnityEditor.Undo.RecordObject(this, "Node GUI");
+#endif
+			NodeGUI();
+#if UNITY_EDITOR // Make sure it doesn't record anything else after this
+			UnityEditor.Undo.FlushUndoRecordObjects();
+#endif
 
 			if(Event.current.type == EventType.Repaint)
 				nodeGUIHeight = GUILayoutUtility.GetLastRect().max + contentOffset;

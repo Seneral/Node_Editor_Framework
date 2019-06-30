@@ -27,6 +27,9 @@ namespace NodeEditorFramework
 
 		public List<Node> nodes = new List<Node> ();
 		public List<NodeGroup> groups = new List<NodeGroup> ();
+		
+		[NonSerialized]
+		public List<ScriptableObject> SOMemoryDump = new List<ScriptableObject>();
 
 		#region Constructors
 

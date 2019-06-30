@@ -243,18 +243,24 @@ namespace NodeEditorFramework
 		[EventHandlerAttribute (EventType.MouseDown, -2)] // Absolute second to call!
 		private static void HandleSelecting (NodeEditorInputInfo inputInfo) 
 		{
-			NodeEditorState state = inputInfo.editorState;
-			if (inputInfo.inputEvent.button == 0 && state.focusedNode != state.selectedNode)
+			if (inputInfo.inputEvent.button == 0 && inputInfo.editorState.focusedNode != inputInfo.editorState.selectedNode)
 			{ // Select focussed Node
-				unfocusControlsForState = state;
-				state.selectedNode = state.focusedNode;
-				NodeEditor.RepaintClients ();
+				unfocusControlsForState = inputInfo.editorState;
+				inputInfo.editorState.selectedNode = inputInfo.editorState.focusedNode;
+#if UNITY_EDITOR
+				NodeEditorState state = inputInfo.editorState;
+				Node prevSelection = state.selectedNode, newSelection = state.focusedNode;
+				UndoPro.UndoProManager.RecordOperation(
+					() => NodeEditorUndoActions.SetNodeSelection(state, newSelection), 
+					() => NodeEditorUndoActions.SetNodeSelection(state, prevSelection), 
+					"Node Selection", false, true);
+#endif
 			}
 #if UNITY_EDITOR
-			if (state.selectedNode != null)
-				UnityEditor.Selection.activeObject = state.selectedNode;
+			if (inputInfo.editorState.selectedNode != null)
+				UnityEditor.Selection.activeObject = inputInfo.editorState.selectedNode;
 			else if (UnityEditor.Selection.activeObject is Node)
-				UnityEditor.Selection.activeObject = state.canvas;
+				UnityEditor.Selection.activeObject = inputInfo.editorState.canvas;
 #endif
 		}
 
