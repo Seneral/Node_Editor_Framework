@@ -15,12 +15,12 @@
 </p>
 
 ### Features
-- Fully-featured and extensible interface
+- Extensible interface
 - Extensive controls including zooming/panning
-- Super extensible with runtime-fetching of custom nodes, connections, canvas, traversal routines and controls
-- Advanced save- and cache system, including saving to Scene, Asset and XML
-- Complete runtime support (see WebGL demo)
-- Clean, structured and commented code!
+- Runtime-fetching of custom nodes, connections, canvas, traversal routines and controls
+- Full Save- and cache system (Scene, Asset and XML)
+- Complete runtime support (see [WebGL demo](https://nodeeditor.seneral.dev/Examples.html))
+- Full Undo support using [UndoPro](https://github.com/Seneral/UndoPro)
 
 ### Examples
 There are several great examples depending on how you are planning to use the framework. You can find them as a subbranch of this repo in Examples/... and need to be copied into a project already containing the Node Editor Framework (**most use the develop branch!**):
