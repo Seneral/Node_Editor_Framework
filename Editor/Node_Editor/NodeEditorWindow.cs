@@ -111,7 +111,10 @@ namespace NodeEditorFramework.Standard
 			NodeEditor.ReInit(false);
 			AssureSetup();
 			if (canvasCache.nodeCanvas)
-				canvasCache.nodeCanvas.Validate();
+			{
+				if (!canvasCache.nodeCanvas.Validate(false))
+					canvasCache.LoadCache();
+			}
 		}
 
 		private void AssureSetup()

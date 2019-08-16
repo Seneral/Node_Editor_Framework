@@ -234,24 +234,21 @@ namespace NodeEditorFramework
 				if (!group.isClipped)
 					group.DrawGroup();
 			}
-			
-			// Push the active node to the top of the draw order.
-			if (Event.current.type == EventType.Layout && curEditorState.selectedNode != null && curNodeCanvas.nodes.Contains(curEditorState.selectedNode))
-			{
-				curNodeCanvas.nodes.Remove (curEditorState.selectedNode);
-				curNodeCanvas.nodes.Add (curEditorState.selectedNode);
-			}
 
 			// Draw the transitions and connections. Has to be drawn before nodes as transitions originate from node centers
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++)
-				curNodeCanvas.nodes [nodeCnt].DrawConnections ();
+			{
+				if (curNodeCanvas.nodes[nodeCnt] != null)
+					curNodeCanvas.nodes[nodeCnt].DrawConnections();
+			}
 
 			// Draw the nodes
 			for (int nodeCnt = 0; nodeCnt < curNodeCanvas.nodes.Count; nodeCnt++)
 			{
 				Node node = curNodeCanvas.nodes [nodeCnt];
+				if (node == null) continue;
 				if (Event.current.type == EventType.Layout)
-					node.isClipped = !curEditorState.canvasViewport.Overlaps(curNodeCanvas.nodes[nodeCnt].fullAABBRect);
+					node.isClipped = !curEditorState.canvasViewport.Overlaps(node.fullAABBRect);
 				if (!node.isClipped || node.ForceGUIDawOffScreen)
 				{
 					node.DrawNode();

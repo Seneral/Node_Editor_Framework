@@ -209,8 +209,18 @@ namespace NodeEditorFramework
 			if (cacheMemorySODump)
 			{ // Check if a memory dump has been found, if so, load that
 				nodeCanvas = ResourceManager.LoadResource<NodeCanvas>(SOMemoryDumpPath);
+				if (nodeCanvas != null && !nodeCanvas.Validate(false))
+				{
+					Debug.LogWarning("Cache Dump corrupted! Loading crash-proof lastSession, you might have lost a bit of work. \n "
+						+ "To prevent this from happening in the future, allow the Node Editor to properly save the cache "
+						+ "by clicking out of the window before switching scenes, since there are no callbacks to facilitate this!");
+					nodeCanvas = null;
+					UnityEditor.AssetDatabase.DeleteAsset(SOMemoryDumpPath);
+
+				}
 				if (nodeCanvas != null)
 					skipLoad = true;
+
 			}
 
 			// Try to load the NodeCanvas
@@ -256,6 +266,7 @@ namespace NodeEditorFramework
 		{
 			if (!useCache)
 				return;
+			UnityEditor.AssetDatabase.DeleteAsset (SOMemoryDumpPath);
 			UnityEditor.AssetDatabase.DeleteAsset (lastSessionPath);
 			UnityEditor.AssetDatabase.Refresh ();
 			NodeEditorSaveManager.DeleteSceneNodeCanvas ("lastSession");
@@ -327,10 +338,6 @@ namespace NodeEditorFramework
 			}
 			editorState = NodeEditorSaveManager.ExtractEditorState (nodeCanvas, MainEditorStateIdentifier);
 
-#if UNITY_EDITOR
-			UnityEditor.AssetDatabase.DeleteAsset(SOMemoryDumpPath);
-#endif
-
 			openedCanvasPath = path;
 			nodeCanvas.Validate();
 			RecreateCache ();
@@ -349,6 +356,8 @@ namespace NodeEditorFramework
 			NodeEditorSaveManager.SaveNodeCanvas (path, ref nodeCanvas, true);
 			if (switchedToFile)
 				RecreateCache ();
+			else 
+				SaveCache (false);
 			NodeEditor.RepaintClients ();
 		}
 
@@ -371,11 +380,6 @@ namespace NodeEditorFramework
 			UpdateCanvasInfo ();
 			nodeCanvas.TraverseAll ();
 			NodeEditor.RepaintClients ();
-
-#if UNITY_EDITOR
-			UnityEditor.AssetDatabase.DeleteAsset(SOMemoryDumpPath);
-			NodeEditorUndoActions.CompleteSOMemoryDump(nodeCanvas);
-#endif
 		}
 
 		/// <summary>

@@ -605,6 +605,8 @@ namespace NodeEditorFramework
 			{
 				AddSubAsset(so, path);
 			}
+			UnityEditor.AssetDatabase.SaveAssets();
+			UnityEditor.AssetDatabase.Refresh();
 		}
 #endif
 

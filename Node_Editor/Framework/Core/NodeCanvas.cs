@@ -123,21 +123,24 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Validates this canvas, checking for any broken nodes or references and cleans them.
 		/// </summary>
-		public void Validate ()
+		public bool Validate (bool repair = true)
 		{
 			NodeEditor.checkInit(false);
 
 			// Check Groups
-			CheckNodeCanvasList(ref groups, "groups");
+			if (!CheckNodeCanvasList(ref groups, "groups", repair) && !repair) return false;
 
-			// Check Nodes and their connection ports
-			CheckNodeCanvasList(ref nodes, "nodes");
+			// Check Nodes
+			if (!CheckNodeCanvasList(ref nodes, "nodes", repair) && !repair) return false;
+
+			// Check Connection ports
 			foreach (Node node in nodes)
 			{
 				ConnectionPortManager.UpdateConnectionPorts(node);
+				if (node.canvas != this && !repair) return false;
 				node.canvas = this;
 				foreach (ConnectionPort port in node.connectionPorts)
-					port.Validate(node);
+					if (!port.Validate(node, repair) && !repair) return false;
 			}
 
 			// Check EditorStates
@@ -152,12 +155,14 @@ namespace NodeEditorFramework
 
 			// Validate CanvasType-specific stuff
 			ValidateSelf ();
+
+			return true;
 		}
 
 		/// <summary>
 		/// Checks the specified list and assures it is initialized, contains no null nodes and it it does, removes them and outputs an error.
 		/// </summary>
-		private void CheckNodeCanvasList<T> (ref List<T> list, string listName)
+		private bool CheckNodeCanvasList<T> (ref List<T> list, string listName, bool repair)
 		{
 			if (list == null)
 			{
@@ -165,9 +170,16 @@ namespace NodeEditorFramework
 				list = new List<T>();
 			}
 			int originalCount = list.Count;
-			list = list.Where((T o) => o != null).ToList();
+			for (int i = 0; i < list.Count; i++) {
+				if (list[i] == null) {
+					if (!repair) return false;
+					list.RemoveAt(i);
+					i--;
+				}
+			}
 			if (originalCount != list.Count)
 				Debug.LogWarning("NodeCanvas '" + name + "' contained " + (originalCount - list.Count) + " broken (null) " + listName + "! Automatically fixed!");
+			return originalCount == list.Count;
 		}
 
 		/// <summary>

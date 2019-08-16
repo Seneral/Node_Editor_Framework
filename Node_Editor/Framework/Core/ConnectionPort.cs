@@ -40,19 +40,32 @@ namespace NodeEditorFramework
 			name = knobName;
 		}
 
-		public void Validate(Node nodeBody)
+		public bool Validate(Node nodeBody, bool repair = true)
 		{
-			if (body == null)
+			if (body == null || body != nodeBody)
 			{
 				Debug.LogError("Port " + name + " has no node body assigned! Fixed!");
+				if (!repair) return false;
 				body = nodeBody;
 			}
 			if (_connections == null)
+			{
+				if (!repair) return false;
 				_connections = new List<ConnectionPort>();
+			}
 			int originalCount = _connections.Count;
-			_connections = _connections.Where(o => o != null).ToList();
+			for (int i = 0; i < _connections.Count; i++)
+			{
+				if (_connections[i] == null)
+				{
+					if (!repair) return false;
+					_connections.RemoveAt(i);
+					i--;
+				}
+			}
 			if (originalCount != _connections.Count)
 				Debug.LogWarning("Removed " + (originalCount - _connections.Count) + " broken (null) connections from node " + body.name + "! Automatically fixed!");
+			return originalCount == _connections.Count;
 		}
 
 		public virtual IEnumerable<string> AdditionalDynamicKnobData()

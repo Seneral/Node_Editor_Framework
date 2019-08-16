@@ -100,11 +100,9 @@ namespace NodeEditorFramework
 						declaredConnectionPorts.Add(port);
 				}
 			}
-			if (triggerUpdate)
-			{ // Update lists as values might have changes when calling this function
-				node.staticConnectionPorts = declaredConnectionPorts;
+			node.staticConnectionPorts = declaredConnectionPorts;
+			if (triggerUpdate) // Update lists as values might have changes when calling this function
 				UpdateRepresentativePortLists(node);
-			}
 		}
 
 		/// <summary>
