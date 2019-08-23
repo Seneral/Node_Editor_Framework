@@ -655,9 +655,9 @@ namespace NodeEditorFramework.Utilities
 		public static System.Enum EnumPopup (GUIContent label, System.Enum selected) 
 		{
 			#if UNITY_EDITOR
-			if (!Application.isPlaying)
-				return UnityEditor.EditorGUILayout.EnumPopup (label, selected);
+			return UnityEditor.EditorGUILayout.EnumPopup (label, selected);
 			#endif
+			label = new GUIContent(label);
 			label.text += ": " + selected.ToString ();
 			GUILayout.Label (label);
 			return selected;
