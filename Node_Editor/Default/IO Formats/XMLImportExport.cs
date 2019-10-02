@@ -100,7 +100,10 @@ namespace NodeEditorFramework.IO
 						node.AppendChild(variable);
 					}
 					else // Serialize value-type fields in-line
-						SerializeFieldToXML(node, nodeData.node, varData.name);
+					{
+						XmlElement serializedValue = SerializeObjectToXML(node, varData.value);
+						serializedValue.SetAttribute("name", varData.name);
+					}
 				}
 			}
 
@@ -305,7 +308,7 @@ namespace NodeEditorFramework.IO
 		private XmlElement SerializeFieldToXML(XmlElement parent, object obj, string fieldName)
 		{
 			Type type = obj.GetType();
-			FieldInfo field = type.GetField(fieldName);
+			FieldInfo field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic);
 			if (field == null)
 			{
 				Debug.LogWarning("Failed to find field " + fieldName + " on type " + type.Name);
@@ -330,7 +333,7 @@ namespace NodeEditorFramework.IO
 		private object DeserializeFieldFromXML(XmlElement xmlElement, Type type, object obj = null)
 		{
 			string fieldName = xmlElement.GetAttribute("name");
-			FieldInfo field = type.GetField(fieldName);
+			FieldInfo field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 			if (field == null)
 			{
 				Debug.LogWarning("Failed to find field " + fieldName + " on type " + type.Name);

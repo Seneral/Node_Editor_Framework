@@ -147,7 +147,7 @@ namespace NodeEditorFramework.IO
 				FieldInfo[] serializedFields = ReflectionUtility.getSerializedFields (node.GetType (), typeof(Node));
 				foreach (FieldInfo field in serializedFields)
 				{ // Create variable data and enter the 
-					if (field.FieldType.IsSubclassOf(typeof(ConnectionPort)))
+					if (field.FieldType == typeof(ConnectionPort) || field.FieldType.IsSubclassOf(typeof(ConnectionPort)))
 						continue;
 					VariableData varData = new VariableData (field);
 					nodeData.variables.Add (varData);
@@ -223,7 +223,7 @@ namespace NodeEditorFramework.IO
 
 				foreach (VariableData varData in nodeData.variables)
 				{ // Restore stored variable to node
-					FieldInfo field = node.GetType().GetField(varData.name);
+					FieldInfo field = node.GetType().GetField(varData.name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 					if (field != null)
 						field.SetValue(node, varData.refObject != null ? varData.refObject.data : varData.value);
 				}
