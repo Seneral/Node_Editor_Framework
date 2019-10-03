@@ -355,7 +355,10 @@ namespace NodeEditorFramework.IO
 				XmlSerializer serializer = new XmlSerializer(obj.GetType());
 				XPathNavigator navigator = parent.CreateNavigator();
 				using (XmlWriter writer = navigator.AppendChild())
+				{ // Workaround: XMLSerializer now always calls WriteStartDocument when writer is unused - even though it's a fragment - and will throw an error...
+					writer.WriteWhitespace("");
 					serializer.Serialize(writer, obj);
+				}
 				return (XmlElement)parent.LastChild;
 			}
 			catch (Exception)
