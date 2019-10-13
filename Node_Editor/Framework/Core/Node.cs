@@ -361,7 +361,7 @@ namespace NodeEditorFramework
 		{
 			if (!AutoLayout || Event.current.type != EventType.Repaint)
 				return;
-
+			
 			Rect nodeRect = rect;
 			Vector2 size = new Vector2();
 			size.y = Math.Max(nodeGUIHeight.y, MinSize.y) + 4;
@@ -370,8 +370,8 @@ namespace NodeEditorFramework
 			float knobSize = 0;
 			List<ConnectionKnob> verticalKnobs = connectionKnobs.Where (x => x.side == NodeSide.Bottom || x.side == NodeSide.Top).ToList ();
 			if (verticalKnobs.Count > 0)
-				knobSize = verticalKnobs.Max ((ConnectionKnob knob) => knob.GetGUIKnob ().xMax - nodeRect.xMin);
-			size.x = Math.Max (knobSize, MinSize.x);
+				knobSize = verticalKnobs.Max ((ConnectionKnob knob) => knob.GetCanvasSpaceKnob ().xMax - nodeRect.xMin);
+			size.x = Math.Max (knobSize, Math.Max (nodeGUIHeight.x, MinSize.x));
 			
 			autoSize = size;
 			NodeEditor.RepaintClients ();
