@@ -1,0 +1,17 @@
+{
+    "name": "Seneral.NodeEditorFramework.Editor",
+    "references": [
+        "GUID:984eb8b4fce069a4fb617d10374722b2"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
