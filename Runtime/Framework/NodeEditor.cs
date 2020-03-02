@@ -14,7 +14,7 @@ namespace NodeEditorFramework
 	/// </summary>
 	public static partial class NodeEditor 
 	{
-		public static string editorPath = "Assets/Plugins/Node_Editor_Framework/";
+		public static string editorPath = "Packages/com.seneral.nodeeditorframework/";
 
 		// The NodeCanvas which represents the currently drawn Node Canvas; globally accessed
 		public static NodeCanvas curNodeCanvas;

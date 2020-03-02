@@ -1,0 +1,1 @@
+{"name":"com.seneral.nodeeditorframework","displayName":"Node Editor Framework","version":"1.0.0","unity":"2018.1","description":"A flexible and modular Node Editor Framework for creating node based displays and editors in Unity","category":"","dependencies":{"com.seneral.undopro":"1.0.0"}}
