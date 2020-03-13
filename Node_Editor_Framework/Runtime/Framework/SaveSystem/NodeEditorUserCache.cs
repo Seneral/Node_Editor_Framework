@@ -64,6 +64,29 @@ namespace NodeEditorFramework
 #endif
 		}
 
+		/// <summary>
+		/// Sets the cache path to a new location if cache is enabled. Does not check validity or moves files
+		/// </summary>
+		public void SetCachePath(string CachePath) 
+		{
+#if CACHE
+			if (useCache) 
+				cachePath = CachePath;
+#endif	
+		}
+
+		/// <summary>
+		/// Returns the cache path if cache is enabled, else an empty string
+		/// </summary>
+		public string GetCachePath() 
+		{
+#if CACHE
+			if (useCache) 
+				return cachePath;
+#endif	
+			return "";
+		}
+
 
 		/// <summary>
 		/// Assures a canvas is loaded, either from the cache or new

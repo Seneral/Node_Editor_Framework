@@ -196,16 +196,15 @@ namespace NodeEditorFramework
 			}
 			else
 			{
-				int nameStart = path.LastIndexOf ('/')+1;
+				int nameStart = Mathf.Max(path.LastIndexOf ('/'), path.LastIndexOf ('\\'))+1;
 				newName = path.Substring (nameStart, path.Length-nameStart-6);
 			}
-			if (!newName.ToLower ().Contains ("lastsession"))
+			if (!newName.ToLower ().Contains ("lastsession") && !newName.ToLower ().Contains ("cursession"))
 			{
 				savePath = path;
 				saveName = newName;
 				livesInScene = path.StartsWith ("SCENE/");
 			}
-			return;
 		}
 
 		#endregion
