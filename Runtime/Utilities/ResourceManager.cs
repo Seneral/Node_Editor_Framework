@@ -24,6 +24,14 @@ namespace NodeEditorFramework.Utilities
 		{
 			return pathSeparators.Replace(path, "" + Path.DirectorySeparatorChar);
 		}
+		public static string UnifyPathSeparators(string path, char pathSeparator)
+		{
+			return pathSeparators.Replace(path, "" + pathSeparator);
+		}
+		public static string StripTrailingSeparator(string path)
+		{
+			return path.EndsWith("/") || path.EndsWith("\\")? path.Substring(0, path.Length-1) : path;
+		}
 
 		#region Common Resource Loading
 
