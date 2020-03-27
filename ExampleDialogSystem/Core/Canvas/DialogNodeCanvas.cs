@@ -8,6 +8,13 @@ public class DialogNodeCanvas : NodeCanvas
 {
 	public override string canvasName { get { return "Dialog"; } }
 	public string Name = "Dialog";
+	public override bool allowRecursion { get { return true; } }
+	
+	public override bool CanAddNode (string nodeID) 
+	{
+		// Could use nodeID directly if it were consistently named
+		return nodeID.ToLower().Contains("dialog") || NodeTypes.getNodeData(nodeID).adress.StartsWith("Dialog");
+	}
 
 	private Dictionary<int, BaseDialogNode> _lstActiveDialogs = new Dictionary<int, BaseDialogNode>();
 

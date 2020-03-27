@@ -9,7 +9,6 @@ using UnityEngine.Serialization;
 [Node(true, "Dialog/Base Dialog Node", new Type[]{typeof(DialogNodeCanvas)})]
 public abstract class BaseDialogNode : Node
 {
-	public override bool AllowRecursion { get { return true; } }
 	public abstract Type GetObjectType { get; }
 
 	public override Vector2 MinSize { get { return new Vector2(350, 200); } }

@@ -91,7 +91,7 @@ public class DialogMultiOptionsNode : BaseDialogNode
 		GUILayout.ExpandWidth(false);
 
 		GUILayout.BeginHorizontal();
-		GUILayout.Label("Options", NodeEditorGUI.nodeLabelBoldCentered);
+		GUILayout.Label("Options", GUI.skin.GetStyle("labelBoldCentered"));
 		if (GUILayout.Button("+", GUILayout.Width(20)))
 		{
 			AddNewOption();
