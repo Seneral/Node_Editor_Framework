@@ -22,6 +22,23 @@
 - Complete runtime support (see [WebGL demo](https://nodeeditor.seneral.dev/Examples.html))
 - Full Undo support using [UndoPro](https://github.com/Seneral/UndoPro)
 
+### Installation
+
+#### Distribution Version
+The LTS distribution version is just the base framework, intended to be installed as a package using the Unity Package Manager and used by different tools simultaneously, without any framework modifications by individual tools. With the options the framework gives, this still allows custom windows for each tool with custom look and behaviour. This is recommended for smaller tools that are released as a UPM package or through github with installation instructions.
+1. Install [Undo Pro](https://github.com/Seneral/UndoPro/releases/latest)
+1.1. UPM/Add from git (latest): https://github.com/Seneral/UndoPro.git#release-pkg
+1.2. UPM/Add from git (specific): https://github.com/Seneral/UndoPro.git#v1.0.0-lts
+2. Install Node Editor Framework by either:
+2.1. UPM/Add from git (latest): https://github.com/Seneral/Node_Editor_Framework.git#release-pkg
+2.2. UPM/Add from git (specific): https://github.com/Seneral/Node_Editor_Framework.git#v1.0.2-lts
+2.3. UPM/Add from disk; package.json from unpacked SourceCode
+2.4. Importing the UnityPackage
+
+#### Development Version
+For the development version, take the latest release from develop.
+This is intended to be used in tools aiming to modify the framework core and embed the framework in their distribution. This requires them to modify the namespace and make sure it does not conflict with other tools. This is the version to choose for Asset Store releases, as they cannot specify a UPM package as dependency.
+
 ### Examples
 There are several great examples depending on how you are planning to use the framework. You can find them as a subbranch of this repo in Examples/... and need to be copied into a project already containing the Node Editor Framework (**most use the develop branch!**):
 
