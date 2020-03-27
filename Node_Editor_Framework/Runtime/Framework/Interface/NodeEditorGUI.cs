@@ -17,14 +17,18 @@ namespace NodeEditorFramework
 
 		public static Color NE_LightColor = new Color (0.4f, 0.4f, 0.4f);
 		public static Color NE_TextColor = new Color(0.8f, 0.8f, 0.8f);
+		public static Color NE_TextColorSelected = new Color(0.6f, 0.6f, 0.6f);
 
 		public static Texture2D Background;
 		public static Texture2D AALineTex;
 
 		public static GUISkin nodeSkin { get { return overrideSkin ?? defaultSkin; } }
 		public static GUISkin overrideSkin;
-		public static GUISkin defaultSkin;
-		public static GUISkin unitySkin;
+		private static GUISkin defaultSkin;
+		private static GUISkin unitySkin;
+
+		private static Color unityTextColor, unityHoverTextColor, unityActiveTextColor, unityFocusedTextColor;
+
 
 		public static bool Init ()
 		{
@@ -35,21 +39,22 @@ namespace NodeEditorFramework
 				return CreateDefaultSkin();
 			else {
 				defaultSkin = Object.Instantiate (defaultSkin);
-				
 				// Copy default editor styles, modified to fit custom style
-				/*
-				customStyles = new List<GUIStyle> (nodeSkin.customStyles);
+				customStyles = new List<GUIStyle> (defaultSkin.customStyles);
 				foreach (GUIStyle style in GUI.skin.customStyles)
 				{
-					if (nodeSkin.FindStyle(style.name) == null)
+					if (defaultSkin.FindStyle(style.name) == null)
 					{
 						GUIStyle modStyle = new GUIStyle (style);
-						modStyle.fontSize = nodeSkin.label.fontSize;
-						modStyle.normal.textColor = modStyle.active.textColor = modStyle.focused.textColor = modStyle.hover.textColor = nodeSkin.label.normal.textColor;
+						if (modStyle.normal.background == null)
+						{
+							modStyle.fontSize = defaultSkin.label.fontSize;
+							modStyle.normal.textColor = modStyle.active.textColor = modStyle.focused.textColor = modStyle.hover.textColor = defaultSkin.label.normal.textColor;
+						}
 						customStyles.Add (modStyle);
 					}
 				}
-				nodeSkin.customStyles = customStyles.ToArray();*/
+				defaultSkin.customStyles = customStyles.ToArray();
 
 				Background = ResourceManager.LoadTexture ("Textures/background.png");
 				AALineTex = ResourceManager.LoadTexture ("Textures/AALine.png");
@@ -158,7 +163,7 @@ namespace NodeEditorFramework
 
 			defaultSkin.customStyles = customStyles.ToArray();
 #if UNITY_EDITOR
-			UnityEditor.AssetDatabase.CreateAsset(Object.Instantiate (nodeSkin), ResourceManager.resourcePath +  "DefaultSkin.asset");
+			UnityEditor.AssetDatabase.CreateAsset(Object.Instantiate (defaultSkin), ResourceManager.resourcePath +  "DefaultSkin.asset");
 #endif
 
 			return true;
@@ -167,16 +172,36 @@ namespace NodeEditorFramework
 		public static void StartNodeGUI (bool IsEditorWindow) 
 		{
 			NodeEditor.checkInit(true);
+			// Required for gamemode switch
+			// Also for EditorWindow+RTNodeEditor in parallel where RTNodeEditor GUISkin setup would not be enough for the editor window as it's missing the editor styles
+			if (nodeSkin == null || (IsEditorWindow && nodeSkin.FindStyle("ObjectField") == null))
+				NodeEditor.ReInit(true);
 
 			isEditorWindow = IsEditorWindow;
 
 			unitySkin = GUI.skin;
 			GUI.skin = nodeSkin;
+			#if UNITY_EDITOR
+			unityTextColor = UnityEditor.EditorStyles.label.normal.textColor;
+			UnityEditor.EditorStyles.label.normal.textColor = NE_TextColor;
+			unityHoverTextColor = UnityEditor.EditorStyles.label.hover.textColor;
+			UnityEditor.EditorStyles.label.hover.textColor = NE_TextColor;
+			unityActiveTextColor = UnityEditor.EditorStyles.label.active.textColor;
+			UnityEditor.EditorStyles.label.active.textColor = NE_TextColorSelected;
+			unityFocusedTextColor = UnityEditor.EditorStyles.label.focused.textColor;
+			UnityEditor.EditorStyles.label.focused.textColor = NE_TextColorSelected;
+			#endif
 		}
 
 		public static void EndNodeGUI () 
 		{
 			GUI.skin = unitySkin;
+			#if UNITY_EDITOR
+			UnityEditor.EditorStyles.label.normal.textColor = unityTextColor;
+			UnityEditor.EditorStyles.label.hover.textColor = unityHoverTextColor;
+			UnityEditor.EditorStyles.label.active.textColor = unityActiveTextColor;
+			UnityEditor.EditorStyles.label.focused.textColor = unityFocusedTextColor;
+			#endif
 		}
 
 		#region Connection Drawing

@@ -122,12 +122,12 @@ namespace NodeEditorFramework
 		/// Used to display a custom node property editor in the GUI.
 		/// By default shows the standard NodeGUI.
 		/// </summary>
-		public virtual void DrawNodePropertyEditor ()
+		public virtual void DrawNodePropertyEditor (bool isEditorWindow = false)
 		{
 			try
 			{ // Draw Node GUI without disturbing knob placement
 				ignoreGUIKnobPlacement = true;
-				NodeEditorGUI.StartNodeGUI(false);
+				NodeEditorGUI.StartNodeGUI(isEditorWindow);
 				GUILayout.BeginVertical(GUI.skin.box);
 				NodeGUI();
 				GUILayout.EndVertical();

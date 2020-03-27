@@ -190,7 +190,7 @@ namespace NodeEditorFramework.Utilities
 		public static bool Foldout (bool foldout, GUIContent content, params GUILayoutOption[] options)
 		{
 			#if UNITY_EDITOR 
-			if (!Application.isPlaying)
+			if (!Application.isPlaying || NodeEditorFramework.NodeEditorGUI.isEditorWindow)
 				return UnityEditor.EditorGUILayout.Foldout (foldout, content);
 			#endif
 			return Foldout (foldout, content, GUI.skin.toggle, options);
@@ -199,7 +199,7 @@ namespace NodeEditorFramework.Utilities
 		public static bool Foldout (bool foldout, GUIContent content, GUIStyle style, params GUILayoutOption[] options)
 		{
 			#if UNITY_EDITOR 
-			if (!Application.isPlaying)
+			if (!Application.isPlaying || NodeEditorFramework.NodeEditorGUI.isEditorWindow)
 				return UnityEditor.EditorGUILayout.Foldout (foldout, content, style);
 			#endif
 			return GUILayout.Toggle (foldout, content, style, options);
@@ -219,7 +219,7 @@ namespace NodeEditorFramework.Utilities
 		public static bool Toggle (bool toggle, GUIContent content, params GUILayoutOption[] options)
 		{
 			#if UNITY_EDITOR 
-			if (!Application.isPlaying)
+			if (!Application.isPlaying || NodeEditorFramework.NodeEditorGUI.isEditorWindow)
 				return UnityEditor.EditorGUILayout.ToggleLeft (content, toggle, options);
 			#endif
 			return Toggle (toggle, content, GUI.skin.toggle, options);
@@ -228,7 +228,7 @@ namespace NodeEditorFramework.Utilities
 		public static bool Toggle (bool toggle, GUIContent content, GUIStyle style, params GUILayoutOption[] options)
 		{
 			#if UNITY_EDITOR 
-			if (!Application.isPlaying)
+			if (!Application.isPlaying || NodeEditorFramework.NodeEditorGUI.isEditorWindow)
 				return UnityEditor.EditorGUILayout.ToggleLeft (content, toggle, style, options);
 			#endif
 			return GUILayout.Toggle (toggle, content, style, options);
@@ -254,7 +254,7 @@ namespace NodeEditorFramework.Utilities
 		public static string TextField (GUIContent label, string text, GUIStyle style = null, params GUILayoutOption[] options)
 		{
 			/*#if UNITY_EDITOR
-			if (!Application.isPlaying)
+			if (!Application.isPlaying || NodeEditorFramework.NodeEditorGUI.isEditorWindow)
 				return UnityEditor.EditorGUILayout.TextField (label, text, options);
 			#endif*/
 
@@ -274,20 +274,20 @@ namespace NodeEditorFramework.Utilities
 		/// <summary>
 		/// Slider to select between the given options
 		/// </summary>
-		public static int OptionSlider (GUIContent label, int selected, string[] selectableOptions, params GUILayoutOption[] options)
+		public static int OptionSlider (GUIContent label, int selected, IList<string> selectableOptions, params GUILayoutOption[] options)
 		{
 			return OptionSlider (label, selected, selectableOptions, GUI.skin.label, options);
 		}
 		/// <summary>
 		/// Slider to select between the given options
 		/// </summary>
-		public static int OptionSlider (GUIContent label, int selected, string[] selectableOptions, GUIStyle style, params GUILayoutOption[] options)
+		public static int OptionSlider (GUIContent label, int selected, IList<string> selectableOptions, GUIStyle style, params GUILayoutOption[] options)
 		{
 			if (style == null) style = GUI.skin.textField;
 			Rect totalPos = GetSliderRect (label, style, options);
 			Rect sliderFieldPos = PrefixLabel (totalPos, 0.5f, label, GUI.skin.label);
 
-			selected = Mathf.RoundToInt (GUI.HorizontalSlider (GetSliderRect (sliderFieldPos), selected, 0, selectableOptions.Length-1));
+			selected = Mathf.RoundToInt (GUI.HorizontalSlider (GetSliderRect (sliderFieldPos), selected, 0, selectableOptions.Count()-1));
 			GUI.Label (GetSliderFieldRect (sliderFieldPos), selectableOptions[selected]);
 			return selected;
 		}
@@ -401,7 +401,7 @@ namespace NodeEditorFramework.Utilities
 		public static float Slider (GUIContent label, float value, float minValue, float maxValue, params GUILayoutOption[] options) 
 		{
 			#if UNITY_EDITOR
-			if (!Application.isPlaying)
+			if (!Application.isPlaying || NodeEditorFramework.NodeEditorGUI.isEditorWindow)
 				return UnityEditor.EditorGUILayout.Slider (label, value, minValue, maxValue, options);
 			#endif
 
@@ -409,7 +409,7 @@ namespace NodeEditorFramework.Utilities
 			Rect sliderFieldPos = PrefixLabel (totalPos, 0.5f, label, GUI.skin.label);
 
 			value = GUI.HorizontalSlider (GetSliderRect (sliderFieldPos), value, minValue, maxValue);
-			value = Mathf.Min (maxValue, Mathf.Max (minValue, FloatField (GetSliderFieldRect (sliderFieldPos), value, GUILayout.Width (60))));
+			value = Mathf.Min (maxValue, Mathf.Max (minValue, FloatField (GetSliderFieldRect (sliderFieldPos), value)));
 			return value;
 		}
 
@@ -424,9 +424,9 @@ namespace NodeEditorFramework.Utilities
 		/// <summary>
 		/// Float Field for ingame purposes. Behaves exactly like UnityEditor.EditorGUILayout.FloatField, besides the label slide field
 		/// </summary>
-		public static float FloatField (string label, float value, params GUILayoutOption[] fieldOptions)
+		public static float FloatField (string label, float value, params GUILayoutOption[] options)
 		{
-			return FloatField (new GUIContent (label), value, fieldOptions);
+			return FloatField (new GUIContent (label), value, options);
 		}
 
 		/// <summary>
@@ -434,9 +434,14 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static float FloatField (GUIContent label, float value, params GUILayoutOption[] options)
 		{
+			#if UNITY_EDITOR
+			if (!Application.isPlaying || NodeEditorFramework.NodeEditorGUI.isEditorWindow)
+				return UnityEditor.EditorGUILayout.FloatField(label, value, options);
+			#endif
+
 			Rect totalPos = GetFieldRect (label, GUI.skin.label, options);
 			Rect fieldPos = PrefixLabel (totalPos, 0.5f, label, GUI.skin.label);
-			return FloatField (fieldPos, value, options);
+			return FloatField (fieldPos, value);
 		}
 
 		/// <summary>
@@ -444,15 +449,25 @@ namespace NodeEditorFramework.Utilities
 		/// </summary>
 		public static float FloatField (float value, params GUILayoutOption[] options)
 		{
+			#if UNITY_EDITOR
+			if (!Application.isPlaying || NodeEditorFramework.NodeEditorGUI.isEditorWindow)
+				return UnityEditor.EditorGUILayout.FloatField(value, options);
+			#endif
+
 			Rect pos = GetFieldRect (GUIContent.none, null, options);
-			return FloatField (pos, value, options);
+			return FloatField (pos, value);
 		}
 
 		/// <summary>
 		/// Float Field for ingame purposes. Behaves exactly like UnityEditor.EditorGUILayout.FloatField
 		/// </summary>
-		public static float FloatField (Rect pos, float value, params GUILayoutOption[] options)
+		public static float FloatField (Rect pos, float value)
 		{
+			#if UNITY_EDITOR
+			if (!Application.isPlaying || NodeEditorFramework.NodeEditorGUI.isEditorWindow)
+				return UnityEditor.EditorGUI.FloatField(pos, value);
+			#endif
+
 			int floatFieldID = GUIUtility.GetControlID ("FloatField".GetHashCode (), FocusType.Keyboard, pos) + 1;
 			if (floatFieldID == 0)
 				return value;
@@ -613,9 +628,10 @@ namespace NodeEditorFramework.Utilities
 		public static T ObjectField<T> (GUIContent label, T obj, bool allowSceneObjects, params GUILayoutOption[] options) where T : Object
 		{
 			#if UNITY_EDITOR
-			if (!Application.isPlaying)
+			if (!Application.isPlaying || NodeEditorFramework.NodeEditorGUI.isEditorWindow)
 				return UnityEditor.EditorGUILayout.ObjectField (label, obj, typeof (T), allowSceneObjects) as T;
 			#endif
+
 			bool open = false;
 			if (obj.GetType () == typeof(Texture2D)) 
 			{
@@ -654,15 +670,14 @@ namespace NodeEditorFramework.Utilities
 
 		public static System.Enum EnumPopup (GUIContent label, System.Enum selected) 
 		{
-			Rect rect = GetFieldRect(label, GUI.skin.label);
 			#if UNITY_EDITOR
-			GUI.Label (rect, label);
-			selected = UnityEditor.EditorGUI.EnumPopup (rect, " ", selected);
-			#else
-			label = new GUIContent(label);
-			label.text += ":" + selected.ToString();
-			GUI.Label (rect, label);
+			if (!Application.isPlaying || NodeEditorFramework.NodeEditorGUI.isEditorWindow)
+				return UnityEditor.EditorGUILayout.EnumPopup (label, selected);
 			#endif
+
+			label = new GUIContent(label);
+			label.text += ": " + selected.ToString();
+			GUILayout.Label (label);
 			return selected;
 		}
 

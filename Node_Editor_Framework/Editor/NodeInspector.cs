@@ -61,7 +61,7 @@ namespace NodeEditorFramework.Standard
 			GUILayout.Space(10);
 
 			GUILayout.Label("Property Editor", boldLabelStyle);
-			node.DrawNodePropertyEditor();
+			node.DrawNodePropertyEditor(true);
 
 			if (EditorGUI.EndChangeCheck())
 				NodeEditor.RepaintClients();
