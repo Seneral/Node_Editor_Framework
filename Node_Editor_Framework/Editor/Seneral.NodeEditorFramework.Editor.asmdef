@@ -1,7 +1,8 @@
 {
     "name": "Seneral.NodeEditorFramework.Editor",
     "references": [
-        "GUID:984eb8b4fce069a4fb617d10374722b2"
+        "GUID:984eb8b4fce069a4fb617d10374722b2",
+        "GUID:c7dd23d8a26985747bf8c6284ac6b26f"
     ],
     "includePlatforms": [
         "Editor"

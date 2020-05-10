@@ -10,7 +10,7 @@ namespace NodeEditorFramework.Utilities
 	public static class GUIScaleUtility
 	{
 #if UNITY_2019_3_OR_NEWER
-		private const int HEADER_SIZE = 18;
+		private const int HEADER_SIZE = 23;
 #else
 		private const int HEADER_SIZE = 23;
 #endif

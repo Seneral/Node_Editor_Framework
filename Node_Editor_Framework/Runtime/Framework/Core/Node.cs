@@ -84,7 +84,7 @@ namespace NodeEditorFramework
 		/// <summary>
 		/// Specifies whether GUI requires to be updated even when the node is off-screen 
 		/// </summary>
-		public virtual bool ForceGUIDawOffScreen { get { return false; } }
+		public virtual bool ForceGUIDrawOffScreen { get { return false; } }
 
 		#endregion
 

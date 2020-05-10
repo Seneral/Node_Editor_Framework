@@ -106,6 +106,9 @@ namespace NodeEditorFramework
 			// Box
 			defaultSkin.box.normal.background = GUIBox;
 			defaultSkin.box.normal.textColor = NE_TextColor;
+			#if UNITY_EDITOR && UNITY_2019_3_OR_NEWER
+			defaultSkin.box.normal.scaledBackgrounds = null;
+			#endif
 			defaultSkin.box.active.textColor = NE_TextColor;
 			customStyles.Add(new GUIStyle (defaultSkin.box) { name = "boxBold", fontStyle = FontStyle.Bold });
 
@@ -114,6 +117,11 @@ namespace NodeEditorFramework
 			defaultSkin.button.normal.background = GUIButton;
 			defaultSkin.button.hover.background = GUIButtonHover;
 			defaultSkin.button.active.background = GUIButtonSelected;
+			#if UNITY_EDITOR && UNITY_2019_3_OR_NEWER
+			defaultSkin.button.normal.scaledBackgrounds = null;
+			defaultSkin.button.hover.scaledBackgrounds = null;
+			defaultSkin.button.active.scaledBackgrounds = null;
+			#endif
 			defaultSkin.button.border = new RectOffset(1, 1, 1, 1);
 			defaultSkin.button.margin = new RectOffset(2, 2, 1, 1);
 			defaultSkin.button.padding = new RectOffset(4, 4, 1, 1);
@@ -132,6 +140,10 @@ namespace NodeEditorFramework
 				GUIStyle toolbar = new GUIStyle(defaultSkin.box) { name = "toolbar" };
 				toolbar.normal.background = GUIToolbar;
 				toolbar.active.background = GUIToolbar;
+				#if UNITY_EDITOR && UNITY_2019_3_OR_NEWER
+				toolbar.normal.scaledBackgrounds = null;
+				toolbar.active.scaledBackgrounds = null;
+				#endif
 				toolbar.border = new RectOffset(0, 0, 1, 1);
 				toolbar.margin = new RectOffset(0, 0, 0, 0);
 				toolbar.padding = new RectOffset(1, 1, 1, 1);
@@ -140,6 +152,9 @@ namespace NodeEditorFramework
 
 				GUIStyle toolbarLabel = new GUIStyle(defaultSkin.box) { name = "toolbarLabel" };
 				toolbarLabel.normal.background = GUIToolbarLabel;
+				#if UNITY_EDITOR && UNITY_2019_3_OR_NEWER
+				toolbarLabel.normal.scaledBackgrounds = null;
+				#endif
 				toolbarLabel.border = new RectOffset(2, 2, 0, 0);
 				toolbarLabel.margin = new RectOffset(0, 0, 0, 0);
 				toolbarLabel.padding = new RectOffset(6, 6, 2, 2);
@@ -147,7 +162,6 @@ namespace NodeEditorFramework
 
 				GUIStyle toolbarButton = new GUIStyle(toolbarLabel) { name = "toolbarButton" };
 				toolbarButton.normal.background = GUIToolbarButton;
-				toolbarButton.border = new RectOffset(2, 2, 0, 0);
 				toolbarButton.active.background = GUISelectedBG;
 				customStyles.Add(toolbarButton);
 

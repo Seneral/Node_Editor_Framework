@@ -98,14 +98,15 @@ namespace NodeEditorFramework.Standard
 			GUILayout.Space(10);
 			GUILayout.FlexibleSpace();
 
-			GUILayout.Label(new GUIContent("" + canvasCache.nodeCanvas.saveName + " (" + (canvasCache.nodeCanvas.livesInScene ? "Scene Save" : "Asset Save") + ")", 
-											"Opened Canvas path: " + canvasCache.nodeCanvas.savePath), GUI.skin.GetStyle("toolbarLabel"));
-			GUILayout.Label("Type: " + canvasCache.typeData.DisplayString, GUI.skin.GetStyle("toolbarLabel"));
-			curToolbarHeight = Mathf.Max(curToolbarHeight, GUILayoutUtility.GetLastRect().yMax);
+			GUILayout.Label(new GUIContent(canvasCache.nodeCanvas.saveName, 
+											"Save Type: " + (canvasCache.nodeCanvas.livesInScene ? "Scene" : "Asset") + "\n" +
+											"Save Path: " + canvasCache.nodeCanvas.savePath), GUI.skin.GetStyle("toolbarLabel"));
+			GUILayout.Label(new GUIContent(canvasCache.typeData.DisplayString, "Canvas Type: " + canvasCache.typeData.DisplayString), GUI.skin.GetStyle("toolbarLabel"));
+			//curToolbarHeight = Mathf.Max(curToolbarHeight, GUILayoutUtility.GetLastRect().yMax);
 
 
 			GUI.backgroundColor = new Color(1, 0.3f, 0.3f, 1);
-			/*if (GUILayout.Button("Force Re-init", GUI.skin.GetStyle("toolbarButton"), GUILayout.Width(100)))
+			/*if (GUILayout.Button("Reinit", GUI.skin.GetStyle("toolbarButton"), GUILayout.Width(100)))
 			{
 				NodeEditor.ReInit(true);
 				NodeEditorGUI.CreateDefaultSkin();

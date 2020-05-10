@@ -67,8 +67,11 @@ namespace NodeEditorFramework.Standard
 			}
 			AssureSetup();
 
-			// Start Overlay GUI for popups
+			// Start Overlay GUI for popups (before any other GUI)
 			OverlayGUI.StartOverlayGUI("RTNodeEditor");
+
+			// Set root rect (can be any number of arbitrary groups, e.g. a nested UI, but at least one)
+			GUI.BeginGroup(new Rect(0, 0, Screen.width, Screen.height));
 
 			// Begin Node Editor GUI and set canvas rect
 			NodeEditorGUI.StartNodeGUI(false);
@@ -92,6 +95,9 @@ namespace NodeEditorFramework.Standard
 
 			// End Node Editor GUI
 			NodeEditorGUI.EndNodeGUI();
+
+			// End root rect
+			GUI.EndGroup();
 			
 			// End Overlay GUI and draw popups
 			OverlayGUI.EndOverlayGUI();
