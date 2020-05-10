@@ -249,7 +249,7 @@ namespace NodeEditorFramework
 				if (node == null) continue;
 				if (Event.current.type == EventType.Layout)
 					node.isClipped = !curEditorState.canvasViewport.Overlaps(node.fullAABBRect);
-				if (!node.isClipped || node.ForceGUIDawOffScreen)
+				if (!node.isClipped || node.ForceGUIDrawOffScreen)
 				{
 					node.DrawNode();
 					if (Event.current.type == EventType.Repaint)
