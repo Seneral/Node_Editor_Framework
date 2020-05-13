@@ -19,8 +19,8 @@
 - Extensive controls including zooming/panning
 - Runtime-fetching of custom nodes, connections, canvas, traversal routines and controls
 - Full Save- and cache system (Scene, Asset and XML)
-- Complete runtime support (see [WebGL demo](https://nodeeditor.seneral.dev/Examples.html))
-- Full Undo support using [UndoPro](https://github.com/Seneral/UndoPro)
+- Runtime support (see [WebGL demo](https://nodeeditor.seneral.dev/Examples.html))
+- Full Undo support using [UndoPro](https://github.com/Seneral/UndoPro) (editor only)
 
 ### Installation
 
