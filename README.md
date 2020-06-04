@@ -25,7 +25,7 @@
 ### Installation
 
 #### Distribution Version
-The LTS distribution version is just the base framework, intended to be installed as a package using the Unity Package Manager and used by different tools simultaneously, without any framework modifications by individual tools. With the options the framework gives, this still allows custom windows for each tool with custom look and behaviour. This is recommended for smaller tools that are released as a UPM package or through github with installation instructions. <br>
+The LTS distribution version is just the base framework, intended to be installed as a package using the Unity Package Manager and used by different tools simultaneously, without any framework modifications by individual tools. With the options the framework gives, this still allows custom windows for each tool with custom look and behaviour. This is recommended for smaller tools that are released as a UPM package or through github with installation instructions. However it prevents you from using the Node Editor at runtime (see [RTNodeEditor](https://github.com/Seneral/Node_Editor_Framework/blob/develop/Examples/Runtime/RTNodeEditor.cs)).<br>
 For detailed installation instructions see the [latest LTS release](https://github.com/Seneral/Node_Editor_Framework/releases/latest).
 1. Install [Undo Pro](https://github.com/Seneral/UndoPro/releases/latest):<br>
     UPM/Add from git (latest): https://github.com/Seneral/UndoPro.git#release-pkg
