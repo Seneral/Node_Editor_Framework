@@ -268,6 +268,10 @@ DefaultImporter:
 
 			// Draw Interface
 			float screenWidth = Screen.width;
+			#if UNITY_EDITOR && UNITY_2019_3_OR_NEWER && UNITY_2020_2_OR_OLDER
+			float scaling = UnityEditor.EditorPrefs.GetInt("CustomEditorUIScale")  / 100.0f;
+			screenWidth = screenWidth / scaling;
+			#endif
 			editorInterface.DrawToolbarGUI(new Rect(0, 0, screenWidth, 0));
 			editorInterface.DrawModalPanel();
 
