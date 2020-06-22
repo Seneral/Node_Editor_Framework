@@ -37,12 +37,9 @@ namespace NodeEditorFramework.Standard
 
 #region GUI
 
-		public void DrawToolbarGUI(Rect rect)
+		public void DrawToolbarGUI()
 		{
-			rect.height = toolbarHeight;
-			GUILayout.BeginArea (rect, GUI.skin.GetStyle("toolbar"));
-			GUILayout.BeginHorizontal();
-			float curToolbarHeight = 0;
+			GUILayout.BeginHorizontal(GUI.skin.GetStyle("toolbar"));
 
 			if (GUILayout.Button("File", GUI.skin.GetStyle("toolbarDropdown"), GUILayout.Width(50)))
 			{
@@ -91,9 +88,8 @@ namespace NodeEditorFramework.Standard
 				menu.AddItem(new GUIContent("Save Canvas to Scene"), false, SaveSceneCanvasCallback);
 
 				// Show dropdown
-				menu.Show(new Vector2(5, toolbarHeight));
+				menu.Show(new Vector2(3, toolbarHeight+3));
 			}
-			curToolbarHeight = Mathf.Max(curToolbarHeight, GUILayoutUtility.GetLastRect().yMax);
 
 			GUILayout.Space(10);
 			GUILayout.FlexibleSpace();
@@ -102,7 +98,6 @@ namespace NodeEditorFramework.Standard
 											"Save Type: " + (canvasCache.nodeCanvas.livesInScene ? "Scene" : "Asset") + "\n" +
 											"Save Path: " + canvasCache.nodeCanvas.savePath), GUI.skin.GetStyle("toolbarLabel"));
 			GUILayout.Label(new GUIContent(canvasCache.typeData.DisplayString, "Canvas Type: " + canvasCache.typeData.DisplayString), GUI.skin.GetStyle("toolbarLabel"));
-			//curToolbarHeight = Mathf.Max(curToolbarHeight, GUILayoutUtility.GetLastRect().yMax);
 
 
 			GUI.backgroundColor = new Color(1, 0.3f, 0.3f, 1);
@@ -117,14 +112,12 @@ namespace NodeEditorFramework.Standard
 				GUILayout.Space(5);
 				if (GUILayout.Button("Quit", GUI.skin.GetStyle("toolbarButton"), GUILayout.Width(100)))
 					Application.Quit ();
-				curToolbarHeight = Mathf.Max(curToolbarHeight, GUILayoutUtility.GetLastRect().yMax);
 			}
 			GUI.backgroundColor = Color.white;
 
 			GUILayout.EndHorizontal();
-			GUILayout.EndArea();
 			if (Event.current.type == EventType.Repaint)
-				toolbarHeight = curToolbarHeight;
+				toolbarHeight = GUILayoutUtility.GetLastRect().yMax;
 		}
 
 		private void SaveSceneCanvasPanel()
