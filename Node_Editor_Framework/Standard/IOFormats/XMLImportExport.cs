@@ -102,7 +102,8 @@ namespace NodeEditorFramework.IO
 					else // Serialize value-type fields in-line
 					{
 						XmlElement serializedValue = SerializeObjectToXML(node, varData.value);
-						serializedValue.SetAttribute("name", varData.name);
+						if (serializedValue != null)
+							serializedValue.SetAttribute("name", varData.name);
 					}
 				}
 			}
@@ -128,9 +129,8 @@ namespace NodeEditorFramework.IO
 				XmlElement obj = saveDoc.CreateElement("Object");
 				obj.SetAttribute("refID", objectData.refID.ToString());
 				obj.SetAttribute("type", objectData.data.GetType().FullName);
-				objects.AppendChild(obj);
-				SerializeObjectToXML(obj, objectData.data);
-			}
+				if (SerializeObjectToXML(obj, objectData.data) != null)
+					objects.AppendChild(obj);			}
 
 			// WRITE
 

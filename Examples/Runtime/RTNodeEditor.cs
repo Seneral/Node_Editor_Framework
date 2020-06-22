@@ -90,7 +90,9 @@ namespace NodeEditorFramework.Standard
 			}
 			
 			// Draw Interface
-			editorInterface.DrawToolbarGUI(rect);
+			GUILayout.BeginArea(rect);
+			editorInterface.DrawToolbarGUI();
+			GUILayout.EndArea();
 			editorInterface.DrawModalPanel();
 
 			// End Node Editor GUI

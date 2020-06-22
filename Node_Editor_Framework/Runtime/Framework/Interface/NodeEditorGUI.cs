@@ -32,35 +32,40 @@ namespace NodeEditorFramework
 
 		public static bool Init ()
 		{
-			List<GUIStyle> customStyles = new List<GUIStyle> (); 
-
-			defaultSkin = ResourceManager.LoadResource<GUISkin> ("DefaultSkin.asset");
-			if (defaultSkin == null) 
-				return CreateDefaultSkin();
-			else {
-				defaultSkin = Object.Instantiate (defaultSkin);
-				// Copy default editor styles, modified to fit custom style
-				customStyles = new List<GUIStyle> (defaultSkin.customStyles);
-				foreach (GUIStyle style in GUI.skin.customStyles)
-				{
-					if (defaultSkin.FindStyle(style.name) == null)
-					{
-						GUIStyle modStyle = new GUIStyle (style);
-						if (modStyle.normal.background == null)
-						{
-							modStyle.fontSize = defaultSkin.label.fontSize;
-							modStyle.normal.textColor = modStyle.active.textColor = modStyle.focused.textColor = modStyle.hover.textColor = defaultSkin.label.normal.textColor;
-						}
-						customStyles.Add (modStyle);
-					}
-				}
-				defaultSkin.customStyles = customStyles.ToArray();
-
-				Background = ResourceManager.LoadTexture ("Textures/background.png");
-				AALineTex = ResourceManager.LoadTexture ("Textures/AALine.png");
-				
-				return Background && AALineTex;
+			overrideSkin = ResourceManager.LoadResource<GUISkin> ("OverrideSkin.asset");
+			if (overrideSkin == null)
+			{ // Create default skin from scratch
+				if (!CreateDefaultSkin ()) return false;	
+				overrideSkin = Object.Instantiate (defaultSkin);
 			}
+			else
+			{ // Use override
+				overrideSkin = Object.Instantiate (overrideSkin);
+			}
+			
+			// Copy default styles in current setting, modified to fit custom style
+			// This mostly refers to the editor styles
+
+			List<GUIStyle> customStyles = new List<GUIStyle> (overrideSkin.customStyles);
+			foreach (GUIStyle style in GUI.skin.customStyles)
+			{
+				if (overrideSkin.FindStyle(style.name) == null)
+				{
+					GUIStyle modStyle = new GUIStyle (style);
+					if (modStyle.normal.background == null)
+					{
+						modStyle.fontSize = overrideSkin.label.fontSize;
+						modStyle.normal.textColor = modStyle.active.textColor = modStyle.focused.textColor = modStyle.hover.textColor = overrideSkin.label.normal.textColor;
+					}
+					customStyles.Add (modStyle);
+				}
+			}
+			overrideSkin.customStyles = customStyles.ToArray();
+
+			Background = ResourceManager.LoadTexture ("Textures/background.png");
+			AALineTex = ResourceManager.LoadTexture ("Textures/AALine.png");
+			
+			return Background && AALineTex;
 		}
 
 		public static bool CreateDefaultSkin ()
@@ -177,7 +182,8 @@ namespace NodeEditorFramework
 
 			defaultSkin.customStyles = customStyles.ToArray();
 #if UNITY_EDITOR
-			UnityEditor.AssetDatabase.CreateAsset(Object.Instantiate (defaultSkin), ResourceManager.resourcePath +  "DefaultSkin.asset");
+			if (!ResourceManager.resourcePath.StartsWith("Packages"))
+				UnityEditor.AssetDatabase.CreateAsset(Object.Instantiate (defaultSkin), ResourceManager.resourcePath +  "DefaultSkin.asset");
 #endif
 
 			return true;
