@@ -38,7 +38,7 @@ namespace NodeEditorFramework.IO
 				return null;
 			foreach (ObjectData data in objects.Values)
 			{
-				if (data.data.Equals(obj))
+				if (data.data == obj)
 					return data;
 			}
 			ObjectData objData = new ObjectData(obj);

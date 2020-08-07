@@ -156,7 +156,7 @@ namespace NodeEditorFramework.IO
 					VariableData varData = new VariableData (field);
 					nodeData.variables.Add (varData);
 					object varValue = field.GetValue (node);
-					if (field.FieldType.IsValueType) // Store value of the object
+					if (field.FieldType.IsValueType || field.FieldType == typeof(string)) // Store value of the object
 						varData.value = varValue;
 					else // Store reference to the object
 						varData.refObject = canvasData.ReferenceObject (varValue);
