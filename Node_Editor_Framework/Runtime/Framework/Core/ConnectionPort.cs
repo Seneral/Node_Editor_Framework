@@ -248,6 +248,8 @@ namespace NodeEditorFramework
 					() => NodeEditorUndoActions.DeleteConnection(port1, port2),
 					() => NodeEditorUndoActions.CreateConnection(port1, port2),
 					"Delete Connection");
+					
+				port.body.OnRemoveConnection(this, port);
 			}
 #endif
 

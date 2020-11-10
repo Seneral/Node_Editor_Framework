@@ -158,6 +158,11 @@ namespace NodeEditorFramework
 		/// Callback when the given port on this node was assigned a new connection
 		/// </summary>
 		protected internal virtual void OnAddConnection (ConnectionPort port, ConnectionPort connection) {}
+		
+		/// <summary>
+		/// Callback when the given port has a connection that was removed.
+		/// </summary>
+		protected internal virtual void OnRemoveConnection (ConnectionPort port, ConnectionPort connection) {}
 
 		/// <summary>
 		/// Should return all additional ScriptableObjects this Node references
