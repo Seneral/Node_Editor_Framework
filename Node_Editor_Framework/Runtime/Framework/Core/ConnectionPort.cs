@@ -258,7 +258,13 @@ namespace NodeEditorFramework
 				return;
 			}
 
-			if (!silent) NodeEditorCallbacks.IssueOnRemoveConnection (this, port);
+			if (!silent)
+			{
+				port.body.OnRemoveConnection(port, this);
+				this.body.OnRemoveConnection(this, port);
+				NodeEditorCallbacks.IssueOnRemoveConnection (this, port);
+			}
+			
 			port.connections.Remove (this);
 			connections.Remove (port);
 
