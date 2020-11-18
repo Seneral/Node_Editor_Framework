@@ -260,7 +260,8 @@ namespace NodeEditorFramework
 
 			if (!silent)
 			{
-				port.body.OnRemoveConnection(this, port);
+				port.body.OnRemoveConnection(port, this);
+				this.body.OnRemoveConnection(this, port);
 				NodeEditorCallbacks.IssueOnRemoveConnection (this, port);
 			}
 			
