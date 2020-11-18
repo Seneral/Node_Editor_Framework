@@ -263,6 +263,7 @@ namespace NodeEditorFramework
 				port.body.OnRemoveConnection(this, port);
 				NodeEditorCallbacks.IssueOnRemoveConnection (this, port);
 			}
+			
 			port.connections.Remove (this);
 			connections.Remove (port);
 
