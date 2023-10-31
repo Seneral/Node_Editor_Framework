@@ -1,3 +1,9 @@
+## Notice of Deprecation
+Since I haven't personally used Unity in many years, and nobody came forward to fix it themselves, the project is currently in a broken state.
+Namely UndoPro, a dependency also developed by me, needs minor updates due to internal changes by Unity.
+I do not have the time anymore to dedicate to the project myself, and so unless someone comes forth to at least maintain it, I would recommend to look for another solution.
+This should be easy, since the creation of the project a lot of alternatives (and even an official solution) have been developed.
+
 # Node Editor Framework for Unity
 
 #### A flexible and modular Node Editor Framework for creating node based displays and editors
